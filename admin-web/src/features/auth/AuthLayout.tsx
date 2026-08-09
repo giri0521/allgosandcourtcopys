@@ -15,9 +15,13 @@ export function AuthLayout({
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-navy-600 text-lg font-bold text-white">
-            AG
-          </div>
+          <img
+            src="/logo.webp"
+            alt="All GOs and Court Copies"
+            width={96}
+            height={96}
+            className="mx-auto mb-3 h-20 w-20 sm:h-24 sm:w-24"
+          />
           <h1 className="text-lg font-bold tracking-tight text-navy-800">ALLGOSANDCOURTCOPYS</h1>
           <p className="text-xs uppercase tracking-wide text-slate-500">
             Document Management System
