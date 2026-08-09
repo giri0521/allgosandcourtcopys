@@ -59,7 +59,7 @@ docker-compose.yml  Postgres + MinIO for local development
 
 ## Getting started
 
-Prerequisites: **JDK 21**, **Maven 3.9+**, **Node 20+**, **Docker**.
+Prerequisites: **JDK 21**, **Maven 3.9+**, **Node 22.12+**, **Docker**.
 
 ```bash
 cp .env.example .env

@@ -156,6 +156,24 @@
           </excludes>
         </configuration>
       </plugin>
+
+      <!--
+        Surefire runs the fast unit tests (*Test). Failsafe runs the Testcontainers-backed
+        integration tests (*IT) during `verify`; it is not bound by the Spring Boot parent, so
+        without this declaration the *IT classes would silently never execute.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

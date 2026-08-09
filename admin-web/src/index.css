@@ -1,6 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* navy/blue government branding, from docs/Logo.png */
+@theme {
+  --color-navy-50: #eef2f9;
+  --color-navy-100: #d6e0f0;
+  --color-navy-200: #adc1e1;
+  --color-navy-300: #7f9ccd;
+  --color-navy-400: #5077b6;
+  --color-navy-500: #2f5794;
+  --color-navy-600: #1f4076;
+  --color-navy-700: #163059;
+  --color-navy-800: #0f2340;
+  --color-navy-900: #0a1729;
+}
 
 :root {
   color-scheme: light;

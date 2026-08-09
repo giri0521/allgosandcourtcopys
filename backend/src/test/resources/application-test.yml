@@ -1,0 +1,15 @@
+# The mock OTP provider is what makes these tests possible without an SMS account:
+# the test reads the generated code straight from the repository instead of a phone.
+app:
+  otp:
+    provider: mock
+    # The 45-second resend cooldown is a production concern; here it would only make every test
+    # sleep. Rate limiting is covered by its own focused test rather than by every flow.
+    resend-cooldown: PT0S
+  jwt:
+    secret: test-only-secret-value-that-is-long-enough-for-hmac-sha256
+
+logging:
+  level:
+    com.allgos.dms: INFO
+    org.testcontainers: WARN
