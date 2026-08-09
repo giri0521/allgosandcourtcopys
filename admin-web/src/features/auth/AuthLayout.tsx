@@ -15,12 +15,14 @@ export function AuthLayout({
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
+          {/* The source artwork sits on a square canvas with a thin frame; clipping to a circle
+              trims those corners so only the seal itself shows. */}
           <img
             src="/logo.webp"
             alt="All GOs and Court Copies"
             width={96}
             height={96}
-            className="mx-auto mb-3 h-20 w-20 sm:h-24 sm:w-24"
+            className="mx-auto mb-3 h-20 w-20 rounded-full object-cover sm:h-24 sm:w-24"
           />
           <h1 className="text-lg font-bold tracking-tight text-navy-800">ALLGOSANDCOURTCOPYS</h1>
           <p className="text-xs uppercase tracking-wide text-slate-500">
