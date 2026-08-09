@@ -1,4 +1,9 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
+import { RegisterPage } from '@/features/auth/RegisterPage';
+import { SignedInPage } from '@/features/auth/SignedInPage';
+import { AuthProvider } from '@/lib/AuthProvider';
 
 /**
  * Route skeleton for the screens in docs/IMPLEMENTATION_PLAN.md.
@@ -8,17 +13,18 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 export function App() {
   return (
     <BrowserRouter>
+      <AuthProvider>
       <Routes>
         {/* public */}
-        <Route path="/" element={<Placeholder name="Landing" />} />
-        <Route path="/register" element={<Placeholder name="Registration" />} />
-        <Route path="/register/pending" element={<Placeholder name="Pending Approval" />} />
-        <Route path="/login" element={<Placeholder name="Login (Password / OTP tabs)" />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register/pending" element={<PendingApprovalPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<Placeholder name="Forgot Password" />} />
         <Route path="/restricted" element={<Placeholder name="Access Restricted" />} />
 
         {/* any active user */}
-        <Route path="/home" element={<Placeholder name="Home" />} />
+        <Route path="/home" element={<SignedInPage />} />
         <Route path="/departments" element={<Placeholder name="Department List" />} />
         <Route path="/departments/:departmentId" element={<Placeholder name="Folders" />} />
         <Route path="/folders/:folderId" element={<Placeholder name="Folder Contents" />} />
@@ -51,6 +57,7 @@ export function App() {
 
         <Route path="*" element={<Placeholder name="Not Found" />} />
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
