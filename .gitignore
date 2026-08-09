@@ -1,22 +1,21 @@
 # Java / Spring Boot
 backend/target/
-backend/.mvn/
 backend/*.iml
 backend/.settings/
 backend/.classpath
 backend/.project
 HELP.md
 
-# Node / React / React Native
+# The Maven wrapper itself IS committed; only its downloaded jar is not.
+.mvn/wrapper/maven-wrapper.jar
+
+# Node / React
 **/node_modules/
 **/dist/
 **/build/
-**/.next/
-mobile-app/android/app/build/
-mobile-app/ios/build/
-mobile-app/ios/Pods/
-*.jks
-*.keystore
+admin-web/playwright-report/
+admin-web/test-results/
+admin-web/coverage/
 
 # Env / secrets
 .env
@@ -24,6 +23,8 @@ mobile-app/ios/Pods/
 .env.*.local
 **/application-local.properties
 **/application-local.yml
+*.jks
+*.keystore
 
 # OS / editor
 .DS_Store

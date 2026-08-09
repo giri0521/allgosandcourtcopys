@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: allgosandcourtcopys-dms
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/allgos_dms}
+    username: ${DB_USERNAME:allgos}
+    password: ${DB_PASSWORD:allgos}
+  jpa:
+    hibernate:
+      ddl-auto: validate      # Flyway owns the schema; Hibernate never writes DDL
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:50MB}
+      max-request-size: ${MAX_REQUEST_SIZE:200MB}
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  # The "once a day" OTP boundary is evaluated against this zone, server-side.
+  timezone: ${APP_TIMEZONE:Asia/Kolkata}
+
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-every-environment-this-must-be-at-least-32-bytes}
+    access-token-ttl: ${JWT_ACCESS_TTL:PT15M}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:P7D}
+
+  otp:
+    provider: ${OTP_PROVIDER:mock}      # mock | msg91 | twilio
+    length: 6
+    ttl: PT5M
+    max-attempts: 5
+    resend-cooldown: PT45S              # matches the 45s countdown in the wireframes
+    msg91:
+      auth-key: ${MSG91_AUTH_KEY:}
+      template-id: ${MSG91_TEMPLATE_ID:}
+      sender-id: ${MSG91_SENDER_ID:}
+
+  storage:
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}   # MinIO locally; blank for real AWS S3
+    region: ${S3_REGION:ap-south-1}
+    bucket: ${S3_BUCKET:allgos-documents}
+    access-key: ${S3_ACCESS_KEY:minioadmin}
+    secret-key: ${S3_SECRET_KEY:minioadmin}
+    path-style-access: ${S3_PATH_STYLE:true}         # required by MinIO
+    presigned-url-ttl: PT5M
+
+  upload:
+    allowed-content-types: application/pdf,image/jpeg,image/png,image/tiff,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+
+  seed:
+    # First admin is created by migration, never by self-registration.
+    admin-mobile: ${SEED_ADMIN_MOBILE:9999999999}
+    admin-name: ${SEED_ADMIN_NAME:System Administrator}
+
+logging:
+  level:
+    com.allgos.dms: ${LOG_LEVEL:INFO}

@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (Spring Boot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+      # Testcontainers needs a Docker daemon; ubuntu-latest provides one.
+      - name: Build and test
+        working-directory: backend
+        run: mvn --batch-mode verify
+
+  web:
+    name: Web (React)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: admin-web/package-lock.json
+      - name: Install
+        working-directory: admin-web
+        run: npm ci
+      - name: Lint
+        working-directory: admin-web
+        run: npm run lint
+      - name: Typecheck
+        working-directory: admin-web
+        run: npm run typecheck
+      - name: Unit tests
+        working-directory: admin-web
+        run: npm test
+      - name: Build
+        working-directory: admin-web
+        run: npm run build
