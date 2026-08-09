@@ -1,0 +1,36 @@
+# Java / Spring Boot
+backend/target/
+backend/.mvn/
+backend/*.iml
+backend/.settings/
+backend/.classpath
+backend/.project
+HELP.md
+
+# Node / React / React Native
+**/node_modules/
+**/dist/
+**/build/
+**/.next/
+mobile-app/android/app/build/
+mobile-app/ios/build/
+mobile-app/ios/Pods/
+*.jks
+*.keystore
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+**/application-local.properties
+**/application-local.yml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Misc
+*.swp

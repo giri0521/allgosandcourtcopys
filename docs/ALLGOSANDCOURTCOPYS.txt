@@ -1,0 +1,146 @@
+ALLGOSANDCOURTCOPYS
+                   Document Management System
+────────────────────────────────────────────────────────────
+
+                    USER OPENS WEBSITE
+                            │
+                            ▼
+                     Splash / Home Page
+                            │
+                            ▼
+                    Mobile Number Login
+                            │
+                            ▼
+                     OTP Verification
+                            │
+                  ┌─────────┴─────────┐
+                  │                   │
+                  ▼                   ▼
+              Admin Login         Viewer Login
+                  │                   │
+                  ▼                   ▼
+            Admin Dashboard      Viewer Dashboard
+
+────────────────────────────────────────────────────────────
+                    ADMIN WORKFLOW
+────────────────────────────────────────────────────────────
+
+Dashboard
+    │
+    ├── Department Management
+    │      ├── Add Department
+    │      ├── Edit Department
+    │      └── Delete Department
+    │
+    ├── Folder Management
+    │      ├── Create Folder
+    │      ├── Rename Folder
+    │      ├── Delete Folder
+    │      └── Assign Folder
+    │
+    ├── File Management
+    │      ├── Upload Files
+    │      ├── Preview
+    │      ├── Replace
+    │      ├── Download
+    │      └── Delete
+    │
+    ├── Contract List
+    │
+    ├── Government Orders
+    │
+    ├── Court Orders
+    │
+    ├── Circulars
+    │
+    ├── Notifications
+    │
+    ├── Viewer Management
+    │      ├── Create Viewer
+    │      ├── Edit Viewer
+    │      ├── Activate/Deactivate
+    │      └── Assign Department
+    │
+    ├── Permission Management
+    │      ├── View Only
+    │      ├── View + Download
+    │      └── Revoke Access
+    │
+    ├── Reports
+    │
+    ├── Activity Logs
+    │
+    ├── Settings
+    │
+    └── Logout
+
+────────────────────────────────────────────────────────────
+                  VIEWER WORKFLOW
+────────────────────────────────────────────────────────────
+
+Viewer Dashboard
+      │
+      ├── Search Documents
+      │
+      ├── Department List
+      │
+      ├── Assigned Folders
+      │
+      ├── Contract List
+      │
+      ├── Government Orders
+      │
+      ├── Court Orders
+      │
+      ├── Circulars
+      │
+      ├── Open PDF
+      │
+      ├── Open Images
+      │
+      ├── Download (If Allowed)
+      │
+      ├── My Profile
+      │
+      └── Logout
+
+────────────────────────────────────────────────────────────
+                  BACKEND PROCESS
+────────────────────────────────────────────────────────────
+
+Login
+   │
+OTP Authentication
+   │
+Firebase Authentication
+   │
+Cloud Firestore Database
+   │
+Permission Validation
+   │
+Firebase Storage
+   │
+Document Access
+   │
+Activity Log
+   │
+Response to User
+
+────────────────────────────────────────────────────────────
+                 DATABASE COLLECTIONS
+────────────────────────────────────────────────────────────
+
+Admins
+Viewers
+Departments
+Folders
+Files
+Contracts
+Government Orders
+Court Orders
+Circulars
+Permissions
+Downloads
+Activity Logs
+Notifications
+Settings
