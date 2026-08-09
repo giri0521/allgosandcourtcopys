@@ -65,14 +65,19 @@ Prerequisites: **JDK 21**, **Maven 3.9+**, **Node 22.12+**, **Docker**.
 cp .env.example .env
 
 # 1. infrastructure
-docker compose up -d              # Postgres :5432, MinIO :9000 (console :9001)
+docker compose up -d               # Postgres :5433, MinIO :9000 (console :9002)
 
 # 2. backend — Flyway applies the schema and seeds 43 departments + the first admin
-cd backend && mvn spring-boot:run # http://localhost:8080
+cd backend && ./mvnw spring-boot:run    # http://localhost:8080
 
 # 3. web app
 cd admin-web && npm install && npm run dev   # http://localhost:5173
 ```
+
+Use `./mvnw` rather than a system `mvn`: the wrapper pins the Maven version, so local builds and CI
+match. Note the two deliberate port choices — the database is published on **5433** so it coexists with
+a PostgreSQL installed directly on the machine, and the MinIO console on **9002** because Windows
+frequently reserves 9001.
 
 In development `OTP_PROVIDER=mock`, so OTP codes are printed to the backend log instead of being sent
 over SMS — no gateway account needed to work on the app.
@@ -80,7 +85,7 @@ over SMS — no gateway account needed to work on the app.
 ### Checks
 
 ```bash
-cd backend   && mvn verify        # unit + Testcontainers integration tests
+cd backend   && ./mvnw verify     # unit + Testcontainers integration tests (needs Docker running)
 cd admin-web && npm run lint && npm run typecheck && npm test && npm run build
 ```
 

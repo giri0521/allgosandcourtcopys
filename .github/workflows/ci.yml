@@ -17,9 +17,10 @@ jobs:
           distribution: temurin
           cache: maven
       # Testcontainers needs a Docker daemon; ubuntu-latest provides one.
+      # ./mvnw pins the Maven version, so CI and every developer build match.
       - name: Build and test
         working-directory: backend
-        run: mvn --batch-mode verify
+        run: ./mvnw --batch-mode verify
 
   web:
     name: Web (React)

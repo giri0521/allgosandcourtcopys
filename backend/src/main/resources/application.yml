@@ -2,7 +2,7 @@ spring:
   application:
     name: allgosandcourtcopys-dms
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/allgos_dms}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/allgos_dms}
     username: ${DB_USERNAME:allgos}
     password: ${DB_PASSWORD:allgos}
   jpa:

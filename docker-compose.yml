@@ -7,7 +7,10 @@ services:
       POSTGRES_USER: allgos
       POSTGRES_PASSWORD: allgos
     ports:
-      - "5432:5432"
+      # Published on 5433 so it coexists with a PostgreSQL installed directly on the machine,
+      # which owns 5432. Without this, "localhost:5432" resolves to the local server and the
+      # application fails to authenticate against a database that does not have its schema.
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +28,10 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
       - "9000:9000"   # S3 API
-      - "9001:9001"   # web console
+      # Published on 9002 because Windows commonly reserves 9001 (see
+      # `netsh interface ipv4 show excludedportrange protocol=tcp`), which makes the
+      # bind fail outright. The container still serves the console on 9001 internally.
+      - "9002:9001"   # web console
     volumes:
       - minio-data:/data
     healthcheck:

@@ -21,7 +21,11 @@
     <java.version>21</java.version>
     <awssdk.version>2.28.16</awssdk.version>
     <jjwt.version>0.12.6</jjwt.version>
-    <testcontainers.version>1.20.2</testcontainers.version>
+    <!--
+      1.21.x bundles a docker-java that negotiates a Docker API version at or above the 1.40 floor
+      enforced by Docker Engine 29; older Testcontainers releases are refused with HTTP 400.
+    -->
+    <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
 
   <dependencies>

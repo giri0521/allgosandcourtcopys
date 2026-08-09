@@ -36,6 +36,7 @@ public class OtpService {
     private final OtpVerificationRepository otpRepository;
     private final OtpProvider otpProvider;
     private final PasswordEncoder passwordEncoder;
+    private final FailedAttemptRecorder failedAttemptRecorder;
     private final AppProperties.Otp config;
     private final SecureRandom random = new SecureRandom();
 
@@ -43,10 +44,12 @@ public class OtpService {
             OtpVerificationRepository otpRepository,
             OtpProvider otpProvider,
             PasswordEncoder passwordEncoder,
+            FailedAttemptRecorder failedAttemptRecorder,
             AppProperties properties) {
         this.otpRepository = otpRepository;
         this.otpProvider = otpProvider;
         this.passwordEncoder = passwordEncoder;
+        this.failedAttemptRecorder = failedAttemptRecorder;
         this.config = properties.otp();
     }
 
@@ -97,14 +100,14 @@ public class OtpService {
         }
 
         if (!passwordEncoder.matches(submittedCode, verification.getOtpHash())) {
-            // Count the failure before rejecting, so guesses are bounded even if the caller retries fast.
-            verification.setAttemptCount(verification.getAttemptCount() + 1);
-            otpRepository.save(verification);
+            // Committed separately: the exception below rolls this transaction back, and a lost
+            // increment would leave OTP guessing unbounded.
+            failedAttemptRecorder.recordOtpFailure(verification.getId());
             throw ApiException.badRequest("OTP_INVALID", "That OTP is not correct");
         }
 
-        verification.setVerifiedAt(Instant.now());
-        otpRepository.save(verification);
+        // Likewise committed on its own, so a later failure cannot resurrect a spent code.
+        failedAttemptRecorder.markOtpVerified(verification.getId());
     }
 
     private void enforceSendLimits(String mobileNumber) {

@@ -160,6 +160,32 @@ class AuthFlowIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("OTP guesses are bounded, and the limit survives the rejection")
+    void otpAttemptsAreBounded() throws Exception {
+        register();
+        approve();
+        sendLoginOtp();
+
+        // Each rejection throws, rolling back the request transaction. The attempt counter is
+        // committed separately precisely so it is not lost with that rollback — without which
+        // guessing a 6-digit code would be unlimited.
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            verifyLoginOtp("000000")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("OTP_INVALID"));
+        }
+
+        verifyLoginOtp("000000")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("OTP_ATTEMPTS_EXCEEDED"));
+
+        // Even the genuine code is now refused: the issued OTP is spent.
+        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("OTP_ATTEMPTS_EXCEEDED"));
+    }
+
+    @Test
     @DisplayName("registering a mobile number twice is refused")
     void duplicateMobileIsRejected() throws Exception {
         register().andExpect(status().isOk());

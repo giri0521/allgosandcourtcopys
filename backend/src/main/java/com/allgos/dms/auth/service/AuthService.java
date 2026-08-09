@@ -35,15 +35,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
 
-    /** Consecutive password failures before the account is locked out briefly. */
-    private static final int MAX_FAILED_LOGINS = 5;
-
-    private static final java.time.Duration LOCKOUT = java.time.Duration.ofMinutes(15);
-
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final RegistrationRequestRepository registrationRequestRepository;
     private final OtpService otpService;
+    private final FailedAttemptRecorder failedAttemptRecorder;
     private final LoginPolicyService loginPolicy;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
@@ -55,6 +51,7 @@ public class AuthService {
             DepartmentRepository departmentRepository,
             RegistrationRequestRepository registrationRequestRepository,
             OtpService otpService,
+            FailedAttemptRecorder failedAttemptRecorder,
             LoginPolicyService loginPolicy,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
@@ -64,6 +61,7 @@ public class AuthService {
         this.departmentRepository = departmentRepository;
         this.registrationRequestRepository = registrationRequestRepository;
         this.otpService = otpService;
+        this.failedAttemptRecorder = failedAttemptRecorder;
         this.loginPolicy = loginPolicy;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
@@ -159,7 +157,9 @@ public class AuthService {
         try {
             otpService.verifyOtp(request.mobileNumber(), OtpPurpose.LOGIN, request.otp());
         } catch (ApiException ex) {
-            auditService.record(user, AuditAction.OTP_FAILED, "user", user.getId(),
+            // Durable: the rethrow rolls this transaction back, and a rejected OTP is precisely the
+            // event a security review needs to see.
+            auditService.recordDurable(user, AuditAction.OTP_FAILED, "user", user.getId(),
                     Map.of("reason", ex.getCode()));
             throw ex;
         }
@@ -294,13 +294,14 @@ public class AuthService {
                 });
     }
 
+    /**
+     * Both the counter and its audit entry are committed independently, because the
+     * INVALID_CREDENTIALS exception that follows rolls this transaction back — and a discarded
+     * counter would mean the lockout never triggers.
+     */
     private void registerFailedAttempt(User user) {
-        int failures = user.getFailedLoginCount() + 1;
-        user.setFailedLoginCount(failures);
-        if (failures >= MAX_FAILED_LOGINS) {
-            user.setLockedUntil(Instant.now().plus(LOCKOUT));
-        }
-        auditService.record(user, AuditAction.LOGIN_FAILED, "user", user.getId(),
+        int failures = failedAttemptRecorder.recordPasswordFailure(user.getId());
+        auditService.recordDurable(user, AuditAction.LOGIN_FAILED, "user", user.getId(),
                 Map.of("failedAttempts", failures));
     }
 
