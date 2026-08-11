@@ -90,13 +90,41 @@ export function departmentTone(id: string): Tone {
   return TONES[DEPARTMENT_TONES[hash % DEPARTMENT_TONES.length]];
 }
 
-/** The first letters of a name, for an avatar. */
+/**
+ * Words that carry no identity, and would otherwise produce the same initials for everything.
+ *
+ * <p>Every one of the 43 departments is named "Department of …", so first-letter-of-each-word gives
+ * all of them "DO". Dropping these leaves the part that actually distinguishes them.
+ */
+const NOISE_WORDS = new Set([
+  'department', 'dept', 'of', 'and', 'the', 'for', 'to', 'in', 'on', '&',
+]);
+
+/**
+ * Initials for an avatar, taken from the words that identify the thing.
+ *
+ * <p>"Department of Agriculture" gives AG rather than DO; "Department of Backward Classes, Most
+ * Backward Classes and Minorities Welfare" gives BC. Two significant words give a letter each; a
+ * single one gives its first two letters, which reads better than a lone character in a square.
+ */
 export function initials(name: string, max = 2): string {
-  return name
-    .split(/\s+/)
-    .filter((part) => /[a-z0-9]/i.test(part))
+  const words = name
+    .split(/[\s,./-]+/)
+    .map((part) => part.replace(/[^a-z0-9]/gi, ''))
+    .filter((part) => part.length > 0 && !NOISE_WORDS.has(part.toLowerCase()));
+
+  if (words.length === 0) {
+    // Nothing significant survived — fall back to the raw name rather than an empty square.
+    return name.replace(/[^a-z0-9]/gi, '').slice(0, max).toUpperCase() || '—';
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, max).toUpperCase();
+  }
+
+  return words
+    .slice(0, max)
     .map((part) => part[0])
     .join('')
-    .slice(0, max)
     .toUpperCase();
 }

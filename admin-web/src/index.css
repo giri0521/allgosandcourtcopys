@@ -34,7 +34,7 @@
    * Semantic surfaces. Screens reference these rather than picking a slate number each time, so the
    * whole application re-tones from six lines — and a future dark mode has somewhere to land.
    */
-  --color-canvas: #f5f7fb;        /* the page behind everything */
+  --color-canvas: #dce6f4;        /* the page behind everything — tinted, so white cards read as cards */
   --color-surface: #ffffff;       /* cards, tables, dialogs */
   --color-surface-sunken: #f8fafc; /* table headers, wells */
   --color-line: #e2e8f0;          /* ordinary borders */
@@ -60,14 +60,21 @@
 body {
   @apply text-slate-900 antialiased;
   /*
-   * A very slight wash rather than flat grey: navy at 3% in the top-left, gold at 3% in the
-   * bottom-right, over the canvas colour. It is barely perceptible on its own and that is the
-   * point — white cards lift off it, and the page stops looking like unstyled default.
+   * Three washes over a tinted canvas: navy from the top-left, a cooler teal from the top-right,
+   * gold rising from the bottom. Fixed, so they stay put while the page scrolls and the colour
+   * never appears to slide.
+   *
+   * Strong enough to be seen — a page that is almost-white just looks like unstyled default — but
+   * kept in the brand's own hues so it reads as considered rather than decorative. White cards sit
+   * on top and lift off it, which is the whole reason for tinting the ground in the first place.
    */
   background-color: var(--color-canvas);
   background-image:
-    radial-gradient(60rem 60rem at 0% 0%, color-mix(in oklab, var(--color-navy-500) 6%, transparent), transparent 60%),
-    radial-gradient(50rem 50rem at 100% 100%, color-mix(in oklab, var(--color-gold-400) 6%, transparent), transparent 55%);
+    radial-gradient(70rem 55rem at 0% 0%, color-mix(in oklab, var(--color-navy-500) 32%, transparent), transparent 70%),
+    radial-gradient(60rem 50rem at 100% 0%, color-mix(in oklab, var(--color-teal-400) 30%, transparent), transparent 68%),
+    radial-gradient(75rem 55rem at 50% 100%, color-mix(in oklab, var(--color-gold-300) 30%, transparent), transparent 70%),
+    /* A whole-page diagonal underneath the three, so nowhere falls back to bare white. */
+    linear-gradient(135deg, color-mix(in oklab, var(--color-navy-400) 14%, transparent), transparent 45%);
   background-attachment: fixed;
 }
 
