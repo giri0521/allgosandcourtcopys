@@ -85,6 +85,35 @@ cd backend   && ./mvnw test                   # unit only, no Docker needed
 cd admin-web && npm run lint && npm run typecheck && npm run build
 ```
 
+**None of the above tells you whether a screen is usable.** All three passed on a home page that had
+no navigation and said the features were still to come, and on a department list where all 43 avatars
+read "DO". Open the app and look at what you changed.
+
+If you would rather not click through by hand, drive it — Playwright is already a dev dependency:
+
+```bash
+cd admin-web && npx playwright install chromium   # once per machine
+```
+
+```js
+// admin-web/shot.mjs — throwaway; run with `node shot.mjs`, then look at the PNGs
+import { chromium } from '@playwright/test';
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+
+await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
+await page.getByLabel('Mobile number').fill('9123456780');
+await page.getByLabel('Password').fill('Str0ngPassword!');   // needs an OTP sign-in earlier today
+await page.getByRole('button', { name: 'Sign in' }).click();
+await page.waitForURL('**/home');
+
+await page.waitForLoadState('networkidle');
+await page.waitForTimeout(800);        // entrance animations, or you shoot them at opacity 0
+await page.screenshot({ path: 'home.png' });
+await browser.close();
+```
+
 ### Signing in
 
 | Account | Mobile | How |
@@ -115,6 +144,7 @@ All fixed in the repo; recorded so nobody re-diagnoses them.
 | Every Lombok getter reports "cannot find symbol" | The JDK is newer than 21. Lombok's annotation processor silently does nothing on JDK 24+, so the whole codebase looks broken. Build on **JDK 21**. |
 | `JAVA_HOME is not defined correctly` while a JDK is installed | `JAVA_HOME` was pointing at the JDK's `bin` directory. It must point at the JDK **root**. |
 | The IDE reports the same Lombok errors while `./mvnw` compiles cleanly | The language server is not running Lombok. Trust Maven, not the squiggles. |
+| `docker` exists but the daemon "cannot be found" | Docker Desktop is installed **per user** on this machine — `%LOCALAPPDATA%\Programs\DockerDesktop\Docker Desktop.exe`, not Program Files. Start it from there, then wait for `docker info` to answer. |
 
 ---
 
@@ -141,19 +171,22 @@ One package per feature area under `com.allgos.dms`, each with
 ### Web — `admin-web/`, React 19 + TypeScript + Vite + Tailwind 4
 
 One responsive app serves both roles; there is no mobile app. `src/app/App.tsx` holds routes for every
-planned screen, most still placeholders. Built screens are in `src/features/auth/` and
-`src/features/admin/`. `src/lib/api.ts` centralises the 401 → login and 403 → Access Restricted
-conventions.
+planned screen. Built screens are in `src/features/auth/`, `src/features/admin/` and
+`src/features/documents/`; the remainder — search, preview, favourites, notifications, reports — are
+still `Placeholder` elements in that routes file, which is the quickest way to see what is left.
+`src/lib/api.ts` centralises the 401 → login and 403 → Access Restricted conventions.
 
 | File | Why it matters |
 |---|---|
 | `index.css` | The palette, the semantic surfaces **and** the motion vocabulary every screen borrows from |
 | `lib/tones.ts` | What colour a category, file type or department is — asked, never chosen per screen |
-| `components/ui/` | Button, Modal, Alert, Field, Skeleton, StatusBadge — polish lives here, so fixing it once fixes it everywhere |
+| `components/ui/` | Button, Modal, Alert, Field, Skeleton, CategoryBadge, StatusBadge — polish lives here, so fixing it once fixes it everywhere |
+| `components/layout/AppShell.tsx` | Header and navigation. **Every signed-in screen must use it** — a screen with its own layout gets no navigation, which is exactly how the home page once shipped unreachable |
 | `lib/AuthProvider.tsx` | Holds the session; restores it from the refresh cookie on start-up |
 | `lib/RouteGuards.tsx` | `RequireAuth` / `RequireAdmin`. A convenience — the server is the control |
 | `features/admin/api.ts` | Every admin call, in one place |
-| `components/layout/AppShell.tsx` | Header and navigation for signed-in screens |
+| `features/documents/api.ts` | Every department, folder and file call, in one place — add to this rather than starting another |
+| `features/documents/` | Departments, DepartmentPage, FolderPage, MyUploads, and the Upload / Replace / Delete / CreateFolder dialogs |
 
 #### Look and feel is part of "done"
 
@@ -344,9 +377,12 @@ DLT-approved templates, admin training.
   the row, the object stays — as do superseded versions, above. Nothing references either and no
   user can see them, but a periodic sweep comparing keys against `files.storage_key` is still owed,
   and it must not treat a key named in a `file_replaced` audit entry as an orphan.
-- **The web document screens have not been exercised in a browser.** Lint, typecheck and build are
-  clean and every endpoint behind them was smoke-tested live with curl, but nobody has clicked
-  through the upload dialog. Worth ten minutes before the next demo.
+- **Half the document screens have been seen in a browser, half have not.** Sign-in, home and the
+  department list have been driven and looked at; **the folder page, the upload dialog, replace and
+  delete, and the admin deletions log have not been clicked through by a human.** Every endpoint
+  behind them was smoke-tested live with curl and is covered by `FileAccessIT`, so the risk is
+  presentation rather than function — but that is exactly the class of bug that got through twice
+  already. Do this before the next demo; §3 has a script that will do most of it.
 - **No `GET /me` endpoint.** Session restore goes through `/auth/refresh`, which returns the user
   alongside the token, so nothing needs it yet — but anything wanting the current user without
   minting a token will.

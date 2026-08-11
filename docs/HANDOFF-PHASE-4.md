@@ -17,6 +17,7 @@ uploads into any of them, and removes their own document with a reason that reac
 | Backend integration tests | **35 pass** (was 18) — including a real MinIO container |
 | Web | typecheck, lint and build clean |
 | Live smoke test | Upload, disguised-file refusal, presigned download, delete rules, restore — all verified against the dev stack |
+| Seen in a browser | Sign-in, home, department list. **Folder page, upload, replace, delete and the deletions log have not been** — see [HANDOFF.md §8](HANDOFF.md) |
 
 The Phase 2 integration tests, which had never been executed, were run first and all passed. No
 Phase 2 bugs were found.
@@ -29,6 +30,12 @@ Phase 2 bugs were found.
 - `UploadValidator`: extension **and** magic-byte checks, filename sanitisation, size cap
 - Web: Departments, department folders, folder contents, upload dialog with per-file progress,
   My Uploads, replace-document, and the admin Deletions log with restore
+- **A design system you should build on rather than around**: the palette and semantic surfaces in
+  `index.css`, what-is-coloured-what in `lib/tones.ts`, the motion vocabulary, and skeleton loaders.
+  New screens inherit it by using `AppShell` and `components/ui/` — see [HANDOFF.md §5](HANDOFF.md).
+- The home page, which until the end of Phase 3 was still the Phase 1 placeholder: no navigation,
+  and copy announcing that departments and uploads were yet to come while both were live behind
+  routes nothing linked to.
 
 ---
 
