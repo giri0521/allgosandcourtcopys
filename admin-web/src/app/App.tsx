@@ -1,8 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { DeletionsPage } from '@/features/admin/deletions/DeletionsPage';
 import { MembersPage } from '@/features/admin/members/MembersPage';
 import { RegistrationRequestsPage } from '@/features/admin/registrations/RegistrationRequestsPage';
 import { AccessRestrictedPage } from '@/features/auth/AccessRestrictedPage';
+import { DepartmentPage } from '@/features/documents/DepartmentPage';
+import { DepartmentsPage } from '@/features/documents/DepartmentsPage';
+import { FolderPage } from '@/features/documents/FolderPage';
+import { MyUploadsPage } from '@/features/documents/MyUploadsPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
@@ -47,12 +52,14 @@ export function App() {
         {/* any active user */}
         <Route element={<RequireAuth />}>
           <Route path="/home" element={<SignedInPage />} />
-          <Route path="/departments" element={<Placeholder name="Department List" />} />
-          <Route path="/departments/:departmentId" element={<Placeholder name="Folders" />} />
-          <Route path="/folders/:folderId" element={<Placeholder name="Folder Contents" />} />
+          <Route path="/departments" element={<DepartmentsPage />} />
+          <Route path="/departments/:departmentId" element={<DepartmentPage />} />
+          <Route path="/folders/:folderId" element={<FolderPage />} />
           <Route path="/files/:fileId" element={<Placeholder name="File Preview" />} />
-          <Route path="/upload" element={<Placeholder name="Upload" />} />
-          <Route path="/my-uploads" element={<Placeholder name="My Uploads" />} />
+          {/* Uploading happens inside the folder it files into, so there is no standalone
+              upload screen; the old route redirects rather than 404s. */}
+          <Route path="/upload" element={<Navigate to="/departments" replace />} />
+          <Route path="/my-uploads" element={<MyUploadsPage />} />
           <Route path="/downloads" element={<Placeholder name="Downloads" />} />
           <Route path="/favorites" element={<Placeholder name="Favorites" />} />
           <Route path="/search" element={<Placeholder name="Search Results" />} />
@@ -66,7 +73,7 @@ export function App() {
           <Route path="/admin/requests" element={<RegistrationRequestsPage />} />
           <Route path="/admin/members" element={<MembersPage />} />
           <Route path="/admin/members/:memberId" element={<Placeholder name="Member Activity" />} />
-          <Route path="/admin/deletions" element={<Placeholder name="Deletions Log" />} />
+          <Route path="/admin/deletions" element={<DeletionsPage />} />
           <Route path="/admin/departments" element={<Placeholder name="Department Management" />} />
           <Route path="/admin/folders" element={<Placeholder name="Folder Management" />} />
           <Route path="/admin/files" element={<Placeholder name="File Management" />} />

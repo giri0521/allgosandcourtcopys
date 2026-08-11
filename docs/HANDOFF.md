@@ -7,8 +7,9 @@ users.
 - **Repo** `github.com/harithkumaradhithya/allgosandcourtcopys` · **branch** `pre-release`
 - **Full specification** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — this file is the
   orientation; that one is the contract.
-- **Picking up the next phase?** Start with [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md) — what changed
-  in Phase 2, what to verify first, and the Phase 3 work broken down.
+- **Picking up the next phase?** Start with [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md) — what changed
+  in Phase 3 and the Phase 4 work broken down. [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md) is kept as
+  the record of what Phase 3 was asked to do.
 
 ---
 
@@ -45,15 +46,14 @@ product.
 | Registration OTP, forgot password, Access Restricted | Done | Registration is now two steps; reset is OTP-only |
 | Session survives a page reload | Done | Start-up `/auth/refresh` exchanges the cookie for a token |
 | Admin approval queue | Done | Approve, reject-with-reason, members list, enable/disable |
-| **Departments, folders, files, upload** | **Not built** | **Next task** — Phase 3 |
-| Search, preview, download, favorites | Not built | Phase 4 |
+| Departments, folders, browsing | Done | All 43 browsable by anyone signed in; folders nest |
+| Upload, download, delete-with-reason, restore | Done | Magic-byte validation; presigned URLs; deletions log |
+| **Search, preview, favorites, notifications** | **Not built** | **Next task** — Phase 4 |
 | Reports, monitoring, audit viewer | Not built | Phase 5 |
 
-24 unit tests pass. 18 integration tests exist — the 7 original plus 11 in `AdminApprovalIT` — and
-run against a real PostgreSQL container, so migrations and JPA entities are validated against each
-other on every build. **The integration tests have not been run since the Phase 2 work landed**: the
-machine that wrote it had no Docker. Run `./mvnw verify` on a machine that does before trusting
-the build.
+46 unit tests and 30 integration tests pass. The integration tests run against a real PostgreSQL
+container — and, for `FileAccessIT`, a real MinIO one — so migrations, JPA entities and the storage
+client are all validated against what they will meet in production on every build.
 
 ---
 
@@ -219,16 +219,42 @@ Three rules in that surface are worth knowing before changing it:
 Also landed with it: session restore on reload, `RequireAuth`/`RequireAdmin` guards, the Access
 Restricted screen, forgot-password, and the registration OTP step.
 
-### Phase 3 — Departments, folders, upload, delete ← start here
+### Phase 3 — Departments, folders, upload, delete · done
 
-Entities and endpoints for folders and files; S3 upload via MinIO with per-file progress; extension
-**and** magic-byte validation; delete-with-reason plus the admin notification fan-out; deletions log
-with restore.
+Documents can be filed, read, removed and put back.
 
-### Phase 4 — Browse, search, preview, download
+| Endpoint | Notes |
+|---|---|
+| `GET /departments` | Authenticated; richer than the public one, with folder and file counts |
+| `GET /departments/{id}/folders?parentFolderId=` | Omit the parameter for the department's top level |
+| `POST /departments/{id}/folders` | 409 `FOLDER_EXISTS` for a duplicate name in the same place |
+| `GET /folders/{id}`, `/folders/{id}/breadcrumb`, `/folders/{id}/folders`, `/folders/{id}/files` | Breadcrumb is root-first |
+| `POST /files?folderId=` | Multipart, multiple files, **any department** |
+| `GET /files/{id}`, `/files/my-uploads` | |
+| `GET /files/{id}/download-link` | A presigned URL valid for 5 minutes |
+| `DELETE /files/{id}` | Body `{ reason }`; blank → 400, not yours → 403 `NOT_FILE_OWNER` |
+| `GET /admin/deletions?status=deleted\|all` | The deletions log, with the reason |
+| `POST /admin/files/{id}/restore` | 409 `FILE_NOT_DELETED` if it was never deleted |
 
-Home dashboard, browsing across all 43 departments, PDF and image preview via short-lived presigned
-URLs, download with history, favorites, global search, notifications.
+Four decisions in that surface are worth knowing before changing it:
+
+- **Uploads are not scoped to the uploader's department.** There is deliberately no check comparing
+  the two — see rule 2. Adding one would be a regression, not a fix.
+- **The declared content type decides nothing.** The extension, the signature Tika reads from the
+  bytes, and the configured allow-list must agree, so a `.pdf` beginning with `MZ` is refused with
+  `FILE_CONTENT_MISMATCH`. Filenames are rebuilt from their last path segment.
+- **A rejected file does not fail the batch.** `POST /files` returns 200 with `uploaded` and
+  `rejected` lists; only an empty selection fails outright. The web app uploads one file per
+  request so it can draw a real progress bar for each.
+- **Bytes are written before the row.** Object storage does not join the transaction, so a
+  committed row always has bytes behind it and the residue is an orphaned object rather than a row
+  pointing at nothing. `FileRecordWriter` is a separate bean for the same proxy reason as
+  `FailedAttemptRecorder`, and it returns the response view built inside its own transaction.
+
+### Phase 4 — Search, preview, favorites, notifications ← start here
+
+Home dashboard, PDF and image preview in the browser, download history, favorites, global search
+across all 43 departments, and the notification bell. Browsing and download landed in Phase 3.
 
 ### Phase 5 — Admin monitoring, reports, profile
 
@@ -249,8 +275,16 @@ DLT-approved templates, admin training.
 
 ## 8. Known gaps in what is already built
 
-- **The Phase 2 integration tests have never been executed** (§2). They compile; nothing more is
-  known about them. This is the first thing to do on a machine with Docker.
+- **Downloads are audited but not stored.** `GET /files/{id}/download-link` writes an audit entry;
+  the `downloads` table, which the download-history screen needs, is still unwritten. Phase 4.
+- **File replacement is not implemented.** `files.version` exists and is always 1. The client has
+  not answered whether a member may replace their own file (§9), so nothing was built on a guess.
+- **Orphaned objects are never swept.** If the process dies between storing bytes and committing
+  the row, the object stays. Nothing references it and no user can see it, but a periodic sweep
+  comparing keys against `files.storage_key` is still owed.
+- **The web document screens have not been exercised in a browser.** Lint, typecheck and build are
+  clean and every endpoint behind them was smoke-tested live with curl, but nobody has clicked
+  through the upload dialog. Worth ten minutes before the next demo.
 - **No `GET /me` endpoint.** Session restore goes through `/auth/refresh`, which returns the user
   alongside the token, so nothing needs it yet — but anything wanting the current user without
   minting a token will.
@@ -273,7 +307,8 @@ DLT-approved templates, admin training.
 - **Hosting:** NIC/MeghRaj or AWS? Affects deployment only, but court documents on a commercial cloud
   needs written sign-off.
 - **File replacement:** may a member upload a new version of their own file, or is that admin-only?
-  Currently assumed yes.
+  **Still unanswered, and now blocking** — Phase 3 left it unbuilt rather than guessing, so a
+  corrected document today means delete-with-reason and upload again.
 - **Retention:** how long do soft-deleted files stay restorable before purge? Currently indefinite.
 - **Additional admins:** how should a second administrator be created — an existing admin promoting a
   member, or seeding only? Approval deliberately never changes a role, so today it takes SQL.

@@ -6,13 +6,14 @@ export type Role = 'ADMIN' | 'MEMBER';
 export type UserStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE';
 export type RegistrationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+/** Uppercase for the same reason as the rest: the wire carries the Java enum name. */
 export type FolderCategory =
-  | 'contract'
-  | 'govt_order'
-  | 'court_order'
-  | 'circular'
-  | 'act_rule'
-  | 'general';
+  | 'CONTRACT'
+  | 'GOVT_ORDER'
+  | 'COURT_ORDER'
+  | 'CIRCULAR'
+  | 'ACT_RULE'
+  | 'GENERAL';
 
 export interface CurrentUser {
   id: string;
@@ -28,11 +29,17 @@ export interface CurrentUser {
   createdAt: string;
 }
 
+/**
+ * A department as the browsing screens see it.
+ *
+ * <p>The counts are absent from the public {@code /auth/departments} list, which returns only id and
+ * name to an applicant who has no account yet.
+ */
 export interface Department {
   id: string;
   name: string;
-  code: string | null;
-  isActive: boolean;
+  code?: string | null;
+  description?: string | null;
   folderCount?: number;
   fileCount?: number;
 }
@@ -40,25 +47,74 @@ export interface Department {
 export interface Folder {
   id: string;
   departmentId: string;
+  departmentName: string;
   parentFolderId: string | null;
   name: string;
   category: FolderCategory;
+  /** Live files only — a soft delete decrements it and a restore puts it back. */
   fileCount: number;
+  createdAt: string;
 }
 
 export interface FileItem {
   id: string;
   folderId: string;
+  folderName: string;
   departmentId: string;
+  departmentName: string;
   fileName: string;
   fileType: string;
   sizeBytes: number;
-  version: number;
-  uploadedBy: string;
+  uploadedById: string;
   uploadedByName: string;
-  createdAt: string;
-  /** Server-computed: true when the caller is the uploader or an admin. */
-  canModify: boolean;
+  version: number;
+  /**
+   * Server-computed: true when the caller uploaded it or is an admin. A convenience for hiding the
+   * button — the server re-checks on every delete, so ignoring it gains nothing.
+   */
+  canDelete: boolean;
+  uploadedAt: string;
+}
+
+/**
+ * The result of one upload request. Files are reported individually rather than the whole batch
+ * failing, so eight documents with one bad file still upload seven.
+ */
+export interface UploadResult {
+  uploaded: FileItem[];
+  rejected: RejectedUpload[];
+}
+
+export interface RejectedUpload {
+  fileName: string;
+  /** e.g. FILE_CONTENT_MISMATCH, FILE_TYPE_NOT_ALLOWED, FILE_TOO_LARGE */
+  code: string;
+  message: string;
+}
+
+/** A short-lived presigned URL. The bytes never pass through the application server. */
+export interface DownloadLink {
+  url: string;
+  expiresAt: string;
+  fileName: string;
+}
+
+/** A row in the admin deletions log, carrying the reason the deleter had to give. */
+export interface FileDeletion {
+  id: string;
+  fileId: string;
+  fileName: string;
+  departmentId: string;
+  departmentName: string;
+  folderId: string;
+  folderName: string;
+  deletedByName: string;
+  reason: string;
+  deletedAt: string;
+  restoredByName: string | null;
+  restoredAt: string | null;
+  /** True while the file is still deleted, which is when restore is offered. */
+  restorable: boolean;
 }
 
 export interface Notification {

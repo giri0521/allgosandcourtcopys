@@ -1,5 +1,13 @@
 # Phase 3 Handoff — Departments, folders, upload, delete
 
+> **Phase 3 is complete.** This file is kept as the record of what it was asked to do and why.
+> Picking up the next phase? Go to [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md).
+>
+> Two things below were answered by doing them, and the answers are worth carrying:
+> §3's "run the integration tests first" was done — all 18 passed, no Phase 2 bugs. And §6's warning
+> that storage is not transactional was settled by writing bytes before the row, so a committed row
+> always has a document behind it.
+
 Written 11 August 2026, handing over after Phase 2. Read [HANDOFF.md](HANDOFF.md) first — it is the
 orientation and the four rules; this file is only what changed and what happens next.
 

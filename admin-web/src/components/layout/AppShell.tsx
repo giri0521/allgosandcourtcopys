@@ -16,8 +16,11 @@ interface NavItem {
  */
 const NAV: NavItem[] = [
   { to: '/home', label: 'Home' },
+  { to: '/departments', label: 'Departments' },
+  { to: '/my-uploads', label: 'My Uploads' },
   { to: '/admin/requests', label: 'Requests', adminOnly: true },
   { to: '/admin/members', label: 'Members', adminOnly: true },
+  { to: '/admin/deletions', label: 'Deleted', adminOnly: true },
 ];
 
 export function AppShell({
