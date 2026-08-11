@@ -13,8 +13,8 @@ uploads into any of them, and removes their own document with a reason that reac
 
 | | |
 |---|---|
-| Backend unit tests | **46 pass** (was 24) |
-| Backend integration tests | **30 pass** (was 18) — including a real MinIO container |
+| Backend unit tests | **48 pass** (was 24) |
+| Backend integration tests | **35 pass** (was 18) — including a real MinIO container |
 | Web | typecheck, lint and build clean |
 | Live smoke test | Upload, disguised-file refusal, presigned download, delete rules, restore — all verified against the dev stack |
 
@@ -23,11 +23,12 @@ Phase 2 bugs were found.
 
 ### What landed
 
-- `folder/` and `file/` packages: browsing, folder creation, upload, download, delete, restore
+- `folder/` and `file/` packages: browsing, folder creation, upload, download, replace, delete,
+  restore
 - `common/storage/`: `StorageService` over the AWS SDK, plus the presigner
 - `UploadValidator`: extension **and** magic-byte checks, filename sanitisation, size cap
 - Web: Departments, department folders, folder contents, upload dialog with per-file progress,
-  My Uploads, and the admin Deletions log with restore
+  My Uploads, replace-document, and the admin Deletions log with restore
 
 ---
 
@@ -59,8 +60,18 @@ executable. The web app sends one request per file so each gets a real progress 
 service. The service check is the one that matters: the reason is the body of the notification every
 admin receives, and an empty one would make the whole rule pointless.
 
-**Who may delete is read from the stored row**, never inferred from the request. `canDelete` on the
-wire is for hiding a button; the server re-decides on every call.
+**Who may delete or replace is read from the stored row**, never inferred from the request. One
+rule, `StoredFile.canBeModifiedBy`, governs both — an admin who can already delete a document and
+upload another in its place gains nothing from being refused the one-step version. `canModify` on
+the wire is for hiding buttons; the server re-decides on every call, and for a replacement it
+decides *before* any bytes are stored, so a refused caller cannot make the system write anything.
+
+**Replacing keeps the document's identity.** Same id, new key, `version + 1`, and `uploadedBy` is
+left alone: an admin correcting someone's document does not become its author. The superseded
+object is kept rather than deleted — overwriting the key would let a failed upload destroy the
+document already there, and discarding the old version would make a mistaken replacement
+unrecoverable. Its key goes into the `file_replaced` audit entry, which is the only way back to it
+today.
 
 **Storage keys are opaque.** `{departmentId}/{folderId}/{uuid}{ext}`, with nothing from the
 filename, so no one can guess another department's objects. The bucket is never public — every read
@@ -165,9 +176,10 @@ has moved.
 - **SMS gateway:** MSG91 or Twilio, and who owns the India DLT registration? It blocks real OTP
   delivery in UAT and has a lead time. Still unstarted.
 - **Hosting:** NIC/MeghRaj or AWS? Court documents on a commercial cloud need written sign-off.
-- **File replacement:** may a member upload a new version of their own file? **Now blocking** —
-  Phase 3 deliberately did not guess, so correcting a document today means deleting it with a reason
-  and uploading again. `files.version` exists and is always 1, waiting for the answer.
+- ~~**File replacement:**~~ answered — a member may replace their own file, and it is built. What
+  follows from it and has *not* been asked: should version history be visible (superseded bytes are
+  kept but unreachable), and should a replacement notify anyone the way a deletion notifies every
+  admin? Today it is audited and silent.
 - **Retention:** how long do soft-deleted files stay restorable before purge? Currently indefinite,
   and the bytes are never removed from storage.
 - **Additional admins:** an existing admin promoting a member, or seeding only? Today it takes SQL.

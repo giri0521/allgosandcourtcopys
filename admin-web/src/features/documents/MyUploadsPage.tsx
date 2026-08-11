@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { fetchMyUploads } from '@/features/documents/api';
 import { DeleteFileDialog } from '@/features/documents/DeleteFileDialog';
 import { FileTable } from '@/features/documents/FileTable';
+import { ReplaceFileDialog } from '@/features/documents/ReplaceFileDialog';
 import { toApiError } from '@/lib/errors';
 import type { FileItem } from '@/types/api';
 
@@ -18,6 +19,7 @@ import type { FileItem } from '@/types/api';
 export function MyUploadsPage() {
   const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState<FileItem | null>(null);
+  const [replacing, setReplacing] = useState<FileItem | null>(null);
 
   const uploads = useQuery({
     queryKey: ['my-uploads', page],
@@ -36,6 +38,7 @@ export function MyUploadsPage() {
             showLocation
             emptyMessage="You have not uploaded anything yet."
             onDelete={setDeleting}
+            onReplace={setReplacing}
           />
 
           {uploads.data.totalPages > 1 && (
@@ -65,6 +68,7 @@ export function MyUploadsPage() {
       )}
 
       <DeleteFileDialog file={deleting} onClose={() => setDeleting(null)} />
+      <ReplaceFileDialog file={replacing} onClose={() => setReplacing(null)} />
     </AppShell>
   );
 }

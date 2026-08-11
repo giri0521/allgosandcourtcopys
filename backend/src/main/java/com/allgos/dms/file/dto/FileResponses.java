@@ -41,8 +41,9 @@ public final class FileResponses {
     /**
      * A file row.
      *
-     * <p>{@code canDelete} is a convenience for the UI only — the server re-checks ownership on
-     * every delete, so a client that ignores this flag gains nothing.
+     * <p>{@code canModify} covers both deleting and replacing, which share one ownership rule, and
+     * is a convenience for the UI only — the server re-checks on every such call, so a client that
+     * ignores the flag gains nothing.
      */
     public record FileView(
             UUID id,
@@ -56,10 +57,10 @@ public final class FileResponses {
             UUID uploadedById,
             String uploadedByName,
             int version,
-            boolean canDelete,
+            boolean canModify,
             Instant uploadedAt) {
 
-        public static FileView from(StoredFile file, boolean canDelete) {
+        public static FileView from(StoredFile file, boolean canModify) {
             return new FileView(
                     file.getId(),
                     file.getFolder().getId(),
@@ -72,7 +73,7 @@ public final class FileResponses {
                     file.getUploadedBy().getId(),
                     file.getUploadedBy().getFullName(),
                     file.getVersion(),
-                    canDelete,
+                    canModify,
                     file.getCreatedAt());
         }
     }

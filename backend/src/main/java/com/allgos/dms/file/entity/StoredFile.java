@@ -68,10 +68,17 @@ public class StoredFile extends BaseEntity {
     private boolean deleted = false;
 
     /**
-     * Rule 4, in one place: a member may remove what they uploaded, an admin may remove anything.
-     * Callers must ask this of the row loaded from the database, never of anything the client sent.
+     * Who may change this document, in one place: the member who uploaded it, or an admin.
+     *
+     * <p>Governs both deleting (rule 4) and replacing. The two share a rule deliberately — an admin
+     * who can delete a document and upload another in its place gains nothing from being refused
+     * the single-step version, and a member who may not delete someone else's document must not be
+     * able to overwrite it either.
+     *
+     * <p>Callers must ask this of the row loaded from the database, never of anything the client
+     * sent.
      */
-    public boolean canBeDeletedBy(User user) {
+    public boolean canBeModifiedBy(User user) {
         return user.isAdmin() || uploadedBy.getId().equals(user.getId());
     }
 }

@@ -17,12 +17,14 @@ export function FileTable({
   emptyMessage,
   showLocation = false,
   onDelete,
+  onReplace,
 }: {
   files: FileItem[];
   emptyMessage: string;
   /** My Uploads spans departments, so it needs the "where" column that a folder does not. */
   showLocation?: boolean;
   onDelete: (file: FileItem) => void;
+  onReplace: (file: FileItem) => void;
 }) {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,8 @@ export function FileTable({
                   <p className="font-medium text-slate-900">{file.fileName}</p>
                   <p className="text-xs text-slate-500">
                     {formatFileType(file.fileType)} · {formatFileSize(file.sizeBytes)}
+                    {/* Only worth saying once a document has actually been replaced. */}
+                    {file.version > 1 && ` · version ${file.version}`}
                   </p>
                 </td>
                 {showLocation && (
@@ -89,16 +93,21 @@ export function FileTable({
                     >
                       Download
                     </Button>
-                    {/* Hidden when the server says the caller may not delete it; the server
+                    {/* Hidden when the server says the caller may not change it; the server
                         re-checks anyway, so this is tidiness rather than protection. */}
-                    {file.canDelete && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => onDelete(file)}
-                        className="!text-red-600 hover:!bg-red-50"
-                      >
-                        Delete
-                      </Button>
+                    {file.canModify && (
+                      <>
+                        <Button variant="ghost" onClick={() => onReplace(file)}>
+                          Replace
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => onDelete(file)}
+                          className="!text-red-600 hover:!bg-red-50"
+                        >
+                          Delete
+                        </Button>
+                      </>
                     )}
                   </div>
                 </td>

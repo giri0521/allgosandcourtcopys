@@ -14,6 +14,7 @@ import { CreateFolderDialog } from '@/features/documents/CreateFolderDialog';
 import { DeleteFileDialog } from '@/features/documents/DeleteFileDialog';
 import { FileTable } from '@/features/documents/FileTable';
 import { FolderGrid } from '@/features/documents/FolderGrid';
+import { ReplaceFileDialog } from '@/features/documents/ReplaceFileDialog';
 import { UploadDialog } from '@/features/documents/UploadDialog';
 import { toApiError } from '@/lib/errors';
 import { formatCategory } from '@/lib/format';
@@ -31,6 +32,7 @@ export function FolderPage() {
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<FileItem | null>(null);
+  const [replacing, setReplacing] = useState<FileItem | null>(null);
 
   const folder = useQuery({
     queryKey: ['folder', folderId],
@@ -129,6 +131,7 @@ export function FolderPage() {
               files={files.data.items}
               emptyMessage="No documents here yet. Use Upload to add the first one."
               onDelete={setDeleting}
+              onReplace={setReplacing}
             />
           )}
         </section>
@@ -152,6 +155,7 @@ export function FolderPage() {
       )}
 
       <DeleteFileDialog file={deleting} onClose={() => setDeleting(null)} />
+      <ReplaceFileDialog file={replacing} onClose={() => setReplacing(null)} />
     </AppShell>
   );
 }

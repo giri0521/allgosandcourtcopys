@@ -69,10 +69,11 @@ export interface FileItem {
   uploadedByName: string;
   version: number;
   /**
-   * Server-computed: true when the caller uploaded it or is an admin. A convenience for hiding the
-   * button — the server re-checks on every delete, so ignoring it gains nothing.
+   * Server-computed: true when the caller uploaded it or is an admin. Covers deleting and
+   * replacing, which share one rule. A convenience for hiding buttons — the server re-checks on
+   * every such call, so ignoring it gains nothing.
    */
-  canDelete: boolean;
+  canModify: boolean;
   uploadedAt: string;
 }
 

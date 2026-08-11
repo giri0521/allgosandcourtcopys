@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Uploading, reading, deleting and restoring documents.
+ * Uploading, reading, replacing, deleting and restoring documents.
  *
  * <p>Two rules from the specification are enforced here and nowhere else:
  *
@@ -156,25 +156,82 @@ public class FileService {
         }
     }
 
+    // ----------------------------------------------------------------------- replace
+
+    /**
+     * Replaces a document's contents with a newer version of it.
+     *
+     * <p>The member who uploaded it may correct their own document, and an admin may correct
+     * anything — the same rule as deleting, since an admin can already delete and re-upload.
+     *
+     * <p>The file keeps its id, so anything already pointing at it still resolves; only the bytes,
+     * the name, the size and the version change. The uploader is not reassigned: an admin fixing
+     * someone's document does not become its author.
+     *
+     * <p>The new bytes go to a <b>new</b> key and the old object is left in place. Overwriting the
+     * existing key would mean a failed upload destroying the document that is already there, and
+     * discarding the superseded version would make a mistaken replacement unrecoverable. The old
+     * key is recorded in the audit entry instead.
+     *
+     * @throws ApiException 403 if the caller neither uploaded the file nor is an admin, 404 if it
+     *     does not exist or has been deleted
+     */
+    public FileView replace(UUID fileId, MultipartFile part, User actor) {
+        if (part == null || part.isEmpty()) {
+            throw ApiException.badRequest("NO_FILES", "Choose a file to replace this document with.");
+        }
+
+        // Permission first, so a refused caller never causes an upload.
+        FileRecordWriter.ReplacementTarget target = fileRecordWriter.replacementTarget(fileId, actor);
+
+        UploadValidator.Accepted accepted = uploadValidator.validate(part);
+        uploadValidator.scanForMalware(part);
+
+        String key = storageService.newKey(target.departmentId(), target.folderId(), accepted.fileName());
+
+        InputStream content;
+        try {
+            content = part.getInputStream();
+        } catch (IOException ex) {
+            throw ApiException.badRequest(
+                    "FILE_UNREADABLE", "%s could not be read.".formatted(accepted.fileName()));
+        }
+
+        try {
+            storageService.put(key, content, accepted.contentType(), accepted.sizeBytes());
+        } finally {
+            StorageService.closeQuietly(content);
+        }
+
+        try {
+            return fileRecordWriter.applyReplacement(fileId, actor, accepted, key, target.storageKey());
+        } catch (RuntimeException ex) {
+            // The row still points at the old key, so these bytes are unreachable.
+            log.error("Replacing file {} failed; removing the stored object", fileId, ex);
+            storageService.delete(key);
+            throw ex;
+        }
+    }
+
     // -------------------------------------------------------------------------- read
 
     @Transactional(readOnly = true)
     public PageResponse<FileView> listByFolder(UUID folderId, User viewer, Pageable pageable) {
         loadFolder(folderId); // 404 for an unknown folder rather than an empty page
         Page<StoredFile> page = fileRepository.findByFolderIdAndDeletedFalse(folderId, pageable);
-        return PageResponse.of(page, file -> FileView.from(file, file.canBeDeletedBy(viewer)));
+        return PageResponse.of(page, file -> FileView.from(file, file.canBeModifiedBy(viewer)));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<FileView> listMyUploads(User viewer, Pageable pageable) {
         Page<StoredFile> page = fileRepository.findByUploadedByIdAndDeletedFalse(viewer.getId(), pageable);
-        return PageResponse.of(page, file -> FileView.from(file, file.canBeDeletedBy(viewer)));
+        return PageResponse.of(page, file -> FileView.from(file, file.canBeModifiedBy(viewer)));
     }
 
     @Transactional(readOnly = true)
     public FileView get(UUID fileId, User viewer) {
         StoredFile file = loadFile(fileId);
-        return FileView.from(file, file.canBeDeletedBy(viewer));
+        return FileView.from(file, file.canBeModifiedBy(viewer));
     }
 
     /**
@@ -219,7 +276,7 @@ public class FileService {
         StoredFile file = loadFile(fileId);
 
         // Decided from the stored row, never from anything the client sent.
-        if (!file.canBeDeletedBy(actor)) {
+        if (!file.canBeModifiedBy(actor)) {
             auditService.recordDurable(
                     actor,
                     AuditAction.FILE_DELETED,
@@ -292,7 +349,7 @@ public class FileService {
                 "An administrator restored \"%s\".".formatted(file.getFileName()),
                 "file:" + file.getId());
 
-        return FileView.from(file, file.canBeDeletedBy(admin));
+        return FileView.from(file, file.canBeModifiedBy(admin));
     }
 
     /** The admin deletions log. {@code onlyUnrestored} narrows it to files still deleted. */

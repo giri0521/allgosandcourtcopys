@@ -65,6 +65,22 @@ public class FileController {
         return fileService.get(fileId, principal.user());
     }
 
+    /**
+     * Replaces a document with a corrected version of it, keeping its id and bumping its version.
+     *
+     * <p>Single file rather than a list: this is one document being corrected, not a batch, and the
+     * failure of the only file is the failure of the request — so unlike upload, a refusal here is a
+     * 400 rather than a `rejected` entry.
+     */
+    @PostMapping(path = "/{fileId}/replace", consumes = "multipart/form-data")
+    public FileView replace(
+            @PathVariable UUID fileId,
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        return fileService.replace(fileId, file, principal.user());
+    }
+
     /** A short-lived presigned URL; the bytes never pass through this server. */
     @GetMapping("/{fileId}/download-link")
     public DownloadLink downloadLink(

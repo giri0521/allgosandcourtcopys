@@ -38,11 +38,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 /**
  * Rule 4 in isolation: a deletion needs a reason, only the uploader or an admin may perform one, and
  * every admin hears about it with the reason attached. {@code FileAccessIT} proves the same over
  * HTTP; these pin the decisions themselves.
+ *
+ * <p>Replacing shares that ownership rule, so the two tests at the end check that a refusal costs
+ * nothing — no validation, and above all no bytes written.
  */
 @ExtendWith(MockitoExtension.class)
 class FileServiceTest {
@@ -209,6 +213,41 @@ class FileServiceTest {
                 .isEqualTo("FILE_NOT_DELETED");
 
         verify(folderRepository, never()).adjustFileCount(any(), anyInt());
+    }
+
+    @Test
+    @DisplayName("a refused replacement never reaches storage")
+    void replacementChecksPermissionBeforeUploading() {
+        when(fileRecordWriter.replacementTarget(file.getId(), otherMember))
+                .thenThrow(ApiException.forbidden("NOT_FILE_OWNER", "not yours"));
+
+        assertThatThrownBy(() ->
+                        service.replace(
+                                file.getId(),
+                                new MockMultipartFile("file", "x.pdf", "application/pdf", new byte[] {1, 2, 3}),
+                                otherMember))
+                .isInstanceOf(ApiException.class)
+                .extracting(ex -> ((ApiException) ex).getCode())
+                .isEqualTo("NOT_FILE_OWNER");
+
+        // Permission is checked first precisely so a refused caller cannot make us store anything —
+        // and the file is not even validated, since it will never be used.
+        verifyNoInteractions(storageService, uploadValidator);
+    }
+
+    @Test
+    @DisplayName("replacing with nothing is refused before anything is looked up")
+    void replacementNeedsAFile() {
+        assertThatThrownBy(() ->
+                        service.replace(
+                                file.getId(),
+                                new MockMultipartFile("file", "empty.pdf", "application/pdf", new byte[0]),
+                                uploader))
+                .isInstanceOf(ApiException.class)
+                .extracting(ex -> ((ApiException) ex).getCode())
+                .isEqualTo("NO_FILES");
+
+        verifyNoInteractions(fileRecordWriter, storageService);
     }
 
     @Test

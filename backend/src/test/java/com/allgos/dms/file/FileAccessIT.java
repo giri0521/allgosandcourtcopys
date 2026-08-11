@@ -61,6 +61,8 @@ import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
  *   <li>deleting without a reason is a 400, and deleting someone else's file is a 403;
  *   <li>a legitimate deletion reaches <b>every admin</b> with the reason, and an admin can restore.
  * </ol>
+ *
+ * <p>Replacement follows the same ownership rule as deletion, and is proved alongside it.
  */
 @Import(RecordingOtpProvider.Config.class)
 class FileAccessIT extends AbstractIntegrationTest {
@@ -159,7 +161,7 @@ class FileAccessIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.uploaded[0].fileName").value("Circular 42.pdf"))
                 .andExpect(jsonPath("$.uploaded[0].departmentId").value(otherDepartment.getId().toString()))
                 .andExpect(jsonPath("$.uploaded[0].uploadedByName").value("Meena Rajan"))
-                .andExpect(jsonPath("$.uploaded[0].canDelete").value(true));
+                .andExpect(jsonPath("$.uploaded[0].canModify").value(true));
 
         // The bytes really are in object storage, under an opaque key.
         StoredFile stored = fileRepository.findAll().getFirst();
@@ -344,6 +346,94 @@ class FileAccessIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items[0].reason").value("Superseded by GO 118"));
     }
 
+    // ----------------------------------------------------------------------- replace
+
+    @Test
+    @DisplayName("the uploader replaces their own document, and it keeps its identity")
+    void uploaderReplacesTheirOwnDocument() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+        String originalKey = fileRepository.findById(fileId).orElseThrow().getStorageKey();
+
+        byte[] corrected = "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Note (corrected) >>\nendobj\ntrailer\n%%EOF"
+                .getBytes(StandardCharsets.US_ASCII);
+
+        replace(fileId, new MockMultipartFile("file", "Circular 42 (revised).pdf", "application/pdf", corrected), memberToken)
+                .andExpect(status().isOk())
+                // Same id, so favourites and links already shared inside the office still resolve.
+                .andExpect(jsonPath("$.id").value(fileId.toString()))
+                .andExpect(jsonPath("$.fileName").value("Circular 42 (revised).pdf"))
+                .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.sizeBytes").value(corrected.length));
+
+        StoredFile replaced = fileRepository.findById(fileId).orElseThrow();
+        assertThat(replaced.getStorageKey()).isNotEqualTo(originalKey);
+        assertThat(replaced.getUploadedBy().getId())
+                .as("replacing does not reassign authorship")
+                .isEqualTo(userRepository.findByMobileNumber(MEMBER_MOBILE).orElseThrow().getId());
+
+        // Both objects exist: the superseded version is kept so a mistaken replacement is
+        // recoverable, and the new one is what downloads now serve.
+        assertThat(objectExists(originalKey)).isTrue();
+        assertThat(objectExists(replaced.getStorageKey())).isTrue();
+
+        // The folder still holds one document, not two.
+        assertThat(folderRepository.findById(folderId).orElseThrow().getFileCount()).isEqualTo(1);
+        assertThat(auditLogRepository.findAll())
+                .anyMatch(entry -> AuditAction.FILE_REPLACED.equals(entry.getAction()));
+    }
+
+    @Test
+    @DisplayName("a member cannot replace a document someone else uploaded, and no bytes are stored")
+    void replacingSomeoneElsesDocumentIsForbidden() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+        String originalKey = fileRepository.findById(fileId).orElseThrow().getStorageKey();
+        String otherToken = registerApproveAndSignIn(OTHER_MEMBER_MOBILE, "Arun Kumar");
+
+        replace(fileId, pdfPart("substitute.pdf"), otherToken)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_FILE_OWNER"));
+
+        StoredFile untouched = fileRepository.findById(fileId).orElseThrow();
+        assertThat(untouched.getVersion()).isEqualTo(1);
+        assertThat(untouched.getStorageKey()).isEqualTo(originalKey);
+        assertThat(untouched.getFileName()).isEqualTo("Circular 42.pdf");
+    }
+
+    @Test
+    @DisplayName("an admin may replace a document a member uploaded")
+    void adminMayReplaceAnyDocument() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+
+        replace(fileId, pdfPart("Circular 42 (corrected).pdf"), adminToken)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.uploadedByName").value("Meena Rajan"));
+    }
+
+    @Test
+    @DisplayName("a replacement is validated like any upload — a disguised file is refused")
+    void aDisguisedReplacementIsRefused() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+
+        replace(
+                        fileId,
+                        new MockMultipartFile("file", "Circular 42.pdf", "application/pdf", WINDOWS_EXECUTABLE),
+                        memberToken)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FILE_CONTENT_MISMATCH"));
+
+        assertThat(fileRepository.findById(fileId).orElseThrow().getVersion()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("a deleted document cannot be replaced")
+    void aDeletedDocumentCannotBeReplaced() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+        deleteFile(fileId, "Wrong department", memberToken).andExpect(status().isOk());
+
+        replace(fileId, pdfPart("Circular 42.pdf"), memberToken).andExpect(status().isNotFound());
+    }
+
     // ---------------------------------------------------------------- browse & folders
 
     @Test
@@ -405,7 +495,7 @@ class FileAccessIT extends AbstractIntegrationTest {
         // But the other member can still see and download it where it is filed — rule 2.
         mockMvc.perform(get("/api/v1/folders/{id}/files", folderId).header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
                 .andExpect(jsonPath("$.totalItems").value(1))
-                .andExpect(jsonPath("$.items[0].canDelete").value(false));
+                .andExpect(jsonPath("$.items[0].canModify").value(false));
     }
 
     // ------------------------------------------------------------------------ helpers
@@ -460,8 +550,19 @@ class FileAccessIT extends AbstractIntegrationTest {
         return UUID.fromString(objectMapper.readTree(response).get("id").asText());
     }
 
+    private ResultActions replace(UUID fileId, MockMultipartFile part, String token) throws Exception {
+        return mockMvc.perform(multipart("/api/v1/files/{id}/replace", fileId)
+                .file(part)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token)));
+    }
+
     private static MockMultipartFile pdf(String filename) {
         return new MockMultipartFile("files", filename, "application/pdf", REAL_PDF);
+    }
+
+    /** The replace endpoint takes a single part named "file", not the "files" list upload uses. */
+    private static MockMultipartFile pdfPart(String filename) {
+        return new MockMultipartFile("file", filename, "application/pdf", REAL_PDF);
     }
 
     /** Registers, approves through the real admin endpoint, and signs in — the demo path. */

@@ -89,9 +89,86 @@ public class FileRecordWriter {
                         "departmentId", folder.getDepartment().getId().toString(),
                         "sizeBytes", saved.getSizeBytes()));
 
-        return FileView.from(saved, saved.canBeDeletedBy(uploader));
+        return FileView.from(saved, saved.canBeModifiedBy(uploader));
+    }
+
+    /**
+     * Checks that this file may be replaced, and reports where its current bytes live.
+     *
+     * <p>Called <em>before</em> anything is uploaded, so a member who may not replace a document
+     * never causes bytes to be written at all. Ownership comes from the stored row.
+     */
+    @Transactional(readOnly = true)
+    public ReplacementTarget replacementTarget(UUID fileId, User actor) {
+        StoredFile file = fileRepository
+                .findByIdAndDeletedFalse(fileId)
+                .orElseThrow(() -> ApiException.notFound("File"));
+
+        if (!file.canBeModifiedBy(actor)) {
+            throw ApiException.forbidden(
+                    "NOT_FILE_OWNER", "You can only replace files you uploaded. Ask an administrator.");
+        }
+
+        return new ReplacementTarget(
+                file.getId(),
+                file.getFolder().getId(),
+                file.getDepartment().getId(),
+                file.getStorageKey(),
+                file.getVersion());
+    }
+
+    /**
+     * Points an existing file at newly stored bytes and bumps its version.
+     *
+     * <p>The row keeps its id, so favourites, download history and any link already shared inside
+     * the office still resolve to the document — which is the point of replacing rather than
+     * deleting and uploading again.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public FileView applyReplacement(
+            UUID fileId, User actor, UploadValidator.Accepted accepted, String storageKey, String previousKey) {
+
+        StoredFile file = fileRepository
+                .findByIdAndDeletedFalse(fileId)
+                .orElseThrow(() -> ApiException.notFound("File"));
+
+        // Re-checked inside the transaction: the row could have changed hands since the pre-check.
+        if (!file.canBeModifiedBy(actor)) {
+            throw ApiException.forbidden(
+                    "NOT_FILE_OWNER", "You can only replace files you uploaded. Ask an administrator.");
+        }
+
+        String previousName = file.getFileName();
+
+        file.setFileName(accepted.fileName());
+        file.setFileType(accepted.contentType());
+        file.setSizeBytes(accepted.sizeBytes());
+        file.setStorageKey(storageKey);
+        file.setVersion(file.getVersion() + 1);
+        // uploadedBy is left alone: it is who put the document into the system, and an admin
+        // correcting someone's file does not take ownership of it.
+
+        auditService.record(
+                actor,
+                AuditAction.FILE_REPLACED,
+                "file",
+                file.getId(),
+                Map.of(
+                        "fileName", accepted.fileName(),
+                        "previousFileName", previousName,
+                        "version", file.getVersion(),
+                        // The superseded object is kept rather than deleted, and its key recorded
+                        // here, so a replacement made in error is recoverable. Nothing in the
+                        // application reads it — see the retention question in the handoff.
+                        "previousStorageKey", previousKey));
+
+        return FileView.from(file, file.canBeModifiedBy(actor));
     }
 
     /** A folder and the department it belongs to, resolved eagerly. */
     public record FolderRef(UUID folderId, UUID departmentId) {}
+
+    /** An existing file the caller is allowed to replace, and where its current bytes are. */
+    public record ReplacementTarget(
+            UUID fileId, UUID folderId, UUID departmentId, String storageKey, int version) {}
 }

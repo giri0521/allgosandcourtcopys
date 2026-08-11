@@ -106,6 +106,29 @@ export async function uploadFiles(
   return data;
 }
 
+/**
+ * Replaces a document with a corrected version, keeping its id and bumping its version.
+ *
+ * <p>Unlike upload, a refusal here is a failed request rather than an entry in a `rejected` list:
+ * there is only one file, so its rejection is the request's.
+ */
+export async function replaceFile(
+  fileId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<FileItem> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const { data } = await api.post<FileItem>(`/files/${fileId}/replace`, form, {
+    onUploadProgress: (event) => {
+      if (!onProgress) return;
+      if (event.total) onProgress(Math.round((event.loaded / event.total) * 100));
+    },
+  });
+  return data;
+}
+
 /** A fresh presigned URL, valid for minutes. Never cache one. */
 export async function fetchDownloadLink(fileId: string): Promise<DownloadLink> {
   const { data } = await api.get<DownloadLink>(`/files/${fileId}/download-link`);

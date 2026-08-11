@@ -48,10 +48,11 @@ product.
 | Admin approval queue | Done | Approve, reject-with-reason, members list, enable/disable |
 | Departments, folders, browsing | Done | All 43 browsable by anyone signed in; folders nest |
 | Upload, download, delete-with-reason, restore | Done | Magic-byte validation; presigned URLs; deletions log |
+| File replacement | Done | Uploader or admin; keeps the id, bumps the version |
 | **Search, preview, favorites, notifications** | **Not built** | **Next task** — Phase 4 |
 | Reports, monitoring, audit viewer | Not built | Phase 5 |
 
-46 unit tests and 30 integration tests pass. The integration tests run against a real PostgreSQL
+48 unit tests and 35 integration tests pass. The integration tests run against a real PostgreSQL
 container — and, for `FileAccessIT`, a real MinIO one — so migrations, JPA entities and the storage
 client are all validated against what they will meet in production on every build.
 
@@ -230,6 +231,7 @@ Documents can be filed, read, removed and put back.
 | `POST /departments/{id}/folders` | 409 `FOLDER_EXISTS` for a duplicate name in the same place |
 | `GET /folders/{id}`, `/folders/{id}/breadcrumb`, `/folders/{id}/folders`, `/folders/{id}/files` | Breadcrumb is root-first |
 | `POST /files?folderId=` | Multipart, multiple files, **any department** |
+| `POST /files/{id}/replace` | Single part named `file`; keeps the id, bumps `version` |
 | `GET /files/{id}`, `/files/my-uploads` | |
 | `GET /files/{id}/download-link` | A presigned URL valid for 5 minutes |
 | `DELETE /files/{id}` | Body `{ reason }`; blank → 400, not yours → 403 `NOT_FILE_OWNER` |
@@ -277,11 +279,15 @@ DLT-approved templates, admin training.
 
 - **Downloads are audited but not stored.** `GET /files/{id}/download-link` writes an audit entry;
   the `downloads` table, which the download-history screen needs, is still unwritten. Phase 4.
-- **File replacement is not implemented.** `files.version` exists and is always 1. The client has
-  not answered whether a member may replace their own file (§9), so nothing was built on a guess.
+- **Superseded versions are kept but unreachable.** Replacing a document writes the new bytes to a
+  new key and leaves the old object in place, with its key recorded in the `file_replaced` audit
+  entry. Nothing in the application reads it, so recovering a mistaken replacement means an admin
+  fetching that key by hand. A `file_versions` table would make it a screen; the client has not
+  asked for version history.
 - **Orphaned objects are never swept.** If the process dies between storing bytes and committing
-  the row, the object stays. Nothing references it and no user can see it, but a periodic sweep
-  comparing keys against `files.storage_key` is still owed.
+  the row, the object stays — as do superseded versions, above. Nothing references either and no
+  user can see them, but a periodic sweep comparing keys against `files.storage_key` is still owed,
+  and it must not treat a key named in a `file_replaced` audit entry as an orphan.
 - **The web document screens have not been exercised in a browser.** Lint, typecheck and build are
   clean and every endpoint behind them was smoke-tested live with curl, but nobody has clicked
   through the upload dialog. Worth ten minutes before the next demo.
@@ -306,9 +312,12 @@ DLT-approved templates, admin training.
   UAT and has a lead time — worth starting now.
 - **Hosting:** NIC/MeghRaj or AWS? Affects deployment only, but court documents on a commercial cloud
   needs written sign-off.
-- **File replacement:** may a member upload a new version of their own file, or is that admin-only?
-  **Still unanswered, and now blocking** — Phase 3 left it unbuilt rather than guessing, so a
-  corrected document today means delete-with-reason and upload again.
+- ~~**File replacement:**~~ **Answered 11 August 2026: a member may replace their own file.** Built.
+  Admins may replace anything, matching the delete rule — an admin can already delete and re-upload,
+  so refusing the one-step version would only be theatre. Two things the client has not been asked:
+  whether *version history* should be visible (superseded bytes are kept but unreachable, see §8),
+  and whether replacing should notify anyone the way deleting notifies every admin. Today it does
+  not; it is audited as `file_replaced`.
 - **Retention:** how long do soft-deleted files stay restorable before purge? Currently indefinite.
 - **Additional admins:** how should a second administrator be created — an existing admin promoting a
   member, or seeding only? Approval deliberately never changes a role, so today it takes SQL.
