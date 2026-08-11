@@ -10,7 +10,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RegistrationRequestRepository extends JpaRepository<RegistrationRequest, UUID> {
 
-    Page<RegistrationRequest> findByStatusOrderByCreatedAtDesc(RegistrationStatus status, Pageable pageable);
+    /** The pending queue. Ordering comes from the caller's Pageable, newest first by default. */
+    Page<RegistrationRequest> findByStatus(RegistrationStatus status, Pageable pageable);
 
     Optional<RegistrationRequest> findFirstByUserIdOrderByCreatedAtDesc(UUID userId);
 

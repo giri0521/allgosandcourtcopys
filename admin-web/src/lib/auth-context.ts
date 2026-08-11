@@ -4,6 +4,8 @@ import type { CurrentUser } from '@/types/api';
 
 export interface AuthState {
   user: CurrentUser | null;
+  /** True until the start-up refresh has answered; guards must wait rather than assume signed out. */
+  restoring: boolean;
   signIn: (session: Session) => void;
   signOut: () => Promise<void>;
 }

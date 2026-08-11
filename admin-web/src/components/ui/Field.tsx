@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type {
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react';
 import { useId } from 'react';
 
 interface BaseProps {
@@ -47,6 +52,25 @@ export function TextField({
         id={id}
         aria-invalid={Boolean(error)}
         className={`${controlClass} ${error ? 'border-red-400' : ''}`}
+        {...props}
+      />
+    </Wrapper>
+  );
+}
+
+export function TextAreaField({
+  label,
+  error,
+  hint,
+  ...props
+}: BaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const id = useId();
+  return (
+    <Wrapper label={label} error={error} hint={hint} id={id}>
+      <textarea
+        id={id}
+        aria-invalid={Boolean(error)}
+        className={`${controlClass} resize-y ${error ? 'border-red-400' : ''}`}
         {...props}
       />
     </Wrapper>

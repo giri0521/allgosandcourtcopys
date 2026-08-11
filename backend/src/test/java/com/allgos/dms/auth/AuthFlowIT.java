@@ -207,7 +207,10 @@ class AuthFlowIT extends AbstractIntegrationTest {
                         "password", PASSWORD))));
     }
 
-    /** Stands in for the admin approval endpoint, which arrives in Phase 2. */
+    /**
+     * Approves directly, keeping these tests about the sign-in rules alone. The admin endpoint that
+     * performs the same transition in production has its own coverage in {@code AdminApprovalIT}.
+     */
     private void approve() {
         User user = userRepository.findByMobileNumber(MOBILE).orElseThrow();
         user.setStatus(UserStatus.ACTIVE);

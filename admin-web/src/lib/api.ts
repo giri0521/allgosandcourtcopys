@@ -23,14 +23,21 @@ api.interceptors.request.use((config) => {
  * codes rather than trying to predict them:
  *   401 → session gone, back to login
  *   403 → Access Restricted screen
- * The one special case is OTP_REQUIRED_TODAY, which the login screen handles
- * itself by switching to the OTP tab.
+ * Two calls opt out. OTP_REQUIRED_TODAY is handled by the login screen itself,
+ * which switches to the OTP tab; and the start-up /auth/refresh legitimately
+ * 401s for anyone who is simply not signed in, so it must not bounce a visitor
+ * off the register or forgot-password screen.
  */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
     const code = error.response?.data?.code;
+    const isSessionRestore = error.config?.url?.endsWith('/auth/refresh');
+
+    if (isSessionRestore) {
+      return Promise.reject(error);
+    }
 
     if (status === 401) {
       setAccessToken(null);

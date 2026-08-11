@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/Field';
@@ -14,14 +14,20 @@ type Tab = 'password' | 'otp';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn } = useAuth();
+
+  // Where the guard bounced them from, and anything the previous screen wants said (a completed
+  // password reset, for instance).
+  const state = location.state as { from?: string; notice?: string } | null;
+  const destination = state?.from ?? '/home';
 
   const [tab, setTab] = useState<Tab>('password');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(state?.notice ?? null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -40,7 +46,7 @@ export function LoginPage() {
     setBusy(true);
     try {
       signIn(await loginWithPassword(mobile, password));
-      navigate('/home');
+      navigate(destination, { replace: true });
     } catch (caught) {
       const apiError = toApiError(caught);
       if (apiError.code === 'OTP_REQUIRED_TODAY') {
@@ -76,7 +82,7 @@ export function LoginPage() {
     setBusy(true);
     try {
       signIn(await loginWithOtp(mobile, otp));
-      navigate('/home');
+      navigate(destination, { replace: true });
     } catch (caught) {
       setError(toApiError(caught).message);
       setOtp('');
@@ -147,6 +153,11 @@ export function LoginPage() {
             >
               Sign in
             </Button>
+            <div className="text-center text-sm">
+              <Link to="/forgot-password" className="font-semibold text-navy-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <p className="text-center text-xs text-slate-500">
               The first sign-in each day requires an OTP.
             </p>

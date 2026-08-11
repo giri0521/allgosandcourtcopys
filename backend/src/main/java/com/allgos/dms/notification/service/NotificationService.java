@@ -58,6 +58,35 @@ public class NotificationService {
                 "user:" + applicant.getId());
     }
 
+    /** Sent the moment an admin approves; this is the applicant's cue that sign-in will now work. */
+    public void notifyRegistrationApproved(User applicant) {
+        notify(
+                applicant,
+                NotificationType.REGISTRATION_APPROVED,
+                "Your account has been approved",
+                "You can now sign in. The first sign-in of each day is verified with an OTP.",
+                "user:" + applicant.getId());
+    }
+
+    /** Carries the reviewer's reason verbatim, so the applicant knows what to do about it. */
+    public void notifyRegistrationRejected(User applicant, String reason) {
+        notify(
+                applicant,
+                NotificationType.REGISTRATION_REJECTED,
+                "Your registration was not approved",
+                reason,
+                "user:" + applicant.getId());
+    }
+
+    public void notifyAccountDisabled(User user) {
+        notify(
+                user,
+                NotificationType.ACCOUNT_DISABLED,
+                "Your account has been disabled",
+                "An administrator has disabled your account. Contact your administrator to restore access.",
+                "user:" + user.getId());
+    }
+
     @Transactional
     public void markRead(User user, java.util.UUID notificationId) {
         notificationRepository

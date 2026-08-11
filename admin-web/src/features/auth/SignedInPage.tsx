@@ -1,4 +1,4 @@
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 
@@ -37,7 +37,7 @@ export function SignedInPage() {
             <div>
               <h1 className="text-xl font-semibold text-slate-900">Welcome, {user.fullName}</h1>
               <p className="text-sm text-slate-500">
-                {user.role === 'admin' ? 'System Administrator' : 'Member'}
+                {user.role === 'ADMIN' ? 'System Administrator' : 'Member'}
                 {user.departmentName ? ` · ${user.departmentName}` : ''}
               </p>
             </div>
@@ -51,11 +51,35 @@ export function SignedInPage() {
           </dl>
         </div>
 
+        {user.role === 'ADMIN' && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Administration</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Nobody can sign in until their registration is approved, so the queue is the first
+              place to look.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/admin/requests"
+                className="rounded-lg bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-700"
+              >
+                Registration Requests
+              </Link>
+              <Link
+                to="/admin/members"
+                className="rounded-lg border border-navy-300 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+              >
+                Members
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Coming next</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Departments, folders, uploads, search and the admin dashboard arrive in the following
-            phases. Signing in is what this build proves.
+            Departments, folders, uploads and search arrive in the following phases. Registration,
+            approval and sign-in are what this build proves.
           </p>
           <div className="mt-4">
             <Button variant="secondary" onClick={handleSignOut}>
