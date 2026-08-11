@@ -49,7 +49,7 @@ export function DepartmentPage() {
 
       {folders.isSuccess && folders.data.length === 0 && (
         <div className="animate-rise flex flex-col items-center rounded-xl border border-dashed
-          border-slate-300 bg-white px-6 py-12 text-center">
+          border-line-strong bg-surface px-6 py-12 text-center">
           <svg
             aria-hidden
             viewBox="0 0 24 24"

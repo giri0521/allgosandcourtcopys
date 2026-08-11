@@ -57,8 +57,16 @@ export function AppShell({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+    // No background of its own: the body's wash shows through, so every screen sits on the same
+    // ground rather than a flat grey panel over it.
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur-md">
+        {/* A hairline of the brand colours across the very top — navy into gold, the seal's two
+            colours. It is the one piece of pure decoration in the chrome. */}
+        <div
+          aria-hidden
+          className="h-0.5 w-full bg-gradient-to-r from-navy-600 via-navy-400 to-gold-400"
+        />
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
           <Link
             to="/home"

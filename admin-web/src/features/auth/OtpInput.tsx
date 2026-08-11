@@ -81,7 +81,7 @@ export function OtpInput({
           autoComplete={index === 0 ? 'one-time-code' : 'off'}
           maxLength={1}
           aria-label={`OTP digit ${index + 1}`}
-          className="h-12 w-full rounded-lg border border-slate-300 bg-white text-center text-lg
+          className="h-12 w-full rounded-lg border border-line-strong bg-surface text-center text-lg
             font-semibold text-slate-900 outline-none transition focus:border-navy-500
             focus:ring-2 focus:ring-navy-200 disabled:bg-slate-100"
         />

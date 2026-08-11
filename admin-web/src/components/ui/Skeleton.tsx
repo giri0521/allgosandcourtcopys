@@ -16,7 +16,7 @@ export function SkeletonCards({ count = 6, label }: { count?: number; label: str
       </span>
       <div aria-hidden className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: count }).map((_, index) => (
-          <div key={index} className="rounded-xl border border-slate-200 bg-white p-5">
+          <div key={index} className="rounded-xl border border-line bg-surface p-5">
             <div className="skeleton h-4 w-2/3 rounded" />
             <div className="skeleton mt-3 h-3 w-1/3 rounded" />
             <div className="skeleton mt-5 h-3 w-1/2 rounded" />
@@ -33,7 +33,7 @@ export function SkeletonRows({ count = 4, label }: { count?: number; label: stri
       <span className="sr-only" role="status">
         {label}
       </span>
-      <div aria-hidden className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div aria-hidden className="overflow-hidden rounded-xl border border-line bg-surface">
         {Array.from({ length: count }).map((_, index) => (
           <div
             key={index}

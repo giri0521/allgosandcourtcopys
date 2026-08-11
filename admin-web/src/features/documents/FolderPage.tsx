@@ -17,8 +17,8 @@ import { FileTable } from '@/features/documents/FileTable';
 import { FolderGrid } from '@/features/documents/FolderGrid';
 import { ReplaceFileDialog } from '@/features/documents/ReplaceFileDialog';
 import { UploadDialog } from '@/features/documents/UploadDialog';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { toApiError } from '@/lib/errors';
-import { formatCategory } from '@/lib/format';
 import type { FileItem } from '@/types/api';
 
 /**
@@ -64,13 +64,10 @@ export function FolderPage() {
   return (
     <AppShell
       title={folder.data?.name ?? 'Folder'}
-      subtitle={
-        folder.data
-          ? `${folder.data.departmentName} · ${formatCategory(folder.data.category)}`
-          : undefined
-      }
+      subtitle={folder.data?.departmentName}
       actions={
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {folder.data && <CategoryBadge category={folder.data.category} />}
           <Button variant="secondary" onClick={() => setCreating(true)}>
             New folder
           </Button>

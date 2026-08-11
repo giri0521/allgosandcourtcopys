@@ -128,7 +128,7 @@ export function MembersPage() {
         {error && <Alert tone="error">{toApiError(error).message}</Alert>}
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
         {members.isPending ? (
           <p className="px-5 py-10 text-center text-sm text-slate-500">Loading members…</p>
         ) : items.length === 0 ? (

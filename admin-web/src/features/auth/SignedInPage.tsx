@@ -3,6 +3,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { fetchDepartments, fetchMyUploads } from '@/features/documents/api';
 import { useAuth } from '@/lib/auth-context';
+import { tone } from '@/lib/tones';
+import type { ToneName } from '@/lib/tones';
 
 /**
  * Home: where a signed-in user starts, and the only screen that has to answer "what can I do here?"
@@ -41,18 +43,21 @@ export function SignedInPage() {
         <section className="stagger grid gap-4 sm:grid-cols-3">
           <Tile
             to="/departments"
+            tone="navy"
             label="Departments"
             value={departments.data ? String(departments.data.length) : '—'}
             hint="Browse and upload anywhere"
           />
           <Tile
             to="/departments"
+            tone="teal"
             label="Documents"
             value={departments.data ? String(documentCount) : '—'}
             hint="Across every department"
           />
           <Tile
             to="/my-uploads"
+            tone="gold"
             label="My uploads"
             value={myUploads.data ? String(myUploads.data.totalItems) : '—'}
             hint="Yours to replace or delete"
@@ -60,7 +65,7 @@ export function SignedInPage() {
         </section>
 
         {documentCount === 0 && departments.isSuccess && (
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
             <h2 className="font-semibold text-slate-900">Nothing has been filed yet</h2>
             <p className="mt-1 text-sm text-slate-600">
               Open a department, create a folder, then upload into it. You may file documents into
@@ -77,7 +82,7 @@ export function SignedInPage() {
         )}
 
         {isAdmin && (
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
             <h2 className="font-semibold text-slate-900">Administration</h2>
             <p className="mt-1 text-sm text-slate-600">
               Nobody can sign in until their registration is approved, so the queue is the first
@@ -106,7 +111,7 @@ export function SignedInPage() {
           </section>
         )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
           <h2 className="font-semibold text-slate-900">Your account</h2>
           <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <Row label="Mobile" value={`+91 ${user.mobileNumber}`} />
@@ -123,11 +128,13 @@ export function SignedInPage() {
 /** A count that is also the way in — the numbers on this screen are all navigation. */
 function Tile({
   to,
+  tone: toneName,
   label,
   value,
   hint,
 }: {
   to: string;
+  tone: ToneName;
   label: string;
   value: string;
   hint: string;
@@ -135,11 +142,18 @@ function Tile({
   return (
     <Link
       to={to}
-      className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm outline-none
-        transition-all duration-[--duration-base] ease-[--ease-settle]
+      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm
+        outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
         hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
         focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
     >
+      {/* A colour bar across the top, growing on hover. Enough to tell the three tiles apart at a
+          glance without turning the page into a paintbox. */}
+      <span
+        aria-hidden
+        className={`absolute inset-x-0 top-0 h-1 transition-all duration-[--duration-base]
+          ease-[--ease-settle] group-hover:h-1.5 ${tone(toneName).edge}`}
+      />
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-navy-800 transition-colors
         duration-[--duration-base] group-hover:text-navy-600">

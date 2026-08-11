@@ -65,7 +65,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="animate-pop relative w-full max-w-md rounded-2xl border border-slate-200 bg-white
+        className="animate-pop relative w-full max-w-md rounded-2xl border border-line bg-surface
           p-6 shadow-xl shadow-slate-900/10"
       >
         <h2 className="text-lg font-semibold text-slate-900">{title}</h2>

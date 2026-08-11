@@ -19,7 +19,7 @@ export function AuthLayout({
   footer?: ReactNode;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+    <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="animate-rise mb-6 text-center">
           {/* The source artwork sits on a square canvas with a thin frame; clipping to a circle
@@ -32,13 +32,15 @@ export function AuthLayout({
             className="mx-auto mb-3 h-20 w-20 rounded-full object-cover shadow-sm sm:h-24 sm:w-24"
           />
           <h1 className="text-lg font-bold tracking-tight text-navy-800">ALLGOSANDCOURTCOPYS</h1>
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+          {/* A short gold rule under the name, the way a seal is underlined on a letterhead. */}
+          <span aria-hidden className="mx-auto mt-1.5 block h-0.5 w-12 rounded-full bg-gold-400" />
+          <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
             Document Management System
           </p>
         </div>
 
         <div
-          className="animate-rise rounded-2xl border border-slate-200 bg-white p-6 shadow-sm
+          className="animate-rise rounded-2xl border border-line bg-surface p-6 shadow-sm
             shadow-slate-900/5 sm:p-7"
           style={{ animationDelay: '70ms' }}
         >

@@ -59,7 +59,7 @@ export function ReplaceFileDialog({
           <label
             htmlFor="replace-input"
             className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2
-              border-dashed border-slate-300 px-4 py-6 text-center transition hover:border-navy-400"
+              border-dashed border-line-strong px-4 py-6 text-center transition hover:border-navy-400"
           >
             <span className="text-sm font-medium text-navy-700">
               {chosen ? 'Choose a different file' : 'Choose the corrected file'}

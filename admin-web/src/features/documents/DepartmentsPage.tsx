@@ -6,6 +6,7 @@ import { Alert } from '@/components/ui/Alert';
 import { SkeletonCards } from '@/components/ui/Skeleton';
 import { fetchDepartments } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
+import { departmentTone, initials } from '@/lib/tones';
 
 /**
  * All 43 departments, browsable by anyone signed in.
@@ -36,7 +37,7 @@ export function DepartmentsPage() {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter departments"
           aria-label="Filter departments"
-          className="w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none
+          className="w-64 rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm outline-none
             transition-all duration-[--duration-base] ease-[--ease-settle]
             focus:w-72 focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
         />
@@ -49,7 +50,7 @@ export function DepartmentsPage() {
       )}
 
       {departments.isSuccess && visible.length === 0 && (
-        <p className="animate-fade rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <p className="animate-fade rounded-xl border border-line bg-surface p-6 text-sm text-slate-500">
           No department matches “{query}”.
         </p>
       )}
@@ -57,23 +58,44 @@ export function DepartmentsPage() {
       {/* Keyed on the query so filtering re-runs the stagger — the list visibly re-forms rather
           than silently losing rows. */}
       <div key={query} className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((department) => (
+        {visible.map((department) => {
+          const tone = departmentTone(department.id);
+          return (
           <Link
             key={department.id}
             to={`/departments/${department.id}`}
-            className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm outline-none
-              transition-all duration-[--duration-base] ease-[--ease-settle]
+            className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 pl-6
+              shadow-sm outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
               hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
               focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
           >
-            <h2 className="font-semibold text-navy-800 transition-colors duration-[--duration-base] group-hover:text-navy-600">
-              {department.name}
-            </h2>
-            {department.code && (
-              <p className="mt-0.5 text-xs uppercase tracking-wide text-slate-400">
-                {department.code}
-              </p>
-            )}
+            {/* The department's own colour, down the leading edge. It widens on hover, which is
+                what makes 43 near-identical cards feel individually chosen. */}
+            <span
+              aria-hidden
+              className={`absolute inset-y-0 left-0 w-1 transition-all duration-[--duration-base]
+                ease-[--ease-settle] group-hover:w-1.5 ${tone.edge}`}
+            />
+            <div className="flex items-start gap-3">
+              <span
+                aria-hidden
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm
+                  font-bold transition-transform duration-[--duration-base] ease-[--ease-settle]
+                  group-hover:scale-105 ${tone.chip}`}
+              >
+                {initials(department.name)}
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-semibold text-navy-800 transition-colors duration-[--duration-base] group-hover:text-navy-600">
+                  {department.name}
+                </h2>
+                {department.code && (
+                  <p className="mt-0.5 text-xs uppercase tracking-wide text-slate-400">
+                    {department.code}
+                  </p>
+                )}
+              </div>
+            </div>
             <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
               <span>
                 {department.folderCount ?? 0}{' '}
@@ -94,7 +116,8 @@ export function DepartmentsPage() {
               </span>
             </p>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </AppShell>
   );

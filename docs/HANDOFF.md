@@ -147,7 +147,8 @@ conventions.
 
 | File | Why it matters |
 |---|---|
-| `index.css` | The design tokens **and** the motion vocabulary every screen borrows from |
+| `index.css` | The palette, the semantic surfaces **and** the motion vocabulary every screen borrows from |
+| `lib/tones.ts` | What colour a category, file type or department is — asked, never chosen per screen |
 | `components/ui/` | Button, Modal, Alert, Field, Skeleton, StatusBadge — polish lives here, so fixing it once fixes it everywhere |
 | `lib/AuthProvider.tsx` | Holds the session; restores it from the refresh cookie on start-up |
 | `lib/RouteGuards.tsx` | `RequireAuth` / `RequireAdmin`. A convenience — the server is the control |
@@ -160,6 +161,31 @@ This is a client requirement, not a preference: **every screen, dialog and contr
 be visually finished, with motion, including the small things.** A screen that works but looks
 unfinished is not finished. Budget for it in the estimate rather than leaving it as a follow-up
 that never comes.
+
+##### Colour
+
+Navy is the brand, from the seal. **Gold is the secondary and is used sparingly** — a rule under the
+logo, the hairline across the header, an accent edge. Never a gold button: gold cannot carry white
+text accessibly, and a gold button beside a navy one starts an argument about which is the real
+action.
+
+| Where colour is decided | |
+|---|---|
+| `index.css` `@theme` | The navy and gold scales, plus semantic surfaces — `canvas`, `surface`, `surface-sunken`, `line`, `line-strong`. **Use `bg-surface` / `border-line`, not `bg-white` / `border-slate-200`**, so the whole application re-tones from six lines and a dark mode later has somewhere to land |
+| `lib/tones.ts` | What each *thing* is coloured: `categoryTone`, `fileTypeTone`, `departmentTone`, and the nine-tone palette they draw from |
+
+`tones.ts` is the important one. A screen never picks a colour for a category or a department — it
+asks. That is what stops a Court Order being indigo on one screen and amber on the next, and it
+means **a screen built in a later phase inherits the scheme without its author knowing it exists**.
+The category tones are assigned by meaning, not taste: court orders take the gravity of indigo,
+government orders the navy of the seal, circulars a lighter sky, contracts the emerald of an
+agreement in force, acts and rules the permanence of gold. General is grey on purpose — it is the
+absence of a classification and should not compete with the five that mean something.
+
+Departments get a stable tone derived from their id, so the one someone uses daily is findable by
+colour rather than by reading, and it is the same colour on every screen for every user.
+
+##### Motion
 
 The vocabulary is defined once, in `src/index.css`, and everything borrows from it:
 

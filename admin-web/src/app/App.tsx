@@ -98,7 +98,7 @@ export function App() {
 function Placeholder({ name }: { name: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="rounded-lg border border-slate-200 bg-white px-8 py-6 text-center shadow-sm">
+      <div className="rounded-lg border border-line bg-surface px-8 py-6 text-center shadow-sm">
         <p className="text-sm uppercase tracking-wide text-navy-500">ALLGOSANDCOURTCOPYS</p>
         <h1 className="mt-2 text-2xl font-semibold text-navy-800">{name}</h1>
         <p className="mt-2 text-sm text-slate-500">Not implemented yet.</p>

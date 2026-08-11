@@ -79,7 +79,7 @@ export function DeletionsPage() {
       {restore.isError && <Alert tone="error">{toApiError(restore.error).message}</Alert>}
 
       {deletions.isSuccess && deletions.data.items.length === 0 && (
-        <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <p className="rounded-xl border border-line bg-surface p-6 text-sm text-slate-500">
           {tab === 'deleted' ? 'Nothing is currently deleted.' : 'No documents have been deleted.'}
         </p>
       )}
@@ -90,7 +90,7 @@ export function DeletionsPage() {
             {deletions.data.items.map((entry) => (
               <li
                 key={entry.id}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm
+                className="rounded-xl border border-line bg-surface p-5 shadow-sm
                   transition-all duration-[--duration-base] ease-[--ease-settle] hover:shadow-md"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">

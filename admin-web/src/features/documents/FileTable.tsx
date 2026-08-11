@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { fetchDownloadLink } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
 import { formatDateTime, formatFileSize, formatFileType } from '@/lib/format';
+import { fileTypeTone } from '@/lib/tones';
 import type { FileItem } from '@/types/api';
 
 /**
@@ -44,7 +45,7 @@ export function FileTable({
 
   if (files.length === 0) {
     return (
-      <div className="animate-rise flex flex-col items-center rounded-xl border border-dashed border-slate-300
+      <div className="animate-rise flex flex-col items-center rounded-xl border border-dashed border-line-strong
         bg-white px-6 py-12 text-center">
         <svg
           aria-hidden
@@ -72,9 +73,9 @@ export function FileTable({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-line bg-surface">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-line bg-surface-sunken text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th scope="col" className="px-5 py-3 font-semibold">Document</th>
               {showLocation && <th scope="col" className="px-5 py-3 font-semibold">Location</th>}
@@ -162,21 +163,12 @@ export function FileTable({
  * is recognition at a glance rather than information only some people receive.
  */
 function FileGlyph({ contentType }: { contentType: string }) {
-  const tone = contentType === 'application/pdf'
-    ? 'bg-red-50 text-red-600'
-    : contentType.startsWith('image/')
-      ? 'bg-violet-50 text-violet-600'
-      : contentType.includes('spreadsheet') || contentType.includes('ms-excel')
-        ? 'bg-emerald-50 text-emerald-700'
-        : contentType.includes('word') || contentType.includes('msword')
-          ? 'bg-sky-50 text-sky-700'
-          : 'bg-slate-100 text-slate-500';
-
   return (
     <span
       aria-hidden
       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform
-        duration-[--duration-base] ease-[--ease-settle] group-hover/row:scale-105 ${tone}`}
+        duration-[--duration-base] ease-[--ease-settle] group-hover/row:scale-105
+        ${fileTypeTone(contentType).chip}`}
     >
       <svg
         viewBox="0 0 24 24"

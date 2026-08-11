@@ -104,7 +104,7 @@ export function RegistrationRequestsPage() {
         {error && <Alert tone="error">{toApiError(error).message}</Alert>}
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         {requests.isPending ? (
           <p className="px-5 py-10 text-center text-sm text-slate-500">Loading requests…</p>
         ) : items.length === 0 ? (

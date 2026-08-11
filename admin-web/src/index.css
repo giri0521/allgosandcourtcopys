@@ -14,6 +14,33 @@
   --color-navy-900: #0a1729;
 
   /*
+   * Gold, taken from the seal on the logo. The secondary brand colour, used sparingly — a highlight,
+   * a rule under a heading, the marker on the current department. Never a button: gold on white
+   * cannot carry white text at an accessible contrast, and a gold button next to a navy one starts
+   * an argument about which is the real action.
+   */
+  --color-gold-50: #fdf8ed;
+  --color-gold-100: #f8ecce;
+  --color-gold-200: #f0d795;
+  --color-gold-300: #e5bd5b;
+  --color-gold-400: #d9a43a;
+  --color-gold-500: #c08a26;
+  --color-gold-600: #9c6c1d;
+  --color-gold-700: #7a531b;
+  --color-gold-800: #5c3f1a;
+  --color-gold-900: #3d2a13;
+
+  /*
+   * Semantic surfaces. Screens reference these rather than picking a slate number each time, so the
+   * whole application re-tones from six lines — and a future dark mode has somewhere to land.
+   */
+  --color-canvas: #f5f7fb;        /* the page behind everything */
+  --color-surface: #ffffff;       /* cards, tables, dialogs */
+  --color-surface-sunken: #f8fafc; /* table headers, wells */
+  --color-line: #e2e8f0;          /* ordinary borders */
+  --color-line-strong: #cbd5e1;   /* dashed empty states, dividers that must be seen */
+
+  /*
    * One easing curve and three durations for the whole application. Motion that varies per screen
    * reads as sloppiness rather than personality, so everything borrows from here.
    *
@@ -31,7 +58,17 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply text-slate-900 antialiased;
+  /*
+   * A very slight wash rather than flat grey: navy at 3% in the top-left, gold at 3% in the
+   * bottom-right, over the canvas colour. It is barely perceptible on its own and that is the
+   * point — white cards lift off it, and the page stops looking like unstyled default.
+   */
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(60rem 60rem at 0% 0%, color-mix(in oklab, var(--color-navy-500) 6%, transparent), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 100%, color-mix(in oklab, var(--color-gold-400) 6%, transparent), transparent 55%);
+  background-attachment: fixed;
 }
 
 /* ---------------------------------------------------------------- keyframes */

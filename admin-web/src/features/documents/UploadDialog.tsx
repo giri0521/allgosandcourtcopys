@@ -96,7 +96,7 @@ export function UploadDialog({
           <label
             htmlFor="upload-input"
             className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2
-              border-dashed border-slate-300 px-4 py-7 text-center transition-all
+              border-dashed border-line-strong px-4 py-7 text-center transition-all
               duration-[--duration-base] ease-[--ease-settle] hover:border-navy-400 hover:bg-navy-50/40"
           >
             <svg
