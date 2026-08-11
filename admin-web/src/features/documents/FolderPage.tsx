@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { SkeletonRows } from '@/components/ui/Skeleton';
 import {
   fetchBreadcrumb,
   fetchFolder,
@@ -123,7 +124,7 @@ export function FolderPage() {
             Documents{files.data ? ` (${files.data.totalItems})` : ''}
           </h2>
 
-          {files.isPending && <p className="text-sm text-slate-500">Loading documents…</p>}
+          {files.isPending && <SkeletonRows count={4} label="Loading documents" />}
           {files.isError && <Alert tone="error">{toApiError(files.error).message}</Alert>}
 
           {files.isSuccess && (

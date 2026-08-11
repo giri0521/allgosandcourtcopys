@@ -23,6 +23,17 @@ const NAV: NavItem[] = [
   { to: '/admin/deletions', label: 'Deleted', adminOnly: true },
 ];
 
+/**
+ * The frame every signed-in screen sits in.
+ *
+ * <p>Anything with its own layout instead of this one ends up without navigation — which is exactly
+ * how the home screen shipped unreachable in Phase 3. If a new screen needs a different shape,
+ * change this; do not go around it.
+ *
+ * <p>The header is sticky and slightly translucent, so scrolling a long folder never strands the
+ * user without a way out. The active nav item keeps an underline that slides between entries rather
+ * than jumping, which is the one flourish here that is purely for pleasure.
+ */
 export function AppShell({
   title,
   subtitle,
@@ -47,33 +58,53 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
-          <Link to="/home" className="flex items-center gap-2.5">
+          <Link
+            to="/home"
+            className="group flex items-center gap-2.5 rounded-lg outline-none
+              focus-visible:ring-2 focus-visible:ring-navy-300"
+          >
             <img
               src="/logo.webp"
               alt=""
               width={36}
               height={36}
-              className="h-9 w-9 rounded-full object-cover"
+              className="h-9 w-9 rounded-full object-cover transition-transform duration-[--duration-base]
+                ease-[--ease-settle] group-hover:scale-105"
             />
             <span className="text-sm font-bold tracking-tight text-navy-800">
               ALLGOSANDCOURTCOPYS
             </span>
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Main">
+          <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Main">
             {items.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    isActive ? 'bg-navy-50 text-navy-700' : 'text-slate-600 hover:text-navy-700'
-                  }`
+                  `relative rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap outline-none
+                   transition-colors duration-[--duration-base] ease-[--ease-settle]
+                   focus-visible:ring-2 focus-visible:ring-navy-300 ${
+                     isActive ? 'text-navy-700' : 'text-slate-600 hover:text-navy-700'
+                   }`
                 }
               >
-                {item.label}
+                {({ isActive }) => (
+                  <>
+                    {item.label}
+                    {/* Scales out from the centre, so moving between tabs reads as one indicator
+                        travelling rather than two separate underlines. */}
+                    <span
+                      aria-hidden
+                      className={`absolute inset-x-2 -bottom-px h-0.5 origin-center rounded-full bg-navy-600
+                        transition-transform duration-[--duration-base] ease-[--ease-settle] ${
+                          isActive ? 'scale-x-100' : 'scale-x-0'
+                        }`}
+                    />
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -90,7 +121,9 @@ export function AppShell({
             <button
               type="button"
               onClick={handleSignOut}
-              className="rounded-md px-3 py-1.5 text-sm font-semibold text-navy-600 transition hover:bg-navy-50"
+              className="rounded-md px-3 py-1.5 text-sm font-semibold text-navy-600 outline-none
+                transition-all duration-[--duration-quick] ease-[--ease-settle] hover:bg-navy-50
+                focus-visible:ring-2 focus-visible:ring-navy-300 active:scale-[0.97]"
             >
               Sign out
             </button>
@@ -99,9 +132,9 @@ export function AppShell({
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div className="animate-fade mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
           </div>
           {actions}

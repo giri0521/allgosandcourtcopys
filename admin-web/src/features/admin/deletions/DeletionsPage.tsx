@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { SkeletonRows } from '@/components/ui/Skeleton';
 import { fetchDeletions, restoreFile } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
@@ -60,18 +61,20 @@ export function DeletionsPage() {
             role="tab"
             aria-selected={tab === entry.value}
             onClick={() => changeTab(entry.value)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-              tab === entry.value
-                ? 'bg-navy-50 text-navy-700'
-                : 'text-slate-600 hover:text-navy-700'
-            }`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium outline-none
+              transition-all duration-[--duration-base] ease-[--ease-settle] active:scale-[0.97]
+              focus-visible:ring-2 focus-visible:ring-navy-300 ${
+                tab === entry.value
+                  ? 'bg-navy-50 text-navy-700 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-navy-700'
+              }`}
           >
             {entry.label}
           </button>
         ))}
       </div>
 
-      {deletions.isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {deletions.isPending && <SkeletonRows count={3} label="Loading deletions" />}
       {deletions.isError && <Alert tone="error">{toApiError(deletions.error).message}</Alert>}
       {restore.isError && <Alert tone="error">{toApiError(restore.error).message}</Alert>}
 
@@ -83,11 +86,12 @@ export function DeletionsPage() {
 
       {deletions.isSuccess && deletions.data.items.length > 0 && (
         <div className="space-y-4">
-          <ul className="space-y-3">
+          <ul key={`${tab}-${page}`} className="stagger space-y-3">
             {deletions.data.items.map((entry) => (
               <li
                 key={entry.id}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm
+                  transition-all duration-[--duration-base] ease-[--ease-settle] hover:shadow-md"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">

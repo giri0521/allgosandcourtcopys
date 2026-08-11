@@ -147,10 +147,40 @@ conventions.
 
 | File | Why it matters |
 |---|---|
+| `index.css` | The design tokens **and** the motion vocabulary every screen borrows from |
+| `components/ui/` | Button, Modal, Alert, Field, Skeleton, StatusBadge — polish lives here, so fixing it once fixes it everywhere |
 | `lib/AuthProvider.tsx` | Holds the session; restores it from the refresh cookie on start-up |
 | `lib/RouteGuards.tsx` | `RequireAuth` / `RequireAdmin`. A convenience — the server is the control |
 | `features/admin/api.ts` | Every admin call, in one place |
 | `components/layout/AppShell.tsx` | Header and navigation for signed-in screens |
+
+#### Look and feel is part of "done"
+
+This is a client requirement, not a preference: **every screen, dialog and control is expected to
+be visually finished, with motion, including the small things.** A screen that works but looks
+unfinished is not finished. Budget for it in the estimate rather than leaving it as a follow-up
+that never comes.
+
+The vocabulary is defined once, in `src/index.css`, and everything borrows from it:
+
+| | |
+|---|---|
+| `--ease-settle` | The single easing curve. It settles rather than bounces — this is a records system, not a game |
+| `--duration-quick / -base / -slow` | 120ms for a press, 220ms for anything the eye follows, 400ms for content arriving |
+| `animate-rise` / `animate-fade` / `animate-pop` | Content arriving, backdrops, dialogs |
+| `stagger` | Put it on a list container and children arrive in sequence, capped at eight |
+| `skeleton` + `SkeletonCards` / `SkeletonRows` | **Loading states are skeletons, never the word "Loading"** — a skeleton holds the layout still so arriving content lands where the eye already is |
+
+Four rules that keep it coherent:
+
+- **Reuse the vocabulary; do not invent per-screen animation.** Motion that varies screen to screen
+  reads as sloppiness rather than personality.
+- **Never remove the `prefers-reduced-motion` block** at the foot of `index.css`. Some people are
+  made ill by animation; that block is what makes animating freely everywhere else safe.
+- **Colour is never the only signal.** Every status carries a shape, an icon or a word as well —
+  see `StatusMark` in `UploadDialog` and `FileGlyph` in `FileTable`.
+- **Hover-only controls must also appear on focus.** Touch and keyboard users have no hover; the
+  row actions in `FileTable` show the pattern (`focus-within`, and full opacity below `sm`).
 
 **Server state goes through TanStack Query**, not `useEffect`. This is not a style preference: the
 `react-hooks/set-state-in-effect` lint rule rejects a `setState` reachable from an effect body, so a

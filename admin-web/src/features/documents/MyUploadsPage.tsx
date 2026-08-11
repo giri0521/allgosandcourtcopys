@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { SkeletonRows } from '@/components/ui/Skeleton';
 import { fetchMyUploads } from '@/features/documents/api';
 import { DeleteFileDialog } from '@/features/documents/DeleteFileDialog';
 import { FileTable } from '@/features/documents/FileTable';
@@ -28,7 +29,7 @@ export function MyUploadsPage() {
 
   return (
     <AppShell title="My Uploads" subtitle="Documents you have added to the system.">
-      {uploads.isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {uploads.isPending && <SkeletonRows count={4} label="Loading your uploads" />}
       {uploads.isError && <Alert tone="error">{toApiError(uploads.error).message}</Alert>}
 
       {uploads.isSuccess && (

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { SkeletonCards } from '@/components/ui/Skeleton';
 import { fetchDepartments, fetchFolders } from '@/features/documents/api';
 import { CreateFolderDialog } from '@/features/documents/CreateFolderDialog';
 import { FolderGrid } from '@/features/documents/FolderGrid';
@@ -43,13 +44,31 @@ export function DepartmentPage() {
         <span className="text-slate-700">{department?.name ?? '…'}</span>
       </nav>
 
-      {folders.isPending && <p className="text-sm text-slate-500">Loading folders…</p>}
+      {folders.isPending && <SkeletonCards count={3} label="Loading folders" />}
       {folders.isError && <Alert tone="error">{toApiError(folders.error).message}</Alert>}
 
       {folders.isSuccess && folders.data.length === 0 && (
-        <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-          This department has no folders yet. Create the first one to start filing documents.
-        </p>
+        <div className="animate-rise flex flex-col items-center rounded-xl border border-dashed
+          border-slate-300 bg-white px-6 py-12 text-center">
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-10 w-10 text-slate-300"
+          >
+            <path d="M3 7a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.6.8l.9 1.2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+          </svg>
+          <p className="mt-3 text-sm text-slate-500">
+            This department has no folders yet. Create the first one to start filing documents.
+          </p>
+          <Button className="mt-4" onClick={() => setCreating(true)}>
+            New folder
+          </Button>
+        </div>
       )}
 
       <FolderGrid folders={folders.data ?? []} />

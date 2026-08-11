@@ -146,6 +146,13 @@ The full list is [HANDOFF.md §6](HANDOFF.md). The ones that matter most in Phas
   `FileDeletion` is lazy. A DTO assembled after the transaction closes throws
   `LazyInitializationException` and returns 500 — this cost time in Phase 3 twice, once in
   production code and once in a test assertion.
+- **Look and feel is part of "done"** — see [HANDOFF.md §5](HANDOFF.md). Every new screen uses the
+  motion vocabulary in `index.css` and the components in `components/ui/`; loading states are
+  skeletons, not the word "Loading". The search results, preview and notification bell in this
+  phase are all high-traffic surfaces, so this is not optional polish on them.
+- **A clean build is not a working screen.** Phase 3's home page passed lint, typecheck and build
+  while being unreachable — no navigation, and copy saying the features were still to come. Run the
+  app and click through what you built before calling it done.
 - **`*Test` is a unit test, `*IT` is a Testcontainers test.** Name it wrong and it never runs.
 - **Server state on the web goes through TanStack Query, not `useEffect`** — the
   `react-hooks/set-state-in-effect` lint rule will reject a hand-rolled fetch hook. `UploadDialog`
@@ -162,6 +169,8 @@ The full list is [HANDOFF.md §6](HANDOFF.md). The ones that matter most in Phas
       name, a deleted file never appears in results, and a preview URL is inline rather than an
       attachment
 - [ ] `npm run lint && npm run typecheck && npm run build` clean
+- [ ] Every new screen clicked through in a browser, reachable from the header navigation, with
+      skeleton loading states and the shared motion vocabulary applied
 - [ ] A member can search, preview, favorite and see their download history
 - [ ] The bell shows unread notifications and marking one read sticks
 - [ ] `docs/HANDOFF.md` §2 and §7 updated, and the next handoff written

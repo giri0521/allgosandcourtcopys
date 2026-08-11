@@ -12,6 +12,18 @@
   --color-navy-700: #163059;
   --color-navy-800: #0f2340;
   --color-navy-900: #0a1729;
+
+  /*
+   * One easing curve and three durations for the whole application. Motion that varies per screen
+   * reads as sloppiness rather than personality, so everything borrows from here.
+   *
+   * The curve settles rather than bounces: this is a government records system, and a document
+   * being filed should feel dependable, not playful.
+   */
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-quick: 120ms;   /* a button acknowledging a press */
+  --duration-base: 220ms;    /* hovers, panels, anything the eye follows */
+  --duration-slow: 400ms;    /* content arriving */
 }
 
 :root {
@@ -20,4 +32,124 @@
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* ---------------------------------------------------------------- keyframes */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modals arrive from slightly small and slightly low, so they read as opening rather than blinking. */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The sweep across a skeleton, which is what makes it read as loading rather than broken. */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Used once, on a row that has just been restored or uploaded, then it is over. */
+@keyframes flash {
+  0% {
+    background-color: var(--color-emerald-50);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* ------------------------------------------------------------------ helpers */
+
+@utility animate-rise {
+  animation: rise var(--duration-slow) var(--ease-settle) both;
+}
+
+@utility animate-fade {
+  animation: fade var(--duration-base) var(--ease-settle) both;
+}
+
+@utility animate-pop {
+  animation: pop var(--duration-base) var(--ease-settle) both;
+}
+
+@utility animate-flash {
+  animation: flash 1.2s var(--ease-settle);
+}
+
+/**
+ * Staggers children so a list assembles instead of appearing all at once. Capped at eight because
+ * beyond that the last rows feel late rather than considered — everything after simply arrives with
+ * the eighth.
+ */
+@utility stagger {
+  & > * {
+    animation: rise var(--duration-slow) var(--ease-settle) both;
+  }
+  & > *:nth-child(1) { animation-delay: 0ms; }
+  & > *:nth-child(2) { animation-delay: 30ms; }
+  & > *:nth-child(3) { animation-delay: 60ms; }
+  & > *:nth-child(4) { animation-delay: 90ms; }
+  & > *:nth-child(5) { animation-delay: 120ms; }
+  & > *:nth-child(6) { animation-delay: 150ms; }
+  & > *:nth-child(7) { animation-delay: 180ms; }
+  & > *:nth-child(n + 8) { animation-delay: 210ms; }
+}
+
+@utility skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-slate-200) 0%,
+    var(--color-slate-100) 40%,
+    var(--color-slate-200) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/**
+ * Everything above is decoration, and decoration is optional.
+ *
+ * A user who has asked their operating system for reduced motion — because animation makes them
+ * ill, not because they dislike it — gets the same interface with none of it. This block is why
+ * animating freely elsewhere is safe.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

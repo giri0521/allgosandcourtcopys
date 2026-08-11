@@ -72,12 +72,7 @@ export function DeleteFileDialog({
           <Button type="button" variant="secondary" onClick={close}>
             Keep it
           </Button>
-          <Button
-            type="submit"
-            loading={remove.isPending}
-            disabled={!reason.trim()}
-            className="!bg-red-600 hover:!bg-red-700"
-          >
+          <Button type="submit" variant="danger" loading={remove.isPending} disabled={!reason.trim()}>
             Delete document
           </Button>
         </div>

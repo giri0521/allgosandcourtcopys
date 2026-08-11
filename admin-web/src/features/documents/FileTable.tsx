@@ -43,7 +43,25 @@ export function FileTable({
   };
 
   if (files.length === 0) {
-    return <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">{emptyMessage}</p>;
+    return (
+      <div className="animate-rise flex flex-col items-center rounded-xl border border-dashed border-slate-300
+        bg-white px-6 py-12 text-center">
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-10 w-10 text-slate-300"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 2v6h6" />
+        </svg>
+        <p className="mt-3 text-sm text-slate-500">{emptyMessage}</p>
+      </div>
+    );
   }
 
   return (
@@ -65,16 +83,29 @@ export function FileTable({
               <th scope="col" className="px-5 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="stagger divide-y divide-slate-100">
             {files.map((file) => (
-              <tr key={file.id} className="hover:bg-slate-50">
+              <tr
+                key={file.id}
+                className="group/row transition-colors duration-[--duration-base] ease-[--ease-settle]
+                  hover:bg-navy-50/40"
+              >
                 <td className="px-5 py-3">
-                  <p className="font-medium text-slate-900">{file.fileName}</p>
-                  <p className="text-xs text-slate-500">
-                    {formatFileType(file.fileType)} · {formatFileSize(file.sizeBytes)}
-                    {/* Only worth saying once a document has actually been replaced. */}
-                    {file.version > 1 && ` · version ${file.version}`}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <FileGlyph contentType={file.fileType} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-900">{file.fileName}</p>
+                      <p className="text-xs text-slate-500">
+                        {formatFileType(file.fileType)} · {formatFileSize(file.sizeBytes)}
+                        {/* Only worth saying once a document has actually been replaced. */}
+                        {file.version > 1 && (
+                          <span className="ml-1.5 rounded-full bg-navy-50 px-1.5 py-0.5 font-medium text-navy-700">
+                            v{file.version}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </td>
                 {showLocation && (
                   <td className="px-5 py-3 text-slate-600">
@@ -85,7 +116,11 @@ export function FileTable({
                 <td className="px-5 py-3 text-slate-600">{file.uploadedByName}</td>
                 <td className="px-5 py-3 text-slate-600">{formatDateTime(file.uploadedAt)}</td>
                 <td className="px-5 py-3">
-                  <div className="flex justify-end gap-1">
+                  {/* Actions fade up on row hover on a pointer device, but stay permanently visible
+                      on touch and for keyboard users — hover-only controls are unreachable there. */}
+                  <div className="flex justify-end gap-1 sm:opacity-60 sm:transition-opacity
+                    sm:duration-[--duration-base] sm:group-hover/row:opacity-100
+                    sm:focus-within:opacity-100 sm:hover:opacity-100">
                     <Button
                       variant="ghost"
                       onClick={() => void download(file)}
@@ -103,7 +138,7 @@ export function FileTable({
                         <Button
                           variant="ghost"
                           onClick={() => onDelete(file)}
-                          className="!text-red-600 hover:!bg-red-50"
+                          className="text-red-600! hover:bg-red-50!"
                         >
                           Delete
                         </Button>
@@ -117,5 +152,44 @@ export function FileTable({
         </table>
       </div>
     </div>
+  );
+}
+
+/**
+ * A tinted square per file type — red for PDF, emerald for a spreadsheet, and so on.
+ *
+ * <p>Colour is never the only signal: the type is also spelled out in the line underneath, so this
+ * is recognition at a glance rather than information only some people receive.
+ */
+function FileGlyph({ contentType }: { contentType: string }) {
+  const tone = contentType === 'application/pdf'
+    ? 'bg-red-50 text-red-600'
+    : contentType.startsWith('image/')
+      ? 'bg-violet-50 text-violet-600'
+      : contentType.includes('spreadsheet') || contentType.includes('ms-excel')
+        ? 'bg-emerald-50 text-emerald-700'
+        : contentType.includes('word') || contentType.includes('msword')
+          ? 'bg-sky-50 text-sky-700'
+          : 'bg-slate-100 text-slate-500';
+
+  return (
+    <span
+      aria-hidden
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform
+        duration-[--duration-base] ease-[--ease-settle] group-hover/row:scale-105 ${tone}`}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-4.5 w-4.5"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 2v6h6" />
+      </svg>
+    </span>
   );
 }

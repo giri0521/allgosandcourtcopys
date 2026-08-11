@@ -2,9 +2,15 @@ import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 /**
- * A small dialog for decisions that need a second thought — rejecting a registration, disabling an
- * account. Escape and a click on the backdrop both cancel, and focus moves inside on open so the
- * dialog is usable from the keyboard alone.
+ * A small dialog for decisions that need a second thought — rejecting a registration, deleting a
+ * document, replacing one.
+ *
+ * <p>Escape and a click on the backdrop both cancel, and focus moves inside on open so the dialog
+ * is usable from the keyboard alone. Focus is also *returned* on close, to whatever was focused
+ * before — without that, dismissing a dialog drops a keyboard user back at the top of the page.
+ *
+ * <p>It fades its backdrop and rises slightly as it opens, which is what makes it read as a layer
+ * over the page rather than a repaint of it. Background scrolling is locked while it is open.
  */
 export function Modal({
   open,
@@ -20,17 +26,29 @@ export function Modal({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
+
+    // The page behind must not scroll under the dialog.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     panelRef.current?.querySelector<HTMLElement>('input, textarea, button')?.focus();
 
-    return () => document.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused.current?.focus?.();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -38,7 +56,7 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-900/40"
+        className="animate-fade absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
@@ -47,10 +65,11 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-lg"
+        className="animate-pop relative w-full max-w-md rounded-2xl border border-slate-200 bg-white
+          p-6 shadow-xl shadow-slate-900/10"
       >
         <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+        {description && <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>}
         <div className="mt-4 space-y-4">{children}</div>
       </div>
     </div>
