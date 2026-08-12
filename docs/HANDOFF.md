@@ -7,10 +7,11 @@ users.
 - **Repo** `github.com/harithkumaradhithya/allgosandcourtcopys` · **branch** `pre-release`
 - **Full specification** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — this file is the
   orientation; that one is the contract.
-- **Picking up the next phase?** Start with [HANDOFF-PHASE-5.md](HANDOFF-PHASE-5.md) — what changed
-  in Phase 4, what must be verified before anything else, and the Phase 5 work broken down.
-  [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md) and [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md) are kept as
-  the record of what those phases were asked to do.
+- **Picking up the next phase?** Start with [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) — what changed
+  in Phase 5, what must be verified before anything else, and the Phase 6 work broken down.
+  [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md), [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md) and
+  [HANDOFF-PHASE-5.md](HANDOFF-PHASE-5.md) are kept as the record of what those phases were asked
+  to do, and why each answered its questions the way it did.
 
 ---
 
@@ -52,15 +53,20 @@ product.
 | File replacement | Done | Uploader or admin; keeps the id, bumps the version |
 | Search, preview, favorites, notifications | Done | Trigram search; inline preview; the bell finally reads the rows |
 | Download history | Done | Written when a presigned link is issued; a preview is not a download |
-| **Reports, monitoring, audit viewer, profile** | **Not built** | **Next task** — Phase 5 |
+| My Profile, admin dashboard, audit viewer, reports | Done | CSV export; per-member activity; Help/About/Privacy |
+| **Hardening and UAT** | **Not built** | **Next task** — Phase 6 |
 
-89 unit tests pass. 51 integration tests exist — 35 from Phase 3 plus 16 in `DocumentDiscoveryIT` —
-and run against a real PostgreSQL container and a real MinIO one, so migrations, JPA entities and the
-storage client are validated against what they will meet in production.
+**Every screen in the plan is now built.** What remains is Phase 6 (hardening, load, accessibility,
+UAT) and Phase 7 (deploy and handover).
 
-**The Phase 4 integration tests have not been executed**: the machine that wrote them had no Docker.
-They compile, and the derived queries they depend on are covered by `RepositoryQueryDerivationTest`
-(§6), but `./mvnw verify` is still the first thing to run on a machine that has Docker.
+121 unit tests pass. 67 integration tests exist — 35 from Phase 3, 16 in `DocumentDiscoveryIT`, 16 in
+`AdminMonitoringIT` — and run against a real PostgreSQL container, with a real MinIO one for the
+tests that touch documents.
+
+**The Phase 4 and Phase 5 integration tests have never been executed**: the machine that wrote them
+had no Docker. They compile, and the derived queries they depend on are covered by
+`RepositoryQueryDerivationTest` (§6), but `./mvnw verify` is the first thing to run on a machine that
+has Docker.
 
 ---
 
@@ -172,6 +178,9 @@ One package per feature area under `com.allgos.dms`, each with
 | `file/service/FileService` | A document's lifecycle: upload, replace, delete-with-reason, restore |
 | `file/service/DiscoveryService` | Finding one: search, preview, favourites, history. Reads only — the lifecycle rules stay next door |
 | `file/repository/StoredFileRepository` | The native search query, and why it must stay native (§7) |
+| `user/service/ProfileService` | What a user may change about themselves — and what is simply not on the request |
+| `admin/service/AdminReportService` | Stats, member activity, the audit viewer, the reports. Reads only |
+| `admin/service/CsvWriter` | Excel's two traps: the byte-order mark, and cells that begin `=` |
 | `audit/service/AuditService` | Two record methods with different transaction semantics (§6) |
 | `common/web/ClientIp` | One derivation of the caller's address, shared by the audit trail and the download history |
 | `common/security/` | JWT issue/parse, auth filter, principal |
@@ -200,6 +209,9 @@ file, which is the quickest way to see what is left. `src/lib/api.ts` centralise
 | `features/documents/` | Departments, DepartmentPage, FolderPage, MyUploads, Favorites, Downloads, FilePreview, and the Upload / Replace / Delete / CreateFolder dialogs |
 | `lib/queryKeys.ts` | `invalidateFileLists` — the one list of caches a document change invalidates. Add a new file-listing query key there and every existing mutation starts refreshing it |
 | `components/layout/NotificationBell.tsx` | The unread badge, polled; failures are deliberately silent |
+| `features/admin/audit/labels.ts` | Action name → words, and the metadata renderer. An unknown action still renders |
+| `features/admin/reports/MonthlyActivityChart.tsx` | The only chart in the app. Read its header before changing the colours |
+| `src/preview/chart-preview.tsx` | A dev-only harness — open `/chart-preview.html` on the dev server to see the chart against five awkward datasets without running the backend. Not in the production build |
 
 #### Look and feel is part of "done"
 
@@ -406,12 +418,41 @@ Five decisions worth knowing before changing it:
 - **`favorite` and `previewable` ride on every `FileView`.** Stars are resolved with one query per
   page, not one per row — see `DiscoveryService.viewsOf`.
 
-### Phase 5 — Admin monitoring, reports, profile ← start here
+### Phase 5 — Admin monitoring, reports, profile · done
 
-Per-member activity timelines, dashboard activity feed, reports with CSV export, audit log viewer,
-My Profile, static pages.
+The office can now answer "what has this person been doing", "what happened to this document" and
+"how much is this system being used" without opening a database client.
 
-### Phase 6 — Hardening and UAT
+| Endpoint | Notes |
+|---|---|
+| `GET\|PATCH /me`, `POST /me/password` | Name, email and designation only; the password change ends every session |
+| `GET /admin/stats` | The dashboard tiles |
+| `GET /admin/activity` | The dashboard feed — the whole trail, newest first |
+| `GET /admin/members/{id}/activity` | Summary counters plus that member's paged timeline |
+| `GET /admin/audit-logs?actorId=&action=&from=&to=` | Filtered by Specification, not sixteen query variants |
+| `GET /admin/audit-logs/actions` | The filter's vocabulary, read from `AuditAction` by reflection |
+| `GET /admin/reports?from=&to=` | Departments, top uploaders, twelve-month series |
+| `GET /admin/reports/export?type=` | `departments` · `uploaders` · `monthly`, streamed as CSV |
+
+Five decisions worth knowing before changing it:
+
+- **A profile edit cannot reach a role, a status or a department.** Those fields are not on the
+  request record, so there is no payload that changes them — not merely a check that could be
+  removed. Approval happens once; editing a profile never returns an account to PENDING.
+- **Changing a password bumps `token_version`**, ending every session including the one making the
+  request. If the reason for the change was that someone else knew the old password, leaving their
+  session alive would defeat it. The daily-OTP stamp is deliberately *not* cleared: it records that
+  this person proved possession of their phone today, which a password change neither confirms nor
+  invalidates.
+- **The audit trail is read-only to the application.** There is no delete on the repository and no
+  endpoint that edits an entry, by design.
+- **Report periods are half-open and resolved in Asia/Kolkata.** `to` is widened to the start of the
+  next day, so "to 3 March" includes a document filed at 4pm on the 3rd. Anything else either loses
+  the last day or counts a boundary document in two adjacent reports.
+- **Every department appears in the report, including the quiet ones.** A report that omitted them
+  would make "no activity" indistinguishable from "not asked about".
+
+### Phase 6 — Hardening and UAT ← start here
 
 Security review, load test at 150 concurrent users, accessibility, responsive QA at 360/768/1440 px,
 client UAT.
@@ -425,11 +466,14 @@ DLT-approved templates, admin training.
 
 ## 8. Known gaps in what is already built
 
-- **Nothing built in Phase 4 has been seen in a browser, and its integration tests have never run.**
-  The machine had neither Docker nor a usable database, so search, preview, favourites, the download
-  history, the bell and the new dashboard are backed by unit tests and a compiling `DocumentDiscoveryIT`
-  and nothing else. This is the largest single risk in the repository — `./mvnw verify` and a
-  click-through, in that order, before anything else.
+- **Two phases of work have never run against a database, and only one screen of them has been seen
+  rendering.** Phases 4 and 5 were written on a machine with no Docker, so search, preview,
+  favourites, download history, the bell, the admin dashboard, the audit viewer, the reports and My
+  Profile are backed by unit tests and compiling integration tests and nothing else. The one
+  exception is the monthly chart, which was rendered and inspected against five datasets through the
+  preview harness (§5). **This is the largest risk in the repository** — `./mvnw verify` and then a
+  click-through, before anything else. [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) §3 lists what to
+  click.
 - **Superseded versions are kept but unreachable.** Replacing a document writes the new bytes to a
   new key and leaves the old object in place, with its key recorded in the `file_replaced` audit
   entry. Nothing in the application reads it, so recovering a mistaken replacement means an admin
@@ -439,14 +483,13 @@ DLT-approved templates, admin training.
   the row, the object stays — as do superseded versions, above. Nothing references either and no
   user can see them, but a periodic sweep comparing keys against `files.storage_key` is still owed,
   and it must not treat a key named in a `file_replaced` audit entry as an orphan.
-- **Most screens have never been clicked through.** Sign-in, home and the department list were driven
-  and looked at during Phase 3. The folder page, upload, replace, delete, the deletions log, and
-  everything from Phase 4 have not been. Every endpoint behind them is covered by tests, so the risk
-  is presentation rather than function — but that is exactly the class of bug that got through twice
-  already. §3 has a script that will do most of it.
-- **No `GET /me` endpoint.** Session restore goes through `/auth/refresh`, which returns the user
-  alongside the token, so nothing needs it yet — but anything wanting the current user without
-  minting a token will.
+- **The audit trail has no retention policy.** Every sign-in, preview and download writes a row, and
+  nothing ever removes one. That is correct for evidence and untenable forever: at 150 users the
+  table will be the largest in the database within a year. The client has not been asked how long a
+  trail must be kept, and until they are, nothing should be deleted.
+- **Reports are computed on demand.** Every load runs half a dozen aggregates over `files` and
+  `downloads`. Fine at this size, and the indexes are there; if a year of data makes the screen slow,
+  a nightly rollup table is the answer rather than a cache.
 - **The registration OTP cannot be resent.** `/auth/otp/send` issues a *login* code, which
   `/auth/otp/verify-registration` will not accept, so the screen offers "skip" instead of "resend".
   A registration-purpose resend endpoint would close it.

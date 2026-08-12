@@ -1,5 +1,17 @@
 # Phase 5 Handoff — Admin monitoring, reports, profile
 
+> **Phase 5 is complete.** This file is kept as the record of what it was asked to do and why.
+> Picking up the next phase? Go to [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md).
+>
+> Two of its instructions shaped the result. §4.4's warning about Excel — the BOM and the locale —
+> became `CsvWriter`, which also neutralises formula-leading cells, an attack §4.4 did not mention
+> but that follows from user-supplied names reaching a spreadsheet. And §4.1's note that `GET /me`
+> was the standing gap was right: session restore was minting a token merely to answer who you are.
+>
+> §3's instruction to run the integration tests first went unmet again — still no Docker on this
+> machine — so the debt from Phase 4 is now carried forward together with Phase 5's, at the top of
+> [HANDOFF-PHASE-6.md §3](HANDOFF-PHASE-6.md).
+
 Written 12 August 2026, handing over after Phase 4. Read [HANDOFF.md](HANDOFF.md) first — it is the
 orientation and the four rules; this file is only what changed and what happens next.
 
