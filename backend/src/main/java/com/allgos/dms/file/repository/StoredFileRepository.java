@@ -28,6 +28,10 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
 
     long countByDepartmentIdAndDeletedFalse(UUID departmentId);
 
+    long countByUploadedByIdAndDeletedFalse(UUID uploaderId);
+
+    long countByCreatedAtAfter(Instant after);
+
     /**
      * Global search by part of a document's name, narrowed by the optional facets.
      *
@@ -92,4 +96,92 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
     Page<StoredFile> findByDeletedFalse(Pageable pageable);
 
     long countByDeletedFalse();
+
+    // ---------------------------------------------------------------------- reporting
+
+    /**
+     * Interface projections rather than {@code Object[]}: the column aliases below bind to these
+     * getters by name, so a renamed alias fails loudly instead of producing an array whose second
+     * element quietly changed meaning.
+     */
+    interface DepartmentCount {
+        UUID getDepartmentId();
+
+        long getTotal();
+    }
+
+    interface UploaderCount {
+        UUID getUserId();
+
+        String getFullName();
+
+        String getDepartmentName();
+
+        long getTotal();
+    }
+
+    /** Live documents per department — the "holdings" column of the report. */
+    @Query("""
+            select f.department.id as departmentId, count(f) as total
+            from StoredFile f
+            where f.deleted = false
+            group by f.department.id
+            """)
+    List<DepartmentCount> countLiveByDepartment();
+
+    /**
+     * Documents filed per department in a period.
+     *
+     * <p>Counts deleted rows too, deliberately: an upload is an event that happened, and a report of
+     * activity that quietly forgets the documents someone later withdrew would understate the work
+     * and could hide a pattern worth seeing.
+     */
+    @Query("""
+            select f.department.id as departmentId, count(f) as total
+            from StoredFile f
+            where f.createdAt >= :from and f.createdAt < :to
+            group by f.department.id
+            """)
+    List<DepartmentCount> countUploadsByDepartment(@Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("""
+            select u.id as userId, u.fullName as fullName, d.name as departmentName, count(f) as total
+            from StoredFile f
+            join f.uploadedBy u
+            left join u.department d
+            where f.createdAt >= :from and f.createdAt < :to
+            group by u.id, u.fullName, d.name
+            order by count(f) desc
+            """)
+    List<UploaderCount> countUploadsByUploader(
+            @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
+
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(Instant from, Instant to);
+
+    interface MonthCount {
+        String getMonth();
+
+        long getTotal();
+    }
+
+    /**
+     * Documents filed per calendar month.
+     *
+     * <p>Native, because grouping by month means {@code date_trunc}, which JPQL has no portable way
+     * to express. The timestamp is converted to Asia/Kolkata first: the office's March is what the
+     * report must show, not UTC's, and a document filed at 4am IST on the 1st belongs to March
+     * rather than to February.
+     */
+    @Query(
+            value =
+                    """
+                    select to_char(date_trunc('month', created_at at time zone 'Asia/Kolkata'), 'YYYY-MM') as month,
+                           count(*) as total
+                    from files
+                    where created_at >= :from and created_at < :to
+                    group by 1
+                    order by 1
+                    """,
+            nativeQuery = true)
+    List<MonthCount> countUploadsByMonth(@Param("from") Instant from, @Param("to") Instant to);
 }

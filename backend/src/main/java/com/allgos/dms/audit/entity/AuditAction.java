@@ -1,5 +1,9 @@
 package com.allgos.dms.audit.entity;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+
 /** The action vocabulary written to audit_logs.action. */
 public final class AuditAction {
 
@@ -34,6 +38,32 @@ public final class AuditAction {
     public static final String FILE_REPLACED = "file_replaced";
     public static final String FILE_DELETED = "file_deleted";
     public static final String FILE_RESTORED = "file_restored";
+
+    /**
+     * Every action name declared above, sorted, for the audit viewer's filter.
+     *
+     * <p>Read by reflection rather than maintained as a second list beside the constants. A
+     * hand-written list is one more thing to forget: the filter would quietly stop offering an
+     * action the moment someone added a constant without noticing it, and the omission looks
+     * exactly like "nothing of that kind has happened yet".
+     *
+     * <p>Computed once at class-load, not per request.
+     */
+    private static final List<String> ALL = Arrays.stream(AuditAction.class.getDeclaredFields())
+            .filter(field -> Modifier.isStatic(field.getModifiers()) && field.getType() == String.class)
+            .map(field -> {
+                try {
+                    return (String) field.get(null);
+                } catch (IllegalAccessException ex) {
+                    throw new IllegalStateException("Could not read audit action " + field.getName(), ex);
+                }
+            })
+            .sorted()
+            .toList();
+
+    public static List<String> all() {
+        return ALL;
+    }
 
     private AuditAction() {}
 }

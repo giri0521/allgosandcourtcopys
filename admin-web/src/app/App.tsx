@@ -1,8 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage';
+import { AuditLogPage } from '@/features/admin/audit/AuditLogPage';
 import { DeletionsPage } from '@/features/admin/deletions/DeletionsPage';
+import { MemberActivityPage } from '@/features/admin/members/MemberActivityPage';
 import { MembersPage } from '@/features/admin/members/MembersPage';
 import { RegistrationRequestsPage } from '@/features/admin/registrations/RegistrationRequestsPage';
+import { ReportsPage } from '@/features/admin/reports/ReportsPage';
+import { ProfilePage } from '@/features/profile/ProfilePage';
+import { AboutPage, HelpPage, PrivacyPage } from '@/features/static/StaticPages';
 import { AccessRestrictedPage } from '@/features/auth/AccessRestrictedPage';
 import { DepartmentPage } from '@/features/documents/DepartmentPage';
 import { DepartmentsPage } from '@/features/documents/DepartmentsPage';
@@ -69,28 +75,30 @@ export function App() {
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/profile" element={<Placeholder name="My Profile" />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
         {/* admin */}
         <Route element={<RequireAdmin />}>
-          <Route path="/admin" element={<Navigate to="/admin/requests" replace />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/requests" element={<RegistrationRequestsPage />} />
           <Route path="/admin/members" element={<MembersPage />} />
-          <Route path="/admin/members/:memberId" element={<Placeholder name="Member Activity" />} />
+          <Route path="/admin/members/:memberId" element={<MemberActivityPage />} />
           <Route path="/admin/deletions" element={<DeletionsPage />} />
-          <Route path="/admin/departments" element={<Placeholder name="Department Management" />} />
-          <Route path="/admin/folders" element={<Placeholder name="Folder Management" />} />
-          <Route path="/admin/files" element={<Placeholder name="File Management" />} />
-          <Route path="/admin/reports" element={<Placeholder name="Reports" />} />
-          <Route path="/admin/logs" element={<Placeholder name="Activity Logs" />} />
+          <Route path="/admin/reports" element={<ReportsPage />} />
+          <Route path="/admin/logs" element={<AuditLogPage />} />
+          {/* Departments and folders are managed where they are browsed, so these older routes
+              lead there rather than to a screen that would duplicate it. */}
+          <Route path="/admin/departments" element={<Navigate to="/departments" replace />} />
+          <Route path="/admin/folders" element={<Navigate to="/departments" replace />} />
+          <Route path="/admin/files" element={<Navigate to="/admin/deletions" replace />} />
           <Route path="/admin/settings" element={<Placeholder name="Settings" />} />
         </Route>
 
-        {/* static */}
-        <Route path="/help" element={<Placeholder name="Help & Support" />} />
-        <Route path="/about" element={<Placeholder name="About" />} />
-        <Route path="/privacy" element={<Placeholder name="Privacy Policy" />} />
+        {/* static — readable signed out too, which is the only moment the privacy notice matters */}
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
 
         <Route path="*" element={<Placeholder name="Not Found" />} />
       </Routes>

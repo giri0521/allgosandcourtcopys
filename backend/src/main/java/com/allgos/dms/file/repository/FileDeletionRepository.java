@@ -16,4 +16,10 @@ public interface FileDeletionRepository extends JpaRepository<FileDeletion, UUID
 
     /** The deletion a restore must stamp: the most recent unrestored one for this file. */
     Optional<FileDeletion> findFirstByFileIdAndRestoredAtIsNullOrderByDeletedAtDesc(UUID fileId);
+
+    /** How many documents this member has removed — a line on their activity summary. */
+    long countByDeletedById(UUID userId);
+
+    /** Removed and not put back. A restored document is not a deleted one. */
+    long countByRestoredAtIsNull();
 }

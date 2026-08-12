@@ -1,10 +1,14 @@
 import { api } from '@/lib/api';
 import type {
+  ActivityReport,
+  AuditEntry,
   Member,
+  MemberActivity,
   MemberCounts,
   PageResponse,
   RegistrationRequest,
   RegistrationStatus,
+  SystemStats,
   UserStatus,
 } from '@/types/api';
 
@@ -58,4 +62,106 @@ export async function changeMemberStatus(
 ): Promise<Member> {
   const { data } = await api.patch<Member>(`/admin/members/${id}/status`, { status });
   return data;
+}
+
+// ------------------------------------------------------------------------- monitoring
+
+export async function fetchSystemStats(): Promise<SystemStats> {
+  const { data } = await api.get<SystemStats>('/admin/stats');
+  return data;
+}
+
+/** The dashboard's activity feed: the whole trail, newest first. */
+export async function fetchRecentActivity(size = 10): Promise<PageResponse<AuditEntry>> {
+  const { data } = await api.get<PageResponse<AuditEntry>>('/admin/activity', { params: { size } });
+  return data;
+}
+
+export async function fetchMemberActivity(
+  memberId: string,
+  page = 0,
+): Promise<MemberActivity> {
+  const { data } = await api.get<MemberActivity>(`/admin/members/${memberId}/activity`, {
+    params: { page },
+  });
+  return data;
+}
+
+export interface AuditFilters {
+  actorId?: string;
+  action?: string;
+  /** Plain dates (YYYY-MM-DD). The server resolves them in Asia/Kolkata and treats both as inclusive. */
+  from?: string;
+  to?: string;
+}
+
+export async function fetchAuditLogs(
+  filters: AuditFilters,
+  page = 0,
+): Promise<PageResponse<AuditEntry>> {
+  const { data } = await api.get<PageResponse<AuditEntry>>('/admin/audit-logs', {
+    params: {
+      actorId: filters.actorId || undefined,
+      action: filters.action || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      page,
+    },
+  });
+  return data;
+}
+
+/** The action names the filter offers, read from the server's own constants. */
+export async function fetchAuditActions(): Promise<string[]> {
+  const { data } = await api.get<string[]>('/admin/audit-logs/actions');
+  return data;
+}
+
+// ---------------------------------------------------------------------------- reports
+
+export type ReportRange = { from?: string; to?: string };
+
+export async function fetchReport(range: ReportRange): Promise<ActivityReport> {
+  const { data } = await api.get<ActivityReport>('/admin/reports', {
+    params: { from: range.from || undefined, to: range.to || undefined },
+  });
+  return data;
+}
+
+export type ReportType = 'departments' | 'uploaders' | 'monthly';
+
+/**
+ * Downloads a report as CSV.
+ *
+ * <p>Fetched rather than linked: the endpoint needs the Authorization header, which a plain anchor
+ * cannot send. The response is turned into an object URL and clicked, then revoked — leaving it
+ * alive would pin the whole file in memory for the life of the tab.
+ */
+export async function downloadReportCsv(type: ReportType, range: ReportRange): Promise<void> {
+  const response = await api.get(`/admin/reports/export`, {
+    params: { type, from: range.from || undefined, to: range.to || undefined },
+    responseType: 'blob',
+  });
+
+  const filename =
+    filenameFromDisposition(response.headers['content-disposition']) ?? `${type}.csv`;
+
+  const url = URL.createObjectURL(response.data as Blob);
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** The server names the file; this only reads that name back off the header. */
+function filenameFromDisposition(header: unknown): string | null {
+  if (typeof header !== 'string') return null;
+  const match = /filename="?([^"]+)"?/.exec(header);
+  return match ? match[1] : null;
 }

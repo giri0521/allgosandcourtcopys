@@ -21,9 +21,11 @@ const NAV: NavItem[] = [
   { to: '/departments', label: 'Departments' },
   { to: '/my-uploads', label: 'My Uploads' },
   { to: '/favorites', label: 'Favorites' },
+  // Three admin entries, not six. The dashboard is the hub for the rest — Reports, the deletions
+  // log and the activity log all hang off it, and a header with ten links is a header nobody reads.
+  { to: '/admin', label: 'Dashboard', adminOnly: true },
   { to: '/admin/requests', label: 'Requests', adminOnly: true },
   { to: '/admin/members', label: 'Members', adminOnly: true },
-  { to: '/admin/deletions', label: 'Deleted', adminOnly: true },
 ];
 
 /**
@@ -123,14 +125,24 @@ export function AppShell({
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <HeaderSearch />
             <NotificationBell />
-            <span className="hidden text-sm text-slate-600 lg:inline">
+            {/* The name is the way into My Profile — the place people look for it. */}
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `hidden rounded-md px-2 py-1 text-sm outline-none transition-colors
+                 duration-[--duration-base] focus-visible:ring-2 focus-visible:ring-navy-300
+                 lg:inline-flex lg:items-center ${
+                   isActive ? 'text-navy-700' : 'text-slate-600 hover:text-navy-700'
+                 }`
+              }
+            >
               {user?.fullName}
               {isAdmin && (
                 <span className="ml-2 rounded-full bg-navy-50 px-2 py-0.5 text-xs font-semibold text-navy-700">
                   Admin
                 </span>
               )}
-            </span>
+            </NavLink>
             <button
               type="button"
               onClick={handleSignOut}
@@ -154,6 +166,20 @@ export function AppShell({
         </div>
         {children}
       </main>
+
+      {/* Small, quiet, and on every signed-in screen — the pages people only look for when
+          something has gone wrong or an auditor has asked. */}
+      <footer className="mx-auto max-w-6xl px-4 pb-8 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4
+          text-xs text-slate-500">
+          <p>ALLGOSANDCOURTCOPYS · Document Management System</p>
+          <nav className="flex gap-4" aria-label="Information">
+            <Link to="/help" className="hover:text-navy-700 hover:underline">Help</Link>
+            <Link to="/about" className="hover:text-navy-700 hover:underline">About</Link>
+            <Link to="/privacy" className="hover:text-navy-700 hover:underline">Privacy</Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -212,6 +212,87 @@ export interface MemberCounts {
   pendingRequests: number;
 }
 
+/**
+ * One line of the audit trail.
+ *
+ * <p>`metadata` is the raw JSON the server stored, passed through rather than turned into a
+ * sentence. The viewer renders whatever keys it finds, so a new action appears without a backend
+ * change and nothing is dropped because no one wrote a template for it.
+ */
+export interface AuditEntry {
+  id: string;
+  action: string;
+  /** Null for events that happened before anyone was authenticated — a failed login, say. */
+  actorId: string | null;
+  actorName: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  metadata: string | null;
+  ipAddress: string | null;
+  at: string;
+}
+
+export interface ActivitySummary {
+  uploads: number;
+  downloads: number;
+  deletions: number;
+  logins: number;
+  lastLoginAt: string | null;
+}
+
+export interface MemberActivity {
+  member: Member;
+  summary: ActivitySummary;
+  timeline: PageResponse<AuditEntry>;
+}
+
+/** The tiles on the admin dashboard. */
+export interface SystemStats {
+  departments: number;
+  folders: number;
+  documents: number;
+  members: number;
+  activeMembers: number;
+  pendingRequests: number;
+  uploadsThisMonth: number;
+  downloadsThisMonth: number;
+  deletedDocuments: number;
+}
+
+/**
+ * One department's line in the report. `documents` is what it holds now; `uploads` and `downloads`
+ * are what happened during the period — a department can hold nothing and still have been busy.
+ */
+export interface DepartmentActivity {
+  departmentId: string;
+  departmentName: string;
+  documents: number;
+  uploads: number;
+  downloads: number;
+}
+
+export interface UploaderActivity {
+  userId: string;
+  fullName: string;
+  departmentName: string | null;
+  uploads: number;
+}
+
+/** `month` is `YYYY-MM`, so it sorts as it reads. Empty months are present as zeroes. */
+export interface MonthlyActivity {
+  month: string;
+  uploads: number;
+  downloads: number;
+}
+
+export interface ActivityReport {
+  from: string;
+  to: string;
+  departments: DepartmentActivity[];
+  topUploaders: UploaderActivity[];
+  monthly: MonthlyActivity[];
+}
+
 /** The wire shape of every paged list endpoint. */
 export interface PageResponse<T> {
   items: T[];

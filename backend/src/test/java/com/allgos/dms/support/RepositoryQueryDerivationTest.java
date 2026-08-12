@@ -2,6 +2,7 @@ package com.allgos.dms.support;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import com.allgos.dms.audit.entity.AuditLog;
 import com.allgos.dms.auth.entity.RegistrationRequest;
 import com.allgos.dms.file.entity.Download;
 import com.allgos.dms.file.entity.Favorite;
@@ -35,6 +36,17 @@ class RepositoryQueryDerivationTest {
 
     @ParameterizedTest(name = "{1}.{0}")
     @CsvSource({
+        // Phase 5 — monitoring and reporting
+        "countByActorIdAndAction, AuditLog",
+        "countByActionAndCreatedAtAfter, AuditLog",
+        "findByActorIdOrderByCreatedAtDesc, AuditLog",
+        "countByUploadedByIdAndDeletedFalse, StoredFile",
+        "countByCreatedAtAfter, StoredFile",
+        "countByCreatedAtGreaterThanEqualAndCreatedAtLessThan, StoredFile",
+        "countByCreatedAtGreaterThanEqualAndCreatedAtLessThan, Download",
+        "countByDeletedById, FileDeletion",
+        "countByRestoredAtIsNull, FileDeletion",
+
         // Phase 4 — discovery
         "findByUserIdAndFileDeletedFalseOrderByCreatedAtDesc, Favorite",
         "findByUserIdAndFileId, Favorite",
@@ -77,6 +89,7 @@ class RepositoryQueryDerivationTest {
             case "StoredFile" -> StoredFile.class;
             case "FileDeletion" -> FileDeletion.class;
             case "RegistrationRequest" -> RegistrationRequest.class;
+            case "AuditLog" -> AuditLog.class;
             case "User" -> User.class;
             default -> throw new IllegalArgumentException("Unknown entity in test data: " + name);
         };
