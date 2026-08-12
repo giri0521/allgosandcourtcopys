@@ -7,9 +7,10 @@ users.
 - **Repo** `github.com/harithkumaradhithya/allgosandcourtcopys` · **branch** `pre-release`
 - **Full specification** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — this file is the
   orientation; that one is the contract.
-- **Picking up the next phase?** Start with [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md) — what changed
-  in Phase 3 and the Phase 4 work broken down. [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md) is kept as
-  the record of what Phase 3 was asked to do.
+- **Picking up the next phase?** Start with [HANDOFF-PHASE-5.md](HANDOFF-PHASE-5.md) — what changed
+  in Phase 4, what must be verified before anything else, and the Phase 5 work broken down.
+  [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md) and [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md) are kept as
+  the record of what those phases were asked to do.
 
 ---
 
@@ -49,12 +50,17 @@ product.
 | Departments, folders, browsing | Done | All 43 browsable by anyone signed in; folders nest |
 | Upload, download, delete-with-reason, restore | Done | Magic-byte validation; presigned URLs; deletions log |
 | File replacement | Done | Uploader or admin; keeps the id, bumps the version |
-| **Search, preview, favorites, notifications** | **Not built** | **Next task** — Phase 4 |
-| Reports, monitoring, audit viewer | Not built | Phase 5 |
+| Search, preview, favorites, notifications | Done | Trigram search; inline preview; the bell finally reads the rows |
+| Download history | Done | Written when a presigned link is issued; a preview is not a download |
+| **Reports, monitoring, audit viewer, profile** | **Not built** | **Next task** — Phase 5 |
 
-48 unit tests and 35 integration tests pass. The integration tests run against a real PostgreSQL
-container — and, for `FileAccessIT`, a real MinIO one — so migrations, JPA entities and the storage
-client are all validated against what they will meet in production on every build.
+89 unit tests pass. 51 integration tests exist — 35 from Phase 3 plus 16 in `DocumentDiscoveryIT` —
+and run against a real PostgreSQL container and a real MinIO one, so migrations, JPA entities and the
+storage client are validated against what they will meet in production.
+
+**The Phase 4 integration tests have not been executed**: the machine that wrote them had no Docker.
+They compile, and the derived queries they depend on are covered by `RepositoryQueryDerivationTest`
+(§6), but `./mvnw verify` is still the first thing to run on a machine that has Docker.
 
 ---
 
@@ -163,7 +169,11 @@ One package per feature area under `com.allgos.dms`, each with
 | `auth/service/FailedAttemptRecorder` | Brute-force counters that must survive rollback (§6) |
 | `admin/service/AdminUserService` | The approval gate from the admin side: approve, reject, enable/disable |
 | `admin/controller/AdminUserController` | `@PreAuthorize` sits on the **class**, so a new endpoint cannot be left unguarded |
+| `file/service/FileService` | A document's lifecycle: upload, replace, delete-with-reason, restore |
+| `file/service/DiscoveryService` | Finding one: search, preview, favourites, history. Reads only — the lifecycle rules stay next door |
+| `file/repository/StoredFileRepository` | The native search query, and why it must stay native (§7) |
 | `audit/service/AuditService` | Two record methods with different transaction semantics (§6) |
+| `common/web/ClientIp` | One derivation of the caller's address, shared by the audit trail and the download history |
 | `common/security/` | JWT issue/parse, auth filter, principal |
 | `common/sms/OtpProvider` | Interface with mock and MSG91 drivers, chosen by config |
 | `resources/db/migration/` | Flyway owns the schema; Hibernate is `validate` only |
@@ -171,10 +181,11 @@ One package per feature area under `com.allgos.dms`, each with
 ### Web — `admin-web/`, React 19 + TypeScript + Vite + Tailwind 4
 
 One responsive app serves both roles; there is no mobile app. `src/app/App.tsx` holds routes for every
-planned screen. Built screens are in `src/features/auth/`, `src/features/admin/` and
-`src/features/documents/`; the remainder — search, preview, favourites, notifications, reports — are
-still `Placeholder` elements in that routes file, which is the quickest way to see what is left.
-`src/lib/api.ts` centralises the 401 → login and 403 → Access Restricted conventions.
+planned screen. Built screens are in `src/features/auth/`, `src/features/admin/`,
+`src/features/documents/`, `src/features/search/` and `src/features/notifications/`; the remainder —
+reports, the audit viewer, profile, the static pages — are still `Placeholder` elements in that routes
+file, which is the quickest way to see what is left. `src/lib/api.ts` centralises the 401 → login and
+403 → Access Restricted conventions.
 
 | File | Why it matters |
 |---|---|
@@ -186,7 +197,9 @@ still `Placeholder` elements in that routes file, which is the quickest way to s
 | `lib/RouteGuards.tsx` | `RequireAuth` / `RequireAdmin`. A convenience — the server is the control |
 | `features/admin/api.ts` | Every admin call, in one place |
 | `features/documents/api.ts` | Every department, folder and file call, in one place — add to this rather than starting another |
-| `features/documents/` | Departments, DepartmentPage, FolderPage, MyUploads, and the Upload / Replace / Delete / CreateFolder dialogs |
+| `features/documents/` | Departments, DepartmentPage, FolderPage, MyUploads, Favorites, Downloads, FilePreview, and the Upload / Replace / Delete / CreateFolder dialogs |
+| `lib/queryKeys.ts` | `invalidateFileLists` — the one list of caches a document change invalidates. Add a new file-listing query key there and every existing mutation starts refreshing it |
+| `components/layout/NotificationBell.tsx` | The unread badge, polled; failures are deliberately silent |
 
 #### Look and feel is part of "done"
 
@@ -267,6 +280,23 @@ left OTP guessing effectively unlimited and password lockout unreachable. That i
 `FailedAttemptRecorder` is a **separate bean** with `REQUIRES_NEW` methods: calling such a method on
 `this` bypasses the Spring proxy and silently loses the new transaction.
 
+### A derived repository method fails at startup, not at compile time
+
+`findByUserIdAndFileDeletedFalse` is parsed from its own name when the context starts. Misspell a
+property and the code compiles perfectly, then fails to boot — or fails only inside an integration
+test, which needs Docker to run at all. On a machine without Docker the mistake is invisible.
+
+`RepositoryQueryDerivationTest` parses every derived finder against its entity using Spring Data's
+own `PartTree`, with no database, in the ordinary unit suite. **Add a row to it whenever you add a
+derived finder.** Methods carrying an explicit `@Query` are not derived and do not belong there.
+
+### Cleaning up test data: foreign keys have an order
+
+Integration tests clear tables explicitly, because audit and notification rows are written in their
+own transactions and survive a rollback. Everything pointing at a file — `downloads`, `favorites`,
+`file_deletions` — must be deleted before the files themselves. Miss one and the failure surfaces in
+the *next* test's setup, which is a miserable thing to debug.
+
 ### Smaller conventions
 
 - **Enum columns are lowercase** in the database (`admin`, `pending`) so SQL reads naturally. Java
@@ -275,6 +305,8 @@ left OTP guessing effectively unlimited and password lockout unreachable. That i
 - **Never edit an applied migration.** Add a new versioned file.
 - **Test naming decides what runs.** `*Test` is a fast unit test (Surefire); `*IT` is a Testcontainers
   integration test (Failsafe, during `verify`). Get it wrong and your test never runs.
+- **A `*IT` needing object storage extends `AbstractStorageIntegrationTest`**, which owns one MinIO
+  container for the whole JVM. A second container per class costs tens of seconds for no confidence.
 - **Errors carry a machine code.** Every failure returns `{ code, message }`; the UI switches on
   `code` and displays `message`. Don't invent client-side wording for server-detected failures.
 - **The access token lives in memory only**, never localStorage, so an XSS bug cannot read it.
@@ -342,12 +374,39 @@ Four decisions in that surface are worth knowing before changing it:
   pointing at nothing. `FileRecordWriter` is a separate bean for the same proxy reason as
   `FailedAttemptRecorder`, and it returns the response view built inside its own transaction.
 
-### Phase 4 — Search, preview, favorites, notifications ← start here
+### Phase 4 — Search, preview, favorites, notifications · done
 
-Home dashboard, PDF and image preview in the browser, download history, favorites, global search
-across all 43 departments, and the notification bell. Browsing and download landed in Phase 3.
+A document can now be found, looked at, kept and revisited — and the notifications the system has
+been writing since Phase 1 are finally readable.
 
-### Phase 5 — Admin monitoring, reports, profile
+| Endpoint | Notes |
+|---|---|
+| `GET /files/search?q=&departmentId=&category=&from=&to=` | Minimum two characters → 400 `SEARCH_TOO_SHORT` |
+| `GET /files/recent` | Newest across every department, for the dashboard |
+| `GET /files/{id}/preview-link` | **Inline** presigned URL; 400 `PREVIEW_UNSUPPORTED` for anything else |
+| `POST\|DELETE /files/{id}/favorite`, `GET /favorites` | Both directions idempotent |
+| `GET /downloads` | The caller's own history |
+| `GET /notifications?unread=`, `/notifications/unread-count` | Scoped to the caller by id |
+| `POST /notifications/{id}/read`, `/notifications/read-all` | Someone else's id → 404, not 403 |
+
+Five decisions worth knowing before changing it:
+
+- **Search is a native query on purpose.** The schema carries a GIN trigram index on `file_name`, and
+  `ILIKE '%…%'` is what uses it. The JPQL equivalent indexes `lower(file_name)` — a different
+  expression from the one the index was built on — so rewriting it in JPQL would pass its tests on a
+  handful of rows and quietly stop scaling. Every optional facet is wrapped in a `cast(… as …)`
+  because PostgreSQL cannot infer the type of a null parameter in a native statement.
+- **LIKE wildcards in a query are escaped.** Searching for `%` looks for a percent sign rather than
+  matching the whole archive.
+- **Preview and download differ by one argument.** `StorageService.presignedGet(key, ttl, filename)`
+  attaches a Content-Disposition when given a filename and does not when passed null. That is the
+  entire difference between rendering in the page and saving to disk.
+- **A preview is not a download.** Previewing is audited but writes no `downloads` row. The history
+  answers "who has a copy of this", and counting glances would make it meaningless.
+- **`favorite` and `previewable` ride on every `FileView`.** Stars are resolved with one query per
+  page, not one per row — see `DiscoveryService.viewsOf`.
+
+### Phase 5 — Admin monitoring, reports, profile ← start here
 
 Per-member activity timelines, dashboard activity feed, reports with CSV export, audit log viewer,
 My Profile, static pages.
@@ -366,8 +425,11 @@ DLT-approved templates, admin training.
 
 ## 8. Known gaps in what is already built
 
-- **Downloads are audited but not stored.** `GET /files/{id}/download-link` writes an audit entry;
-  the `downloads` table, which the download-history screen needs, is still unwritten. Phase 4.
+- **Nothing built in Phase 4 has been seen in a browser, and its integration tests have never run.**
+  The machine had neither Docker nor a usable database, so search, preview, favourites, the download
+  history, the bell and the new dashboard are backed by unit tests and a compiling `DocumentDiscoveryIT`
+  and nothing else. This is the largest single risk in the repository — `./mvnw verify` and a
+  click-through, in that order, before anything else.
 - **Superseded versions are kept but unreachable.** Replacing a document writes the new bytes to a
   new key and leaves the old object in place, with its key recorded in the `file_replaced` audit
   entry. Nothing in the application reads it, so recovering a mistaken replacement means an admin
@@ -377,20 +439,20 @@ DLT-approved templates, admin training.
   the row, the object stays — as do superseded versions, above. Nothing references either and no
   user can see them, but a periodic sweep comparing keys against `files.storage_key` is still owed,
   and it must not treat a key named in a `file_replaced` audit entry as an orphan.
-- **Half the document screens have been seen in a browser, half have not.** Sign-in, home and the
-  department list have been driven and looked at; **the folder page, the upload dialog, replace and
-  delete, and the admin deletions log have not been clicked through by a human.** Every endpoint
-  behind them was smoke-tested live with curl and is covered by `FileAccessIT`, so the risk is
-  presentation rather than function — but that is exactly the class of bug that got through twice
-  already. Do this before the next demo; §3 has a script that will do most of it.
+- **Most screens have never been clicked through.** Sign-in, home and the department list were driven
+  and looked at during Phase 3. The folder page, upload, replace, delete, the deletions log, and
+  everything from Phase 4 have not been. Every endpoint behind them is covered by tests, so the risk
+  is presentation rather than function — but that is exactly the class of bug that got through twice
+  already. §3 has a script that will do most of it.
 - **No `GET /me` endpoint.** Session restore goes through `/auth/refresh`, which returns the user
   alongside the token, so nothing needs it yet — but anything wanting the current user without
   minting a token will.
 - **The registration OTP cannot be resent.** `/auth/otp/send` issues a *login* code, which
   `/auth/otp/verify-registration` will not accept, so the screen offers "skip" instead of "resend".
   A registration-purpose resend endpoint would close it.
-- **Notifications are written but never read.** Approval, rejection and disable all create rows;
-  there is no bell, no list and no `GET /notifications`. Phase 4.
+- **The bell polls on a timer.** Sixty seconds, rather than pushing. The events that produce a
+  notification are minutes apart at most, so a standing websocket per user would buy nothing
+  noticeable — but if the client ever wants live updates, this is where that decision lives.
 - **Admins are only created by seeding.** `registered_role` is always MEMBER and approval does not
   change a role, so a second admin currently needs SQL. The client has not been asked how they want
   admins promoted.

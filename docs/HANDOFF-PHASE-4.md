@@ -1,5 +1,17 @@
 # Phase 4 Handoff — Search, preview, favorites, notifications
 
+> **Phase 4 is complete.** This file is kept as the record of what it was asked to do and why.
+> Picking up the next phase? Go to [HANDOFF-PHASE-5.md](HANDOFF-PHASE-5.md).
+>
+> Two things below were answered by doing them. §3.3's note that the presigner's third argument is
+> "already there for this" was right — inline versus attachment is that argument and nothing else.
+> And §5's warning about building DTOs inside the transaction shaped `DiscoveryService`, which
+> resolves every star in one query per page rather than walking a lazy association per row.
+>
+> One instruction went unmet: §6 required every new screen to be clicked through in a browser. The
+> machine had no Docker and no usable database, so none of Phase 4 has been seen running. That debt
+> is carried at the top of [HANDOFF-PHASE-5.md §3](HANDOFF-PHASE-5.md).
+
 Written 11 August 2026, handing over after Phase 3. Read [HANDOFF.md](HANDOFF.md) first — it is the
 orientation and the four rules; this file is only what changed and what happens next.
 
