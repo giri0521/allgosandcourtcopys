@@ -15,13 +15,15 @@ import com.allgos.dms.auth.repository.RegistrationRequestRepository;
 import com.allgos.dms.department.entity.Department;
 import com.allgos.dms.department.repository.DepartmentRepository;
 import com.allgos.dms.file.entity.StoredFile;
+import com.allgos.dms.file.repository.DownloadRepository;
+import com.allgos.dms.file.repository.FavoriteRepository;
 import com.allgos.dms.file.repository.FileDeletionRepository;
 import com.allgos.dms.file.repository.StoredFileRepository;
 import com.allgos.dms.folder.repository.FolderRepository;
 import com.allgos.dms.notification.entity.Notification;
 import com.allgos.dms.notification.entity.NotificationType;
 import com.allgos.dms.notification.repository.NotificationRepository;
-import com.allgos.dms.support.AbstractIntegrationTest;
+import com.allgos.dms.support.AbstractStorageIntegrationTest;
 import com.allgos.dms.support.RecordingOtpProvider;
 import com.allgos.dms.user.entity.User;
 import com.allgos.dms.user.entity.UserStatus;
@@ -40,15 +42,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.ResultActions;
-import org.testcontainers.containers.MinIOContainer;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 
 /**
  * Documents end to end, against real PostgreSQL and real object storage.
@@ -65,7 +59,7 @@ import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
  * <p>Replacement follows the same ownership rule as deletion, and is proved alongside it.
  */
 @Import(RecordingOtpProvider.Config.class)
-class FileAccessIT extends AbstractIntegrationTest {
+class FileAccessIT extends AbstractStorageIntegrationTest {
 
     private static final String ADMIN_MOBILE = "9999999999"; // seeded by V3
     private static final String MEMBER_MOBILE = "9876543212";
@@ -80,26 +74,14 @@ class FileAccessIT extends AbstractIntegrationTest {
     /** A Windows executable's first bytes, which no allowed extension may carry. */
     private static final byte[] WINDOWS_EXECUTABLE = new byte[] {'M', 'Z', (byte) 0x90, 0x00, 0x03};
 
-    static final MinIOContainer MINIO = new MinIOContainer("minio/minio:RELEASE.2024-08-17T01-24-54Z");
-
-    static {
-        MINIO.start();
-    }
-
-    @DynamicPropertySource
-    static void storageProperties(DynamicPropertyRegistry registry) {
-        registry.add("app.storage.endpoint", MINIO::getS3URL);
-        registry.add("app.storage.access-key", MINIO::getUserName);
-        registry.add("app.storage.secret-key", MINIO::getPassword);
-    }
-
     @Autowired private ObjectMapper objectMapper;
-    @Autowired private S3Client s3Client;
     @Autowired private UserRepository userRepository;
     @Autowired private DepartmentRepository departmentRepository;
     @Autowired private FolderRepository folderRepository;
     @Autowired private StoredFileRepository fileRepository;
     @Autowired private FileDeletionRepository deletionRepository;
+    @Autowired private DownloadRepository downloadRepository;
+    @Autowired private FavoriteRepository favoriteRepository;
     @Autowired private AuditLogRepository auditLogRepository;
     @Autowired private NotificationRepository notificationRepository;
     @Autowired private RegistrationRequestRepository registrationRequestRepository;
@@ -121,6 +103,11 @@ class FileAccessIT extends AbstractIntegrationTest {
         ensureBucket();
 
         otpProvider.clear();
+        // Foreign-key order: everything that points at a file goes before the files themselves.
+        // Downloads and favourites joined that list in Phase 4, and omitting them here fails the
+        // *next* test's setup rather than this one, which is a miserable thing to debug.
+        downloadRepository.deleteAll();
+        favoriteRepository.deleteAll();
         deletionRepository.deleteAll();
         fileRepository.deleteAll();
         folderRepository.deleteAll();
@@ -612,24 +599,5 @@ class FileAccessIT extends AbstractIntegrationTest {
 
     private static String bearer(String token) {
         return "Bearer " + token;
-    }
-
-    /** The compose file creates the bucket in development; the test container needs it made here. */
-    private void ensureBucket() {
-        String bucket = "allgos-documents";
-        try {
-            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
-        } catch (NoSuchBucketException ex) {
-            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
-        }
-    }
-
-    private boolean objectExists(String key) {
-        try {
-            s3Client.headObject(HeadObjectRequest.builder().bucket("allgos-documents").key(key).build());
-            return true;
-        } catch (RuntimeException ex) {
-            return false;
-        }
     }
 }

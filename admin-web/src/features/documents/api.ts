@@ -2,11 +2,13 @@ import { api } from '@/lib/api';
 import type {
   Department,
   DownloadLink,
+  DownloadRecord,
   FileDeletion,
   FileItem,
   Folder,
   FolderCategory,
   PageResponse,
+  PreviewLink,
   UploadResult,
 } from '@/types/api';
 
@@ -56,6 +58,12 @@ export async function fetchFolderFiles(
   const { data } = await api.get<PageResponse<FileItem>>(`/folders/${folderId}/files`, {
     params: { page },
   });
+  return data;
+}
+
+/** One document. 404 once it has been deleted — see the deletions log for those. */
+export async function fetchFile(fileId: string): Promise<FileItem> {
+  const { data } = await api.get<FileItem>(`/files/${fileId}`);
   return data;
 }
 
@@ -141,6 +149,73 @@ export async function fetchDownloadLink(fileId: string): Promise<DownloadLink> {
  */
 export async function deleteFile(fileId: string, reason: string): Promise<void> {
   await api.delete(`/files/${fileId}`, { data: { reason } });
+}
+
+// ------------------------------------------------------------------- find and revisit
+
+export interface SearchFilters {
+  q: string;
+  departmentId?: string;
+  category?: FolderCategory;
+  /** ISO instants. The server treats both bounds as inclusive. */
+  from?: string;
+  to?: string;
+}
+
+/**
+ * Global search by part of a document's name, across every department.
+ *
+ * <p>The server refuses anything shorter than two characters with `SEARCH_TOO_SHORT`, so callers
+ * should not fire a request for a single keystroke.
+ */
+export async function searchFiles(
+  filters: SearchFilters,
+  page = 0,
+): Promise<PageResponse<FileItem>> {
+  const { data } = await api.get<PageResponse<FileItem>>('/files/search', {
+    params: {
+      q: filters.q,
+      departmentId: filters.departmentId || undefined,
+      category: filters.category || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      page,
+    },
+  });
+  return data;
+}
+
+/** Newest documents across every department, for the home dashboard. */
+export async function fetchRecentFiles(size = 5): Promise<PageResponse<FileItem>> {
+  const { data } = await api.get<PageResponse<FileItem>>('/files/recent', { params: { size } });
+  return data;
+}
+
+/**
+ * An inline presigned URL. Only for documents whose `previewable` flag is true — anything else is
+ * refused with `PREVIEW_UNSUPPORTED` rather than quietly downloading.
+ */
+export async function fetchPreviewLink(fileId: string): Promise<PreviewLink> {
+  const { data } = await api.get<PreviewLink>(`/files/${fileId}/preview-link`);
+  return data;
+}
+
+/** Both directions are idempotent, so the UI can toggle without tracking what the server thinks. */
+export async function setFavorite(fileId: string, favorite: boolean): Promise<FileItem> {
+  const { data } = favorite
+    ? await api.post<FileItem>(`/files/${fileId}/favorite`)
+    : await api.delete<FileItem>(`/files/${fileId}/favorite`);
+  return data;
+}
+
+export async function fetchFavorites(page = 0): Promise<PageResponse<FileItem>> {
+  const { data } = await api.get<PageResponse<FileItem>>('/favorites', { params: { page } });
+  return data;
+}
+
+export async function fetchDownloadHistory(page = 0): Promise<PageResponse<DownloadRecord>> {
+  const { data } = await api.get<PageResponse<DownloadRecord>>('/downloads', { params: { page } });
+  return data;
 }
 
 // ------------------------------------------------------------------------ admin only

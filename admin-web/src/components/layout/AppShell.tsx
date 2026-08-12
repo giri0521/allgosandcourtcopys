@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { HeaderSearch } from '@/components/layout/HeaderSearch';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { useAuth } from '@/lib/auth-context';
 
 interface NavItem {
@@ -18,6 +20,7 @@ const NAV: NavItem[] = [
   { to: '/home', label: 'Home' },
   { to: '/departments', label: 'Departments' },
   { to: '/my-uploads', label: 'My Uploads' },
+  { to: '/favorites', label: 'Favorites' },
   { to: '/admin/requests', label: 'Requests', adminOnly: true },
   { to: '/admin/members', label: 'Members', adminOnly: true },
   { to: '/admin/deletions', label: 'Deleted', adminOnly: true },
@@ -117,8 +120,10 @@ export function AppShell({
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-sm text-slate-600 sm:inline">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <HeaderSearch />
+            <NotificationBell />
+            <span className="hidden text-sm text-slate-600 lg:inline">
               {user?.fullName}
               {isAdmin && (
                 <span className="ml-2 rounded-full bg-navy-50 px-2 py-0.5 text-xs font-semibold text-navy-700">

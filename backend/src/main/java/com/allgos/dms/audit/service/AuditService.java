@@ -2,10 +2,10 @@ package com.allgos.dms.audit.service;
 
 import com.allgos.dms.audit.entity.AuditLog;
 import com.allgos.dms.audit.repository.AuditLogRepository;
+import com.allgos.dms.common.web.ClientIp;
 import com.allgos.dms.user.entity.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Writes the audit trail.
@@ -74,7 +72,7 @@ public class AuditService {
         entry.setAction(action);
         entry.setEntityType(entityType);
         entry.setEntityId(entityId);
-        entry.setIpAddress(currentIpAddress());
+        entry.setIpAddress(ClientIp.current());
         entry.setMetadata(serialise(metadata));
 
         auditLogRepository.save(entry);
@@ -93,17 +91,4 @@ public class AuditService {
         }
     }
 
-    private String currentIpAddress() {
-        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
-            return null;
-        }
-        HttpServletRequest request = attributes.getRequest();
-
-        // Behind the government/NIC reverse proxy the real client address arrives in this header.
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
 }

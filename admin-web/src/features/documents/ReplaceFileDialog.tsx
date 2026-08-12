@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { replaceFile } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
 import { formatFileSize } from '@/lib/format';
+import { invalidateFileLists } from '@/lib/queryKeys';
 import type { FileItem } from '@/types/api';
 
 /**
@@ -29,8 +30,9 @@ export function ReplaceFileDialog({
   const replace = useMutation({
     mutationFn: () => replaceFile(file!.id, chosen!, setPercent),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['folder-files'] });
-      void queryClient.invalidateQueries({ queryKey: ['my-uploads'] });
+      // The document keeps its id, so a favourite or a search result still points at it — and both
+      // now show a stale name and size until they are re-read.
+      void invalidateFileLists(queryClient);
       close();
     },
   });

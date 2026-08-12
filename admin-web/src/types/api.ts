@@ -74,7 +74,39 @@ export interface FileItem {
    * every such call, so ignoring it gains nothing.
    */
   canModify: boolean;
+  /** True when the browser can render these bytes in place — PDFs and images. */
+  previewable: boolean;
+  /** Whether *this* viewer has starred it. Another user's star is never visible. */
+  favorite: boolean;
   uploadedAt: string;
+}
+
+/** A presigned URL the browser renders in place rather than saving. */
+export interface PreviewLink {
+  url: string;
+  expiresAt: string;
+  fileName: string;
+  fileType: string;
+}
+
+/**
+ * A row in the caller's own download history.
+ *
+ * <p>`available` goes false once the document is deleted. The row stays either way — a history that
+ * dropped entries when something was removed would not be a history.
+ */
+export interface DownloadRecord {
+  id: string;
+  fileId: string;
+  fileName: string;
+  fileType: string;
+  sizeBytes: number;
+  departmentId: string;
+  departmentName: string;
+  folderId: string;
+  folderName: string;
+  available: boolean;
+  downloadedAt: string;
 }
 
 /**
@@ -118,13 +150,20 @@ export interface FileDeletion {
   restorable: boolean;
 }
 
+/**
+ * One notification.
+ *
+ * <p>`entityRef` is the server's free-form pointer back to the subject — `"file:{uuid}"` or
+ * `"user:{uuid}"`. The client turns it into a route; the server deliberately does not, because URLs
+ * are the web app's business.
+ */
 export interface Notification {
   id: string;
   type: string;
   title: string;
   body: string | null;
   entityRef: string | null;
-  isRead: boolean;
+  read: boolean;
   createdAt: string;
 }
 

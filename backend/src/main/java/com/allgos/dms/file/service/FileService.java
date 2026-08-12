@@ -6,12 +6,15 @@ import com.allgos.dms.common.config.AppProperties;
 import com.allgos.dms.common.dto.PageResponse;
 import com.allgos.dms.common.exception.ApiException;
 import com.allgos.dms.common.storage.StorageService;
+import com.allgos.dms.common.web.ClientIp;
 import com.allgos.dms.file.dto.FileResponses.DeletionView;
 import com.allgos.dms.file.dto.FileResponses.DownloadLink;
 import com.allgos.dms.file.dto.FileResponses.FileView;
 import com.allgos.dms.file.dto.FileResponses.UploadResult;
+import com.allgos.dms.file.entity.Download;
 import com.allgos.dms.file.entity.FileDeletion;
 import com.allgos.dms.file.entity.StoredFile;
+import com.allgos.dms.file.repository.DownloadRepository;
 import com.allgos.dms.file.repository.FileDeletionRepository;
 import com.allgos.dms.file.repository.StoredFileRepository;
 import com.allgos.dms.folder.entity.Folder;
@@ -63,6 +66,7 @@ public class FileService {
 
     private final StoredFileRepository fileRepository;
     private final FileDeletionRepository deletionRepository;
+    private final DownloadRepository downloadRepository;
     private final FolderRepository folderRepository;
     private final StorageService storageService;
     private final UploadValidator uploadValidator;
@@ -74,6 +78,7 @@ public class FileService {
     public FileService(
             StoredFileRepository fileRepository,
             FileDeletionRepository deletionRepository,
+            DownloadRepository downloadRepository,
             FolderRepository folderRepository,
             StorageService storageService,
             UploadValidator uploadValidator,
@@ -83,6 +88,7 @@ public class FileService {
             AppProperties properties) {
         this.fileRepository = fileRepository;
         this.deletionRepository = deletionRepository;
+        this.downloadRepository = downloadRepository;
         this.folderRepository = folderRepository;
         this.storageService = storageService;
         this.uploadValidator = uploadValidator;
@@ -239,6 +245,13 @@ public class FileService {
      *
      * <p>Every active user may download from every department (rule 2), so the only checks are that
      * the file exists and has not been deleted.
+     *
+     * <p>Two records are written, and they are not redundant. The audit entry is append-only
+     * evidence for a reviewer; the {@code downloads} row is the user-facing history they can browse
+     * and reports can count. Both are written here, at the moment the URL is issued — the last point
+     * the server is involved, since the bytes then travel from storage straight to the browser. A
+     * row therefore means "this user was given the means to read this", which is the question worth
+     * answering, rather than a claim that the transfer completed.
      */
     @Transactional
     public DownloadLink downloadLink(UUID fileId, User viewer) {
@@ -246,6 +259,12 @@ public class FileService {
 
         var ttl = properties.storage().presignedUrlTtl();
         String url = storageService.presignedGet(file.getStorageKey(), ttl, file.getFileName());
+
+        Download download = new Download();
+        download.setUser(viewer);
+        download.setFile(file);
+        download.setIpAddress(ClientIp.current());
+        downloadRepository.save(download);
 
         auditService.record(
                 viewer,

@@ -6,8 +6,13 @@ import { RegistrationRequestsPage } from '@/features/admin/registrations/Registr
 import { AccessRestrictedPage } from '@/features/auth/AccessRestrictedPage';
 import { DepartmentPage } from '@/features/documents/DepartmentPage';
 import { DepartmentsPage } from '@/features/documents/DepartmentsPage';
+import { DownloadsPage } from '@/features/documents/DownloadsPage';
+import { FavoritesPage } from '@/features/documents/FavoritesPage';
+import { FilePreviewPage } from '@/features/documents/FilePreviewPage';
 import { FolderPage } from '@/features/documents/FolderPage';
 import { MyUploadsPage } from '@/features/documents/MyUploadsPage';
+import { NotificationsPage } from '@/features/notifications/NotificationsPage';
+import { SearchPage } from '@/features/search/SearchPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
@@ -55,15 +60,15 @@ export function App() {
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/departments/:departmentId" element={<DepartmentPage />} />
           <Route path="/folders/:folderId" element={<FolderPage />} />
-          <Route path="/files/:fileId" element={<Placeholder name="File Preview" />} />
+          <Route path="/files/:fileId" element={<FilePreviewPage />} />
           {/* Uploading happens inside the folder it files into, so there is no standalone
               upload screen; the old route redirects rather than 404s. */}
           <Route path="/upload" element={<Navigate to="/departments" replace />} />
           <Route path="/my-uploads" element={<MyUploadsPage />} />
-          <Route path="/downloads" element={<Placeholder name="Downloads" />} />
-          <Route path="/favorites" element={<Placeholder name="Favorites" />} />
-          <Route path="/search" element={<Placeholder name="Search Results" />} />
-          <Route path="/notifications" element={<Placeholder name="Notifications" />} />
+          <Route path="/downloads" element={<DownloadsPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<Placeholder name="My Profile" />} />
         </Route>
 

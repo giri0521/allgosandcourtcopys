@@ -1,5 +1,6 @@
 package com.allgos.dms.file.dto;
 
+import com.allgos.dms.file.entity.Download;
 import com.allgos.dms.file.entity.FileDeletion;
 import com.allgos.dms.file.entity.StoredFile;
 import com.allgos.dms.folder.entity.Folder;
@@ -58,9 +59,17 @@ public final class FileResponses {
             String uploadedByName,
             int version,
             boolean canModify,
+            /** True when the browser can render these bytes in place — see {@code FileService}. */
+            boolean previewable,
+            /** Whether <em>this</em> viewer has starred it; another user's row says nothing. */
+            boolean favorite,
             Instant uploadedAt) {
 
         public static FileView from(StoredFile file, boolean canModify) {
+            return from(file, canModify, false);
+        }
+
+        public static FileView from(StoredFile file, boolean canModify, boolean favorite) {
             return new FileView(
                     file.getId(),
                     file.getFolder().getId(),
@@ -74,8 +83,24 @@ public final class FileResponses {
                     file.getUploadedBy().getFullName(),
                     file.getVersion(),
                     canModify,
+                    isPreviewable(file.getFileType()),
+                    favorite,
                     file.getCreatedAt());
         }
+    }
+
+    /**
+     * What a browser will display in place rather than download.
+     *
+     * <p>PDFs and images only. Word and Excel would either prompt a download anyway or be handed to
+     * a plugin, so offering "Preview" for them would be a button that does not do what it says.
+     *
+     * <p>Lives here, beside the {@code previewable} flag it fills in, so the answer the list gives
+     * and the answer the preview endpoint enforces can never drift apart.
+     */
+    public static boolean isPreviewable(String contentType) {
+        return contentType != null
+                && ("application/pdf".equals(contentType) || contentType.startsWith("image/"));
     }
 
     /**
@@ -127,6 +152,51 @@ public final class FileResponses {
 
     /** A short-lived presigned URL, plus when it stops working. */
     public record DownloadLink(String url, Instant expiresAt, String fileName) {}
+
+    /**
+     * A presigned URL the browser renders in place rather than saving.
+     *
+     * <p>The same mechanism as a download — the difference is only that no Content-Disposition is
+     * attached — but it carries the content type, because the viewer has to decide between an
+     * {@code <object>} and an {@code <img>} before the bytes arrive.
+     */
+    public record PreviewLink(String url, Instant expiresAt, String fileName, String fileType) {}
+
+    /**
+     * A row in a user's own download history.
+     *
+     * <p>{@code available} is false once the document has been deleted. The row stays either way: a
+     * history that quietly drops entries when something is removed is not a history.
+     */
+    public record DownloadView(
+            UUID id,
+            UUID fileId,
+            String fileName,
+            String fileType,
+            long sizeBytes,
+            UUID departmentId,
+            String departmentName,
+            UUID folderId,
+            String folderName,
+            boolean available,
+            Instant downloadedAt) {
+
+        public static DownloadView from(Download download) {
+            StoredFile file = download.getFile();
+            return new DownloadView(
+                    download.getId(),
+                    file.getId(),
+                    file.getFileName(),
+                    file.getFileType(),
+                    file.getSizeBytes(),
+                    file.getDepartment().getId(),
+                    file.getDepartment().getName(),
+                    file.getFolder().getId(),
+                    file.getFolder().getName(),
+                    !file.isDeleted(),
+                    download.getCreatedAt());
+        }
+    }
 
     private FileResponses() {}
 }

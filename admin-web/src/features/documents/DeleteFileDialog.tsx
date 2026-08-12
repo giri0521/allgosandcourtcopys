@@ -6,6 +6,7 @@ import { TextAreaField } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { deleteFile } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
+import { invalidateFileLists } from '@/lib/queryKeys';
 import type { FileItem } from '@/types/api';
 
 /**
@@ -28,10 +29,9 @@ export function DeleteFileDialog({
   const remove = useMutation({
     mutationFn: () => deleteFile(file!.id, reason.trim()),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['folder-files'] });
-      void queryClient.invalidateQueries({ queryKey: ['my-uploads'] });
-      void queryClient.invalidateQueries({ queryKey: ['folders'] });
-      void queryClient.invalidateQueries({ queryKey: ['deletions'] });
+      // Favourites, search and the home dashboard all show documents too, so the list of what a
+      // deletion invalidates lives in one place rather than being re-guessed here.
+      void invalidateFileLists(queryClient);
       close();
     },
   });

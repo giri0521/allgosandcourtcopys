@@ -1,10 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
-import { fetchDepartments, fetchMyUploads } from '@/features/documents/api';
+import { SkeletonRows } from '@/components/ui/Skeleton';
+import {
+  fetchDepartments,
+  fetchFavorites,
+  fetchMyUploads,
+  fetchRecentFiles,
+} from '@/features/documents/api';
+import { fetchMemberCounts } from '@/features/admin/api';
 import { useAuth } from '@/lib/auth-context';
-import { tone } from '@/lib/tones';
+import { formatDateTime, formatFileSize, formatFileType } from '@/lib/format';
+import { fileTypeTone, tone } from '@/lib/tones';
 import type { ToneName } from '@/lib/tones';
+import type { FileItem } from '@/types/api';
 
 /**
  * Home: where a signed-in user starts, and the only screen that has to answer "what can I do here?"
@@ -13,20 +22,29 @@ import type { ToneName } from '@/lib/tones';
  * present. It did not until Phase 3 shipped, which left someone who signed in on a page with no way
  * to reach anything — worth remembering before adding another standalone layout.
  *
- * <p>The full dashboard from the plan — recent activity, favourites, notifications — is Phase 4.
- * What is here is the set of places that actually exist.
+ * <p>Every number on it is also a way in: the tiles are links, because a count with no route is a
+ * fact the user can do nothing with.
  */
 export function SignedInPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   const departments = useQuery({ queryKey: ['departments'], queryFn: fetchDepartments });
   const myUploads = useQuery({ queryKey: ['my-uploads', 0], queryFn: () => fetchMyUploads(0) });
+  const favorites = useQuery({ queryKey: ['favorites', 0], queryFn: () => fetchFavorites(0) });
+  const recent = useQuery({ queryKey: ['recent-files'], queryFn: () => fetchRecentFiles(5) });
+
+  // Only admins may call this one, so it is not even attempted for a member — a 403 would send
+  // them to the Access Restricted screen from their own home page.
+  const counts = useQuery({
+    queryKey: ['member-counts'],
+    queryFn: fetchMemberCounts,
+    enabled: isAdmin,
+  });
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
-  const isAdmin = user.role === 'ADMIN';
   const documentCount = (departments.data ?? []).reduce(
     (total, department) => total + (department.fileCount ?? 0),
     0,
@@ -40,7 +58,7 @@ export function SignedInPage() {
       }`}
     >
       <div className="space-y-6">
-        <section className="stagger grid gap-4 sm:grid-cols-3">
+        <section className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Tile
             to="/departments"
             tone="navy"
@@ -62,7 +80,38 @@ export function SignedInPage() {
             value={myUploads.data ? String(myUploads.data.totalItems) : '—'}
             hint="Yours to replace or delete"
           />
+          <Tile
+            to="/favorites"
+            tone="violet"
+            label="Favorites"
+            value={favorites.data ? String(favorites.data.totalItems) : '—'}
+            hint="Starred for quick access"
+          />
         </section>
+
+        {/* Admins get the queue in front of them: an unapproved registration blocks a real person
+            from working, and it is the one thing here that nobody else can clear. */}
+        {isAdmin && (counts.data?.pendingRequests ?? 0) > 0 && (
+          <Link
+            to="/admin/requests"
+            className="animate-rise flex flex-wrap items-center justify-between gap-3 rounded-xl
+              border border-amber-300 bg-amber-50 px-5 py-4 transition-all duration-[--duration-base]
+              ease-[--ease-settle] hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <span>
+              <span className="block font-semibold text-amber-900">
+                {counts.data?.pendingRequests} registration
+                {counts.data?.pendingRequests === 1 ? '' : 's'} awaiting your approval
+              </span>
+              <span className="mt-0.5 block text-sm text-amber-800">
+                Nobody can sign in until their request is approved.
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-amber-900">Review now →</span>
+          </Link>
+        )}
+
+        <RecentlyFiled files={recent.data?.items ?? []} loading={recent.isPending} />
 
         {documentCount === 0 && departments.isSuccess && (
           <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
@@ -107,6 +156,12 @@ export function SignedInPage() {
               >
                 Deleted documents
               </Link>
+              <Link
+                to="/downloads"
+                className="rounded-lg border border-navy-300 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+              >
+                My downloads
+              </Link>
             </div>
           </section>
         )}
@@ -122,6 +177,73 @@ export function SignedInPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * The five most recent documents, across every department.
+ *
+ * <p>Deliberately a short list rather than a feed: this answers "what has been filed lately", and
+ * anyone wanting more has Departments and the search box.
+ */
+function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean }) {
+  if (loading) {
+    return <SkeletonRows count={3} label="Loading recent documents" />;
+  }
+
+  if (files.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3">
+        <h2 className="font-semibold text-slate-900">Recently filed</h2>
+        <Link to="/departments" className="text-sm font-semibold text-navy-600 hover:underline">
+          Browse all
+        </Link>
+      </div>
+      <ul className="stagger divide-y divide-slate-100">
+        {files.map((file) => (
+          <li key={file.id}>
+            <Link
+              to={`/files/${file.id}`}
+              className="flex items-center gap-3 px-5 py-3 outline-none transition-colors
+                duration-[--duration-base] hover:bg-navy-50/40 focus-visible:bg-navy-50/40"
+            >
+              <span
+                aria-hidden
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
+                  ${fileTypeTone(file.fileType).chip}`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4.5 w-4.5"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-slate-900">{file.fileName}</span>
+                <span className="block text-xs text-slate-500">
+                  {file.departmentName} · {formatFileType(file.fileType)} ·{' '}
+                  {formatFileSize(file.sizeBytes)}
+                </span>
+              </span>
+              <span className="hidden text-xs text-slate-400 sm:block">
+                {formatDateTime(file.uploadedAt)}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

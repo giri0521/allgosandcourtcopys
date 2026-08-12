@@ -8,6 +8,7 @@ import { SkeletonRows } from '@/components/ui/Skeleton';
 import { fetchDeletions, restoreFile } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
+import { invalidateFileLists } from '@/lib/queryKeys';
 
 type Tab = 'deleted' | 'all';
 
@@ -36,10 +37,9 @@ export function DeletionsPage() {
     mutationFn: (fileId: string) => restoreFile(fileId),
     onSuccess: () => {
       // The row stays in the log with its restore stamped, so the list is re-read rather than
-      // patched — it moves between tabs on its own.
-      void queryClient.invalidateQueries({ queryKey: ['deletions'] });
-      void queryClient.invalidateQueries({ queryKey: ['folder-files'] });
-      void queryClient.invalidateQueries({ queryKey: ['folders'] });
+      // patched — it moves between tabs on its own. A restore also returns the document to
+      // favourites and search, which is why this invalidates every document-bearing list.
+      void invalidateFileLists(queryClient);
     },
   });
 

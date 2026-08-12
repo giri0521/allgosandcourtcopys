@@ -1,5 +1,8 @@
 package com.allgos.dms.notification.service;
 
+import com.allgos.dms.common.dto.PageResponse;
+import com.allgos.dms.common.exception.ApiException;
+import com.allgos.dms.notification.dto.NotificationResponses.NotificationView;
 import com.allgos.dms.notification.entity.Notification;
 import com.allgos.dms.notification.entity.NotificationType;
 import com.allgos.dms.notification.repository.NotificationRepository;
@@ -8,6 +11,9 @@ import com.allgos.dms.user.entity.UserRole;
 import com.allgos.dms.user.entity.UserStatus;
 import com.allgos.dms.user.repository.UserRepository;
 import java.util.List;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,14 +93,51 @@ public class NotificationService {
                 "user:" + user.getId());
     }
 
-    @Transactional
-    public void markRead(User user, java.util.UUID notificationId) {
-        notificationRepository
-                .findById(notificationId)
-                .filter(notification -> notification.getUser().getId().equals(user.getId()))
-                .ifPresent(notification -> notification.setRead(true));
+    // -------------------------------------------------------------------- read side
+
+    /**
+     * A user's own notifications, newest first.
+     *
+     * <p>Scoped to the caller by user id rather than filtered afterwards, so there is no arrangement
+     * of parameters that returns somebody else's.
+     *
+     * @param unreadOnly the "Unread" filter on the notifications screen
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<NotificationView> list(User user, boolean unreadOnly, Pageable pageable) {
+        Page<Notification> page = unreadOnly
+                ? notificationRepository.findByUserIdAndReadFalseOrderByCreatedAtDesc(user.getId(), pageable)
+                : notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+
+        return PageResponse.of(page, NotificationView::from);
     }
 
+    /**
+     * Marks one notification read.
+     *
+     * <p>Someone else's notification reports 404 rather than 403: which ids exist is not information
+     * this endpoint should confirm, and to the caller a row they cannot touch may as well not exist.
+     * Marking an already-read one again is a no-op rather than an error — the bell fires this on
+     * click, and a double click is not a mistake worth reporting.
+     */
+    @Transactional
+    public NotificationView markRead(User user, UUID notificationId) {
+        Notification notification = notificationRepository
+                .findById(notificationId)
+                .filter(candidate -> candidate.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> ApiException.notFound("Notification"));
+
+        notification.setRead(true);
+        return NotificationView.from(notification);
+    }
+
+    /** @return how many were still unread, so the UI can say "12 marked as read" */
+    @Transactional
+    public int markAllRead(User user) {
+        return notificationRepository.markAllReadFor(user.getId());
+    }
+
+    @Transactional(readOnly = true)
     public long unreadCount(User user) {
         return notificationRepository.countByUserIdAndReadFalse(user.getId());
     }

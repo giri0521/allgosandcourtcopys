@@ -18,6 +18,7 @@ import com.allgos.dms.common.storage.StorageService;
 import com.allgos.dms.department.entity.Department;
 import com.allgos.dms.file.entity.FileDeletion;
 import com.allgos.dms.file.entity.StoredFile;
+import com.allgos.dms.file.repository.DownloadRepository;
 import com.allgos.dms.file.repository.FileDeletionRepository;
 import com.allgos.dms.file.repository.StoredFileRepository;
 import com.allgos.dms.folder.entity.Folder;
@@ -53,6 +54,7 @@ class FileServiceTest {
 
     @Mock private StoredFileRepository fileRepository;
     @Mock private FileDeletionRepository deletionRepository;
+    @Mock private DownloadRepository downloadRepository;
     @Mock private FolderRepository folderRepository;
     @Mock private StorageService storageService;
     @Mock private UploadValidator uploadValidator;
@@ -72,6 +74,7 @@ class FileServiceTest {
         service = new FileService(
                 fileRepository,
                 deletionRepository,
+                downloadRepository,
                 folderRepository,
                 storageService,
                 uploadValidator,
