@@ -172,15 +172,23 @@ Downloads are excluded on purpose: the server only signs a URL, and the bytes ne
   sighted keyboard user, so Tab used to walk out of the dialog into the page behind it.
 - Outstanding: an actual screen-reader pass. Nothing substitutes for listening to it.
 
-### 4.4 Responsive QA · header done, screens outstanding
+### 4.4 Responsive QA · done offline
 
-- **Search is reachable below `md`** — it collapses to an icon that opens the search screen, rather
-  than vanishing.
-- **The header was rendered at 360 / 768 / 1440** through `/shell-preview.html` and inspected. No
-  horizontal page overflow at any width; at 360 it stacks into three rows and the nav scrolls
-  sideways within itself. That scroll has no visual affordance — worth a look during UAT to see
-  whether anyone fails to find Favorites.
-- Outstanding: every *screen* at those widths. Only the frame has been checked.
+**All 20 screens rendered at 360 / 768 / 1440 — 60 renders, no horizontal page overflow anywhere,
+every screen drawing its real content.** Done through `/screens-preview.html`, which drives the
+*real* application with the HTTP layer swapped for fixtures, so what was inspected is what a user
+sees. Run it yourself with `node scripts/preview-screens.mjs`.
+
+- **Search is reachable below `md`** — it collapses to an icon rather than vanishing.
+- At 360 the header stacks into three rows and the nav scrolls sideways within itself; wide tables
+  do the same inside `overflow-x-auto`. **Neither scroll has a visual affordance.** Nothing is
+  unreachable, but watch during UAT for someone failing to find Favorites, or missing the actions
+  column on a file table.
+- The chart's axis labels get very small at 360. The "View these figures as a table" link beneath it
+  is the intended way through, and it is right there.
+
+This is a real check and not the whole check: fixtures prove the screens draw, not that the API is
+wired correctly behind them. The click-through in §3 is still owed.
 
 ### 4.5 Client UAT
 
@@ -218,11 +226,11 @@ The full list is [HANDOFF.md §6](HANDOFF.md). In this phase especially:
 
 - [x] Security review closed — rate limiting, headers and a production-readiness check, all tested
 - [x] Accessibility: both palettes validated with data; modal focus trap added
-- [x] Responsive: search reachable below `md`; header verified at 360 / 768 / 1440
+- [x] Responsive: all 20 screens rendered at 360 / 768 / 1440, no overflow anywhere
 - [x] Load test written with its thresholds asserted
 - [ ] `./mvnw verify` green — including the 39 integration tests that have never run
 - [ ] `k6 run -e TOKEN=… load/browse.js` passing at 150 users
-- [ ] Every screen clicked through at 360 / 768 / 1440 px
+- [ ] Every screen clicked through **against the real API** (they have been rendered, not exercised)
 - [ ] CSV exports opened in Excel with Tamil department names intact
 - [ ] Screen-reader pass on every dialog and interactive control
 - [ ] Bucket confirmed non-public, and no stack trace leaking, **in the deployed environment**

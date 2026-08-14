@@ -16,6 +16,8 @@ HELP.md
 admin-web/playwright-report/
 admin-web/test-results/
 admin-web/coverage/
+# Output of scripts/preview-screens.mjs — regenerated on demand, never reviewed as source.
+admin-web/preview-shots/
 
 # Env / secrets
 .env

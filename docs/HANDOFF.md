@@ -215,7 +215,8 @@ file, which is the quickest way to see what is left. `src/lib/api.ts` centralise
 | `features/admin/audit/labels.ts` | Action name → words, and the metadata renderer. An unknown action still renders |
 | `features/admin/reports/MonthlyActivityChart.tsx` | The only chart in the app. Read its header before changing the colours |
 | `src/preview/chart-preview.tsx` | A dev-only harness — open `/chart-preview.html` on the dev server to see the chart against five awkward datasets without running the backend. Not in the production build |
-| `src/preview/shell-preview.tsx` | The same trick for the application frame: `/shell-preview.html` renders the header as an admin, for checking it at 360 / 768 / 1440 px |
+| `src/preview/shell-preview.tsx` | The same trick for the application frame: `/shell-preview.html` renders the header as an admin |
+| `src/preview/screens-preview.tsx` + `fixtures.ts` | **The whole application, driven by fixtures.** Swaps only axios's adapter, so the real router, guards and screens render. `node scripts/preview-screens.mjs` walks all 20 screens at a given width and flags overflow, console errors, placeholders and near-empty pages. Proves the screens draw; proves nothing about API wiring |
 
 #### Look and feel is part of "done"
 
@@ -498,11 +499,13 @@ DLT-approved templates, admin training.
 ## 8. Known gaps in what is already built
 
 - **Three phases of work have never run against a database.** Phases 4, 5 and 6 were written without
-  Docker, so 39 of the 74 integration tests have never executed and most screens have never been
-  seen rendering. The exceptions were rendered through the preview harnesses (§5): the monthly chart
-  against five datasets, and the header at three breakpoints. **This is the largest risk in the
-  repository** — `./mvnw verify` and then a click-through, before anything else.
-  [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) §3 lists what to click.
+  Docker, so **39 of the 74 integration tests have never executed** and no screen has been exercised
+  against the real API. **This is the largest risk in the repository** — `./mvnw verify` and then a
+  click-through, before anything else. [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) §3 lists what to
+  click.
+  <br>What *has* been checked: all 20 screens render correctly at 360 / 768 / 1440 with no
+  horizontal overflow, verified through the fixture harness (§5). So the risk is wiring and query
+  correctness, not layout.
 - **The load test has never been run.** `load/browse.js` asserts the plan's figure — p95 under 500ms
   at 150 users — and exits non-zero if it is missed. Nobody has seen it pass or fail.
 - **Spring Boot 3.3.4 is a year behind; 4.1.0 is available.** Deliberately not taken: a major
