@@ -1,5 +1,19 @@
 # Phase 6 Handoff — Hardening and UAT
 
+> **Updated 14 August 2026. Phase 6 is half done.**
+>
+> The code half — §4.1's security review, §4.3's accessibility pass, §4.4's responsive QA, and the
+> §4.2 load script — is complete and committed. What is left is everything that needs the stack
+> actually running: the load *run*, the click-through, and client UAT.
+>
+> The gaps §4.1 named were real and are now closed: there was no per-caller rate limit, and four
+> security headers were missing. Two things it did not anticipate turned up while doing it — a
+> production instance would happily start with the placeholder JWT secret and MinIO's default
+> credentials, and the modal had no focus trap.
+>
+> §3's instruction to run the integration tests first went unmet for the fourth time. Still no
+> Docker. **Section 3 below is now the whole of what remains before Phase 7.**
+
 Written 12 August 2026, handing over after Phase 5. Read [HANDOFF.md](HANDOFF.md) first — it is the
 orientation and the four rules; this file is only what changed and what happens next.
 
@@ -76,9 +90,19 @@ that is supposed to find exactly this class of problem.
 
 ```bash
 docker compose up -d
-cd backend && ./mvnw verify      # 121 unit + 67 integration; 32 have never executed
+cd backend && ./mvnw verify      # 135 unit + 74 integration; 39 have never executed
 cd admin-web && npm run dev
 ```
+
+Then the load run, which is written and waiting:
+
+```bash
+k6 run -e TOKEN="$ADMIN_ACCESS_TOKEN" load/browse.js
+```
+
+It asserts the plan's figure — p95 under 500ms on list endpoints at 150 users — and exits non-zero
+if it is missed, so it needs reading only when it fails. The token has to be supplied because
+signing in needs an OTP; `load/browse.js` explains how to get one.
 
 **Then click through all of it.** In rough order of risk:
 
@@ -97,7 +121,7 @@ Anything wrong there belongs to the phase that wrote it, not to you. Fix it befo
 
 | Symptom | Cause |
 |---|---|
-| Every Lombok getter is "cannot find symbol" | The JDK is newer than 21. Lombok's processor silently no-ops on JDK 24+. Build on **JDK 21**. |
+| ~~Every Lombok getter is "cannot find symbol"~~ | **Fixed.** Lombok 1.18.46 understands JDK 24+; the build compiles on 21 and 25. It still *targets* 21. |
 | `JAVA_HOME is not defined correctly`, but a JDK is installed | It was pointing at the JDK's `bin`. It must point at the JDK **root**. |
 | The IDE reports those errors while `./mvnw` compiles cleanly | The language server is not running Lombok. Trust Maven. |
 | `npx playwright install chromium` fails to download | Use the installed browser instead: `chromium.launch({ channel: 'msedge' })`. |
@@ -109,46 +133,54 @@ Anything wrong there belongs to the phase that wrote it, not to you. Fix it befo
 *Done when* the client has signed off on a walkthrough, the system holds up at 150 concurrent users,
 and nothing in the security review is outstanding.
 
-### 4.1 Security review
+### 4.1 Security review · done
 
-The application's own rules have tests; this is about everything around them.
+- **Per-address rate limit on `/auth/**`** — `AuthRateLimitFilter`, 60/min, ahead of the JWT filter
+  so a refused request costs a map lookup rather than a BCrypt verification. The per-account limits
+  (OTP attempts, password lockout) could never bound a script spreading attempts across many
+  accounts; this can. Off in the test profile, with `AuthRateLimitIT` turning it back on.
+- **Four missing headers added** — HSTS, CSP, Referrer-Policy, Permissions-Policy. Spring Security
+  was already sending nosniff, `X-Frame-Options: DENY` and no-store. `SecurityHeadersIT` asserts all
+  of them, so a later refactor of the chain cannot quietly drop one.
+- **`ProductionReadinessCheck`** — under `prod`, refuses to start on the placeholder JWT secret,
+  MinIO's default credentials, a localhost CORS origin, a disabled throttle, the mock OTP provider,
+  or the default seeded admin number. Every one of those *works*, which is why it survives a
+  deployment and why the check has to be explicit.
+- **Dependency audit** — `npm audit` clean. Maven has updates; Spring Boot 4.1 was deliberately not
+  taken, see §8 of [HANDOFF.md](HANDOFF.md).
 
-- Re-read [HANDOFF.md §1](HANDOFF.md) and confirm each of the four rules still holds end to end
-  after five phases of change. The tests say yes; a person should agree.
-- Dependency audit: `./mvnw versions:display-dependency-updates` and `npm audit`.
-- Confirm the bucket is not publicly readable in whatever environment you point at.
-- Rate limits: OTP send and verify are bounded per mobile number. **Login and the API generally are
-  not.** A per-IP limit in front of `/auth/**` is the obvious gap.
-- Response headers: HSTS, `X-Content-Type-Options`, a CSP for the web app. None are set today.
-- Check that no endpoint leaks an internal id or a stack trace — `include-stacktrace` is `never`,
-  but confirm it in the environment you deploy.
+Still to confirm **in the deployed environment**, because they cannot be checked from here: that the
+bucket is not publicly readable, and that no response leaks a stack trace.
 
-### 4.2 Load test
+### 4.2 Load test · written, never run
 
-- k6, 150 concurrent users, p95 < 500ms on list endpoints — the figure in the plan.
-- The two to watch: `GET /files/search` (the trigram index must be doing the work — check the query
-  plan, do not assume) and `GET /admin/reports` (half a dozen aggregates per load, §8).
-- Presigned URLs mean document bytes never pass through the application, so throughput on downloads
-  is object storage's problem rather than Spring's. Confirm that in the numbers.
+`load/browse.js` — 150 VUs over 7 minutes, thresholds asserted so it exits non-zero on failure.
 
-### 4.3 Accessibility
+The two to watch are in it: `GET /files/search` with a two-character fragment, the worst case for
+the trigram index, and `GET /admin/reports`, which aggregates over every file and download. Check
+the query plan for the search rather than trusting the timing — a sequential scan is fast on a small
+table and catastrophic later.
 
-- Keyboard: every dialog, the star buttons, the chart's table view, the file table's hover actions
-  (they are `focus-within`-visible for exactly this reason — verify it works).
-- Screen reader: the skeletons announce politely, the bell has a label with a count, the chart has a
-  text alternative and a table.
-- Colour: the palette was validated for the chart. The status badges have not been through the same
-  check — run them through `scripts/validate_palette.js` in the dataviz skill.
+Downloads are excluded on purpose: the server only signs a URL, and the bytes never pass through it.
 
-### 4.4 Responsive QA
+### 4.3 Accessibility · done, bar a screen-reader pass
 
-360 / 768 / 1440 px, on every screen. The known weak points, by construction:
+- **Both palettes validated with data.** Department avatars: worst adjacent CVD ΔE 10.9, above the 8
+  floor. Status badges are a text-contrast question rather than a categorical one, and all four pass
+  WCAG AA comfortably — 6.8:1 to 9.5:1.
+- **The modal now traps focus.** `aria-modal` stops a screen reader wandering; it does nothing for a
+  sighted keyboard user, so Tab used to walk out of the dialog into the page behind it.
+- Outstanding: an actual screen-reader pass. Nothing substitutes for listening to it.
 
-- The header at 360px — nav wraps, and search is hidden below `md` with no other way to reach it.
-  Decide whether that is acceptable or whether search needs an icon at small widths.
-- Wide tables: the members list, the reports table and the file table all scroll inside
-  `overflow-x-auto`. Confirm the page itself never scrolls sideways.
-- The chart's fixed viewBox scales; check the month labels at 360px.
+### 4.4 Responsive QA · header done, screens outstanding
+
+- **Search is reachable below `md`** — it collapses to an icon that opens the search screen, rather
+  than vanishing.
+- **The header was rendered at 360 / 768 / 1440** through `/shell-preview.html` and inspected. No
+  horizontal page overflow at any width; at 360 it stacks into three rows and the nav scrolls
+  sideways within itself. That scroll has no visual affordance — worth a look during UAT to see
+  whether anyone fails to find Favorites.
+- Outstanding: every *screen* at those widths. Only the frame has been checked.
 
 ### 4.5 Client UAT
 
@@ -184,12 +216,16 @@ The full list is [HANDOFF.md §6](HANDOFF.md). In this phase especially:
 
 ## 7. Definition of done for Phase 6
 
-- [ ] `./mvnw verify` green — including the 32 integration tests that have never run
+- [x] Security review closed — rate limiting, headers and a production-readiness check, all tested
+- [x] Accessibility: both palettes validated with data; modal focus trap added
+- [x] Responsive: search reachable below `md`; header verified at 360 / 768 / 1440
+- [x] Load test written with its thresholds asserted
+- [ ] `./mvnw verify` green — including the 39 integration tests that have never run
+- [ ] `k6 run -e TOKEN=… load/browse.js` passing at 150 users
 - [ ] Every screen clicked through at 360 / 768 / 1440 px
 - [ ] CSV exports opened in Excel with Tamil department names intact
-- [ ] Load test at 150 concurrent users meeting p95 < 500ms on list endpoints
-- [ ] Keyboard and screen-reader pass on every dialog and interactive control
-- [ ] Security review closed, with rate limiting and response headers decided one way or the other
+- [ ] Screen-reader pass on every dialog and interactive control
+- [ ] Bucket confirmed non-public, and no stack trace leaking, **in the deployed environment**
 - [ ] Client UAT complete, with the resulting list either fixed or written down
 - [ ] `docs/HANDOFF.md` §2 and §7 updated, and the Phase 7 handoff written
 

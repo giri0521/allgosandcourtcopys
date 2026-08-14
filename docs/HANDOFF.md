@@ -54,19 +54,20 @@ product.
 | Search, preview, favorites, notifications | Done | Trigram search; inline preview; the bell finally reads the rows |
 | Download history | Done | Written when a presigned link is issued; a preview is not a download |
 | My Profile, admin dashboard, audit viewer, reports | Done | CSV export; per-member activity; Help/About/Privacy |
-| **Hardening and UAT** | **Not built** | **Next task** — Phase 6 |
+| Hardening — the parts that are code | Done | Auth rate limiting, security headers, production-readiness check, focus trap |
+| **Hardening — the parts that need the stack running** | **Outstanding** | Load test, click-through, UAT — see [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) |
 
-**Every screen in the plan is now built.** What remains is Phase 6 (hardening, load, accessibility,
-UAT) and Phase 7 (deploy and handover).
+**Every screen in the plan is built**, and the hardening that could be done without a running
+environment is done. What remains is verification — a load run, a click-through, client UAT — and
+Phase 7 (deploy and handover).
 
-121 unit tests pass. 67 integration tests exist — 35 from Phase 3, 16 in `DocumentDiscoveryIT`, 16 in
-`AdminMonitoringIT` — and run against a real PostgreSQL container, with a real MinIO one for the
-tests that touch documents.
+135 unit tests pass. 74 integration tests exist and run against a real PostgreSQL container, with a
+real MinIO one for the tests that touch documents.
 
-**The Phase 4 and Phase 5 integration tests have never been executed**: the machine that wrote them
-had no Docker. They compile, and the derived queries they depend on are covered by
-`RepositoryQueryDerivationTest` (§6), but `./mvnw verify` is the first thing to run on a machine that
-has Docker.
+**The integration tests from Phases 4, 5 and 6 have never been executed** — 39 of the 74 — because
+none of the machines they were written on had Docker. They compile, and the derived queries they
+depend on are covered by `RepositoryQueryDerivationTest` (§6), but `./mvnw verify` is the first thing
+to run on a machine that has it.
 
 ---
 
@@ -181,6 +182,8 @@ One package per feature area under `com.allgos.dms`, each with
 | `user/service/ProfileService` | What a user may change about themselves — and what is simply not on the request |
 | `admin/service/AdminReportService` | Stats, member activity, the audit viewer, the reports. Reads only |
 | `admin/service/CsvWriter` | Excel's two traps: the byte-order mark, and cells that begin `=` |
+| `common/security/AuthRateLimitFilter` | The per-address cap on `/auth/**`; runs before any password work |
+| `common/config/ProductionReadinessCheck` | Refuses to start under `prod` with development defaults still set |
 | `audit/service/AuditService` | Two record methods with different transaction semantics (§6) |
 | `common/web/ClientIp` | One derivation of the caller's address, shared by the audit trail and the download history |
 | `common/security/` | JWT issue/parse, auth filter, principal |
@@ -212,6 +215,7 @@ file, which is the quickest way to see what is left. `src/lib/api.ts` centralise
 | `features/admin/audit/labels.ts` | Action name → words, and the metadata renderer. An unknown action still renders |
 | `features/admin/reports/MonthlyActivityChart.tsx` | The only chart in the app. Read its header before changing the colours |
 | `src/preview/chart-preview.tsx` | A dev-only harness — open `/chart-preview.html` on the dev server to see the chart against five awkward datasets without running the backend. Not in the production build |
+| `src/preview/shell-preview.tsx` | The same trick for the application frame: `/shell-preview.html` renders the header as an admin, for checking it at 360 / 768 / 1440 px |
 
 #### Look and feel is part of "done"
 
@@ -452,10 +456,37 @@ Five decisions worth knowing before changing it:
 - **Every department appears in the report, including the quiet ones.** A report that omitted them
   would make "no activity" indistinguishable from "not asked about".
 
-### Phase 6 — Hardening and UAT ← start here
+### Phase 6 — Hardening and UAT · partly done ← finish here
 
-Security review, load test at 150 concurrent users, accessibility, responsive QA at 360/768/1440 px,
-client UAT.
+The code half is done. The half that needs a running stack is not, and cannot be until someone runs
+this on a machine with Docker.
+
+**Done:**
+
+| | |
+|---|---|
+| Per-address rate limit on `/auth/**` | 60/min, before any BCrypt work. The per-account limits could not stop a script spreading attempts across many accounts |
+| Security headers | HSTS, CSP, Referrer-Policy, Permissions-Policy — asserted by `SecurityHeadersIT` so a chain refactor cannot drop them |
+| `ProductionReadinessCheck` | Under `prod`, refuses to start on a placeholder JWT secret, MinIO's default credentials, a localhost CORS origin, a disabled throttle or the mock OTP provider |
+| Lombok 1.18.46 | Closes the JDK 24+ trap that cost time in three phases; verified compiling on both 21 and 25 |
+| Dependency audit | `npm audit` clean. Maven: see §8 — Spring Boot 4.1 is available and deliberately not taken |
+| Accessibility | Both palettes validated with data, not judgement; modal focus trap added |
+| Responsive | Search reachable below `md`; header rendered at 360/768/1440 with no horizontal overflow |
+| Load test | `load/browse.js` — written, thresholds asserted, **never run** |
+
+**Outstanding:** the load run, the click-through, and client UAT.
+[HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) has the ordered list.
+
+Three decisions worth knowing:
+
+- **The rate limit trusts `X-Forwarded-For`.** Behind a proxy that does not overwrite that header an
+  attacker can rotate it and evade the limit; behind one that does not *set* it, every user collapses
+  onto one address and the whole office is throttled together. **The reverse proxy must set it.**
+- **The limit is per instance, not per cluster.** Two instances behind a balancer each enforce their
+  own count. Fine for one instance and ~150 users; a second instance needs Redis or the proxy's own
+  limiter.
+- **`ProductionReadinessCheck` fails start-up rather than warning.** A warning in a log nobody reads
+  is the same as no check. An instance that refuses to start gets fixed in minutes.
 
 ### Phase 7 — Deploy and handover
 
@@ -466,14 +497,22 @@ DLT-approved templates, admin training.
 
 ## 8. Known gaps in what is already built
 
-- **Two phases of work have never run against a database, and only one screen of them has been seen
-  rendering.** Phases 4 and 5 were written on a machine with no Docker, so search, preview,
-  favourites, download history, the bell, the admin dashboard, the audit viewer, the reports and My
-  Profile are backed by unit tests and compiling integration tests and nothing else. The one
-  exception is the monthly chart, which was rendered and inspected against five datasets through the
-  preview harness (§5). **This is the largest risk in the repository** — `./mvnw verify` and then a
-  click-through, before anything else. [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) §3 lists what to
-  click.
+- **Three phases of work have never run against a database.** Phases 4, 5 and 6 were written without
+  Docker, so 39 of the 74 integration tests have never executed and most screens have never been
+  seen rendering. The exceptions were rendered through the preview harnesses (§5): the monthly chart
+  against five datasets, and the header at three breakpoints. **This is the largest risk in the
+  repository** — `./mvnw verify` and then a click-through, before anything else.
+  [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) §3 lists what to click.
+- **The load test has never been run.** `load/browse.js` asserts the plan's figure — p95 under 500ms
+  at 150 users — and exits non-zero if it is missed. Nobody has seen it pass or fail.
+- **Spring Boot 3.3.4 is a year behind; 4.1.0 is available.** Deliberately not taken: a major
+  upgrade with 39 integration tests that have never run is not a hardening change, it is a gamble.
+  Do it once the suite is green, on its own branch. The same applies to Tika (2.9 → 4.0 beta) and
+  the AWS SDK. Lombok was the one exception, because it fixes a trap that was actively costing time
+  and is verified by compiling on two JDKs.
+- **No CVE scan has run.** `npm audit` is clean, but OWASP dependency-check needs an NVD API key and
+  there is none configured. Get a key and add it to CI — that is the check that would actually catch
+  a vulnerable transitive dependency.
 - **Superseded versions are kept but unreachable.** Replacing a document writes the new bytes to a
   new key and leaves the old object in place, with its key recorded in the `file_replaced` audit
   entry. Nothing in the application reads it, so recovering a mistaken replacement means an admin
