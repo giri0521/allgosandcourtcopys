@@ -9,6 +9,12 @@ import type { ReactNode } from 'react';
  * is usable from the keyboard alone. Focus is also *returned* on close, to whatever was focused
  * before — without that, dismissing a dialog drops a keyboard user back at the top of the page.
  *
+ * <p>Focus is <b>trapped</b> while it is open: Tab past the last control wraps to the first, and
+ * Shift+Tab before the first wraps to the last. {@code aria-modal} already tells a screen reader to
+ * ignore the page behind, but it does nothing for a sighted keyboard user — without the trap, Tab
+ * walks out of the dialog and into content the dialog is supposed to be blocking, and the next
+ * Enter presses a button nobody can see.
+ *
  * <p>It fades its backdrop and rises slightly as it opens, which is what makes it read as a layer
  * over the page rather than a repaint of it. Background scrolling is locked while it is open.
  */
@@ -34,7 +40,32 @@ export function Modal({
     previouslyFocused.current = document.activeElement as HTMLElement | null;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      // Queried on each press rather than cached: a dialog's controls change as it is used — the
+      // reject dialog's submit button is disabled until a reason is typed, and a disabled button
+      // is not tabbable.
+      const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable || focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      // Also catches focus having escaped already — anything outside the panel is sent back in.
+      if (event.shiftKey && (active === first || !panelRef.current?.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !panelRef.current?.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', onKeyDown);
 

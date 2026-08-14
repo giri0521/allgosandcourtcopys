@@ -31,7 +31,7 @@ class LoginPolicyServiceTest {
     private static final Instant EVENING_UTC = Instant.parse("2026-08-09T20:00:00Z");
 
     private static LoginPolicyService policyAt(Instant instant) {
-        AppProperties properties = new AppProperties("Asia/Kolkata", null, null, null, null, null);
+        AppProperties properties = new AppProperties("Asia/Kolkata", null, null, null, null, null, null);
         return new LoginPolicyService(properties, Clock.fixed(instant, ZoneOffset.UTC));
     }
 

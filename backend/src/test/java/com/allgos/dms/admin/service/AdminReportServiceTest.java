@@ -59,7 +59,7 @@ class AdminReportServiceTest {
     @BeforeEach
     void setUp() {
         AppProperties properties =
-                new AppProperties("Asia/Kolkata", null, null, null, null, null);
+                new AppProperties("Asia/Kolkata", null, null, null, null, null, null);
 
         service = new AdminReportService(
                 auditLogRepository,

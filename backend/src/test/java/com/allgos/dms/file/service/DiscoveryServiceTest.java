@@ -78,6 +78,7 @@ class DiscoveryServiceTest {
                 new AppProperties.Storage("http://localhost:9000", "ap-south-1", "bucket", "k", "s", true,
                         Duration.ofMinutes(5)),
                 null,
+                null,
                 null);
 
         service = new DiscoveryService(

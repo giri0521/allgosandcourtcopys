@@ -9,6 +9,16 @@ app:
   jwt:
     secret: test-only-secret-value-that-is-long-enough-for-hmac-sha256
 
+  rate-limit:
+    # Off by default here. Every integration test signs several accounts in from 127.0.0.1 within
+    # a second or two, which is exactly the pattern the limiter exists to stop — leaving it on
+    # would make unrelated tests fail intermittently as they grew.
+    #
+    # AuthRateLimitIT turns it back on with a deliberately tiny allowance, so the behaviour is
+    # still proved over HTTP rather than only in the unit test.
+    enabled: false
+    auth-requests-per-minute: 60
+
 logging:
   level:
     com.allgos.dms: INFO

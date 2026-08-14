@@ -69,6 +69,17 @@ app:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
 
+  rate-limit:
+    # Caps one network address's calls to /api/v1/auth/**. The per-account limits (OTP attempts,
+    # password lockout) cannot stop a script spreading attempts across many accounts; this can.
+    #
+    # 60 a minute is far above what a person does — a sign-in is three or four calls — and far
+    # below what a script needs to be useful. Behind a proxy that does not set X-Forwarded-For
+    # itself, every user appears as one address and this will throttle the whole office, so raise
+    # it only after checking that the proxy is configured, never to make a symptom go away.
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    auth-requests-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:60}
+
   seed:
     # First admin is created by migration, never by self-registration.
     admin-mobile: ${SEED_ADMIN_MOBILE:9999999999}

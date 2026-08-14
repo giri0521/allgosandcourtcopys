@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 /**
  * The search box in the header, on every signed-in screen.
@@ -10,6 +10,11 @@ import { useNavigate } from 'react-router-dom';
  *
  * <p>A form rather than a keydown handler, so Enter submits the way a browser user expects and the
  * field gets its native clear affordance.
+ *
+ * <p>Below `md` the field would crowd the logo and the bell off a 360px header, so it collapses to
+ * an icon that opens the search screen instead. It collapses rather than disappearing: search is
+ * the fastest way to a document, and hiding it on a phone would leave a whole class of user
+ * browsing 43 departments by hand.
  */
 export function HeaderSearch() {
   const navigate = useNavigate();
@@ -19,7 +24,31 @@ export function HeaderSearch() {
   const canSubmit = term.trim().length >= 2;
 
   return (
-    <form
+    <>
+      <Link
+        to="/search"
+        aria-label="Search documents"
+        title="Search documents"
+        className="rounded-md p-2 text-slate-600 outline-none transition-colors
+          duration-[--duration-base] ease-[--ease-settle] hover:bg-navy-50 hover:text-navy-700
+          focus-visible:ring-2 focus-visible:ring-navy-300 md:hidden"
+      >
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-5 w-5"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+      </Link>
+
+      <form
       role="search"
       onSubmit={(event) => {
         event.preventDefault();
@@ -55,6 +84,7 @@ export function HeaderSearch() {
           placeholder:text-slate-400 focus:w-72 focus:border-navy-400 focus:bg-surface
           focus:ring-2 focus:ring-navy-200"
       />
-    </form>
+      </form>
+    </>
   );
 }

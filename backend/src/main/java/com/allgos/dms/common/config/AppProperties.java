@@ -17,7 +17,16 @@ public record AppProperties(
         Otp otp,
         Storage storage,
         Upload upload,
-        Cors cors) {
+        Cors cors,
+        RateLimit rateLimit) {
+
+    /**
+     * The per-address cap on the authentication endpoints.
+     *
+     * @param authRequestsPerMinute counted per network address, per instance — see
+     *     {@code RateLimiter} for what that means behind a load balancer
+     */
+    public record RateLimit(boolean enabled, int authRequestsPerMinute) {}
 
     public record Jwt(String secret, Duration accessTokenTtl, Duration refreshTokenTtl) {}
 

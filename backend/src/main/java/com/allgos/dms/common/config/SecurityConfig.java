@@ -1,9 +1,11 @@
 package com.allgos.dms.common.config;
 
 import com.allgos.dms.common.dto.ApiErrorResponse;
+import com.allgos.dms.common.security.AuthRateLimitFilter;
 import com.allgos.dms.common.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +16,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -38,10 +41,30 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http, JwtAuthenticationFilter jwtFilter, AuthRateLimitFilter rateLimitFilter)
+            throws Exception {
+
         return http.csrf(csrf -> csrf.disable()) // stateless bearer tokens; no cookie-authenticated writes
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        // Spring Security already sends nosniff, X-Frame-Options: DENY and
+                        // no-store. These are the four it does not.
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(Duration.ofDays(365).toSeconds()))
+                        // This is a JSON API: nothing it returns should ever be treated as a
+                        // document that can load anything. If a response is somehow rendered — a
+                        // reflected error, a file served by mistake — it can reach nothing.
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'none'; frame-ancestors 'none'; sandbox"))
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        // Nothing here needs a camera, a microphone or a location, and saying so
+                        // stops an embedded context asking on our behalf.
+                        .permissionsPolicy(permissions -> permissions.policy(
+                                "camera=(), microphone=(), geolocation=(), payment=()")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**")
                         .permitAll()
@@ -56,7 +79,10 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, ex) ->
                                 writeError(response, HttpServletResponse.SC_FORBIDDEN,
                                         "ACCESS_DENIED", "You do not have access to this resource")))
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                // Before the JWT filter, and therefore before any password or OTP work: a refused
+                // request must cost the server nothing beyond a map lookup.
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtFilter, AuthRateLimitFilter.class)
                 .build();
     }
 
