@@ -45,12 +45,23 @@ const listDuration = new Trend('list_endpoint_duration', true);
 const reportDuration = new Trend('report_endpoint_duration', true);
 const failures = new Rate('failed_requests');
 
+/**
+ * 150 is the figure in the plan and the default. It is overridable because a developer laptop that
+ * is also running Docker, PostgreSQL, MinIO and the application has nothing left to generate load
+ * with — a run that swaps measures the machine, not the system. Scale it down to smoke-test the
+ * script, but the number that counts as the acceptance test is 150 on hardware resembling
+ * production.
+ */
+const PEAK = Number(__ENV.VUS) || 150;
+const HOLD = __ENV.HOLD || '3m';
+const RAMP = __ENV.RAMP || '2m';
+
 export const options = {
   stages: [
-    { duration: '1m', target: 50 }, // warm the pool and the JIT
-    { duration: '2m', target: 150 }, // the number in the plan
-    { duration: '3m', target: 150 }, // hold — this is the measurement
-    { duration: '1m', target: 0 },
+    { duration: '1m', target: Math.max(1, Math.round(PEAK / 3)) }, // warm the pool and the JIT
+    { duration: RAMP, target: PEAK },
+    { duration: HOLD, target: PEAK }, // hold — this is the measurement
+    { duration: '30s', target: 0 },
   ],
   thresholds: {
     // The plan's figure, asserted rather than eyeballed: k6 exits non-zero if it is missed, so
