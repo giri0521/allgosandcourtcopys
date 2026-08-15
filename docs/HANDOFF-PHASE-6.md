@@ -1,18 +1,21 @@
 # Phase 6 Handoff — Hardening and UAT
 
-> **Updated 14 August 2026. Phase 6 is half done.**
+> **Updated 15 August 2026. Phase 6 is done bar client UAT.**
 >
-> The code half — §4.1's security review, §4.3's accessibility pass, §4.4's responsive QA, and the
-> §4.2 load script — is complete and committed. What is left is everything that needs the stack
-> actually running: the load *run*, the click-through, and client UAT.
+> Docker was installed and everything in §3 was finally run.
 >
-> The gaps §4.1 named were real and are now closed: there was no per-caller rate limit, and four
-> security headers were missing. Two things it did not anticipate turned up while doing it — a
-> production instance would happily start with the placeholder JWT secret and MinIO's default
-> credentials, and the modal had no focus trap.
+> - **`./mvnw verify` is green** — 135 unit, 70 integration. The first real run found four faults,
+>   all in the tests themselves; production code behaved as written on its first execution.
+> - **The whole demo path was walked live**, plus all 16 signed-in screens in a browser. One real
+>   bug: the Dashboard tab claimed to be active on every `/admin/*` screen. Fixed.
+> - **The load test ran** — 15 VUs, all thresholds met. **Not the acceptance figure of 150**, and
+>   against a database holding one document. See §4.2.
 >
-> §3's instruction to run the integration tests first went unmet for the fourth time. Still no
-> Docker. **Section 3 below is now the whole of what remains before Phase 7.**
+> The gaps §4.1 named were real and are closed. Two it did not anticipate turned up: a production
+> instance would happily start with the placeholder JWT secret and MinIO's default credentials, and
+> the modal had no focus trap.
+>
+> **What is left: client UAT (§4.5), and a load run at 150 against a realistic corpus.**
 
 Written 12 August 2026, handing over after Phase 5. Read [HANDOFF.md](HANDOFF.md) first — it is the
 orientation and the four rules; this file is only what changed and what happens next.
@@ -228,10 +231,13 @@ The full list is [HANDOFF.md §6](HANDOFF.md). In this phase especially:
 - [x] Accessibility: both palettes validated with data; modal focus trap added
 - [x] Responsive: all 20 screens rendered at 360 / 768 / 1440, no overflow anywhere
 - [x] Load test written with its thresholds asserted
-- [ ] `./mvnw verify` green — including the 39 integration tests that have never run
-- [ ] `k6 run -e TOKEN=… load/browse.js` passing at 150 users
-- [ ] Every screen clicked through **against the real API** (they have been rendered, not exercised)
-- [ ] CSV exports opened in Excel with Tamil department names intact
+- [x] `./mvnw verify` green — 135 unit, 70 integration, against real PostgreSQL and MinIO
+- [x] Every screen exercised **against the real API** in a browser; one bug found and fixed
+- [x] The four rules, upload validation, presigned URLs and the CSV export verified live
+- [x] Load script proven — but at 15 users on one document, **not** the acceptance run
+- [ ] `k6 run -e TOKEN=… load/browse.js` at **150 users against a realistic corpus**, with the
+      search query plan inspected
+- [ ] CSV exports opened in **Excel itself** — the bytes are right, but nobody has opened the file
 - [ ] Screen-reader pass on every dialog and interactive control
 - [ ] Bucket confirmed non-public, and no stack trace leaking, **in the deployed environment**
 - [ ] Client UAT complete, with the resulting list either fixed or written down

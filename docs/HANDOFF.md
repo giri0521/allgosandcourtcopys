@@ -54,20 +54,35 @@ product.
 | Search, preview, favorites, notifications | Done | Trigram search; inline preview; the bell finally reads the rows |
 | Download history | Done | Written when a presigned link is issued; a preview is not a download |
 | My Profile, admin dashboard, audit viewer, reports | Done | CSV export; per-member activity; Help/About/Privacy |
-| Hardening — the parts that are code | Done | Auth rate limiting, security headers, production-readiness check, focus trap |
-| **Hardening — the parts that need the stack running** | **Outstanding** | Load test, click-through, UAT — see [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) |
+| Hardening | Done | Auth rate limiting, security headers, production-readiness check, focus trap |
+| **Client UAT** | **Outstanding** | The last thing before Phase 7 — see [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) |
 
-**Every screen in the plan is built**, and the hardening that could be done without a running
-environment is done. What remains is verification — a load run, a click-through, client UAT — and
-Phase 7 (deploy and handover).
+**Every screen in the plan is built, and the whole system has now been verified against a running
+stack.** What remains is client UAT and Phase 7 (deploy and handover).
 
-135 unit tests pass. 74 integration tests exist and run against a real PostgreSQL container, with a
-real MinIO one for the tests that touch documents.
+**`./mvnw verify` is green: 135 unit and 70 integration tests**, against a real PostgreSQL container
+and a real MinIO one. That first real run — three phases of code had never touched a database —
+found four faults, all in the tests rather than in what they test; see the commit
+"Fix four test-isolation faults found by the first real integration run".
 
-**The integration tests from Phases 4, 5 and 6 have never been executed** — 39 of the 74 — because
-none of the machines they were written on had Docker. They compile, and the derived queries they
-depend on are covered by `RepositoryQueryDerivationTest` (§6), but `./mvnw verify` is the first thing
-to run on a machine that has it.
+Verified live against the running stack on 15 August 2026:
+
+- **The four rules, end to end.** Pending account refused → approved → OTP sign-in → password for
+  the rest of the day; upload into a department that is not the member's own; delete refused without
+  a reason, then accepted with one, fanned out to every admin with the reason, and restored.
+- **Upload validation.** An executable renamed `.pdf` was refused with `FILE_CONTENT_MISMATCH` while
+  the genuine PDF in the same request was kept.
+- **Presigned URLs.** The download link served the real bytes and they matched the original;
+  preview carries no Content-Disposition, download does.
+- **Search, favourites, download history** — including a favourite disappearing on delete and
+  returning on restore, and history keeping its row marked unavailable.
+- **CSV export** — byte-order mark present, 43 rows, and a department name *containing a comma*
+  correctly quoted.
+- **Security headers** on live responses; **member → `/admin/**` is 403**.
+- **All 16 signed-in screens** driven in a browser against the live API. One real bug found and
+  fixed: the Dashboard tab claimed to be active on every `/admin/*` screen.
+- **Load test** at 15 VUs: 6,051 checks, 100% succeeded, list p95 234ms against a 500ms threshold.
+  **Not the acceptance run** — see §8.
 
 ---
 
@@ -498,16 +513,14 @@ DLT-approved templates, admin training.
 
 ## 8. Known gaps in what is already built
 
-- **Three phases of work have never run against a database.** Phases 4, 5 and 6 were written without
-  Docker, so **39 of the 74 integration tests have never executed** and no screen has been exercised
-  against the real API. **This is the largest risk in the repository** — `./mvnw verify` and then a
-  click-through, before anything else. [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) §3 lists what to
-  click.
-  <br>What *has* been checked: all 20 screens render correctly at 360 / 768 / 1440 with no
-  horizontal overflow, verified through the fixture harness (§5). So the risk is wiring and query
-  correctness, not layout.
-- **The load test has never been run.** `load/browse.js` asserts the plan's figure — p95 under 500ms
-  at 150 users — and exits non-zero if it is missed. Nobody has seen it pass or fail.
+- **The load test has not been run at the acceptance figure.** It passed at 15 concurrent users with
+  every threshold met, which validates the script and the endpoints — but the plan says **150**, and
+  the machine available (7.4 GB, already running Docker, PostgreSQL, MinIO and the application) had
+  nothing left to generate load with. Worse, **the database held one document**, so those timings
+  describe framework overhead rather than how the queries behave at volume. Re-run at 150 against a
+  realistic corpus, and check the search query plan rather than trusting the timing — a sequential
+  scan is fast on one row and catastrophic on fifty thousand.
+- **UAT has not happened.** Everything below the client is verified; the client has not seen it.
 - **Spring Boot 3.3.4 is a year behind; 4.1.0 is available.** Deliberately not taken: a major
   upgrade with 39 integration tests that have never run is not a hardening change, it is a gamble.
   Do it once the suite is green, on its own branch. The same applies to Tika (2.9 → 4.0 beta) and
