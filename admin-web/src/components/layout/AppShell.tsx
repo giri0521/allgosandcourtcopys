@@ -8,6 +8,17 @@ interface NavItem {
   to: string;
   label: string;
   adminOnly?: boolean;
+  /**
+   * Marks this entry active only on an exact path match.
+   *
+   * <p>Needed wherever one nav path is a prefix of another. `/admin` is a prefix of
+   * `/admin/requests`, so without this the Dashboard entry lights up on Requests, Members, Reports
+   * and the logs as well — two underlined tabs at once, and no way to tell where you are.
+   *
+   * <p>Deliberately *not* set on `/departments`, where prefix matching is what we want: browsing
+   * into `/departments/{id}` should keep Departments highlighted.
+   */
+  exact?: boolean;
 }
 
 /**
@@ -23,7 +34,7 @@ const NAV: NavItem[] = [
   { to: '/favorites', label: 'Favorites' },
   // Three admin entries, not six. The dashboard is the hub for the rest — Reports, the deletions
   // log and the activity log all hang off it, and a header with ten links is a header nobody reads.
-  { to: '/admin', label: 'Dashboard', adminOnly: true },
+  { to: '/admin', label: 'Dashboard', adminOnly: true, exact: true },
   { to: '/admin/requests', label: 'Requests', adminOnly: true },
   { to: '/admin/members', label: 'Members', adminOnly: true },
 ];
@@ -96,6 +107,7 @@ export function AppShell({
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.exact}
                 className={({ isActive }) =>
                   `relative rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap outline-none
                    transition-colors duration-[--duration-base] ease-[--ease-settle]
