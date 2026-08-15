@@ -7,6 +7,8 @@ users.
 - **Repo** `github.com/harithkumaradhithya/allgosandcourtcopys` · **branch** `pre-release`
 - **Full specification** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — this file is the
   orientation; that one is the contract.
+- **How it fits together** [ARCHITECTURE.md](ARCHITECTURE.md) — where documents live, how a request
+  flows, the security model, and what the client's IT will ask before signing off on hosting.
 - **Picking up the next phase?** Start with [HANDOFF-PHASE-6.md](HANDOFF-PHASE-6.md) — what changed
   in Phase 5, what must be verified before anything else, and the Phase 6 work broken down.
   [HANDOFF-PHASE-3.md](HANDOFF-PHASE-3.md), [HANDOFF-PHASE-4.md](HANDOFF-PHASE-4.md) and
