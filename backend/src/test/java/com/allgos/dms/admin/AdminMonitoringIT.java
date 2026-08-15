@@ -14,6 +14,7 @@ import com.allgos.dms.auth.repository.OtpVerificationRepository;
 import com.allgos.dms.auth.repository.RegistrationRequestRepository;
 import com.allgos.dms.department.entity.Department;
 import com.allgos.dms.department.repository.DepartmentRepository;
+import com.allgos.dms.file.repository.StoredFileRepository;
 import com.allgos.dms.notification.repository.NotificationRepository;
 import com.allgos.dms.support.AbstractIntegrationTest;
 import com.allgos.dms.support.RecordingOtpProvider;
@@ -61,6 +62,7 @@ class AdminMonitoringIT extends AbstractIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
     @Autowired private DepartmentRepository departmentRepository;
+    @Autowired private StoredFileRepository fileRepository;
     @Autowired private AuditLogRepository auditLogRepository;
     @Autowired private NotificationRepository notificationRepository;
     @Autowired private RegistrationRequestRepository registrationRequestRepository;
@@ -216,16 +218,31 @@ class AdminMonitoringIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("the dashboard counts what exists")
+    @DisplayName("the dashboard counts what is actually in the database")
     void statsCountTheSystem() throws Exception {
+        // Compared against the repositories rather than against fixed numbers. Every integration
+        // test class shares one database and cleans up only what it created, so the number of users
+        // and documents depends on which classes have already run — an earlier version of this test
+        // asserted "2 members" and passed only because of the order the classes happened to run in.
+        // What the endpoint actually promises is that it reports the truth, so that is what is
+        // checked.
+        long members = userRepository.count();
+        long activeMembers = userRepository.countByStatus(UserStatus.ACTIVE);
+        long documents = fileRepository.countByDeletedFalse();
+
         mockMvc.perform(get("/api/v1/admin/stats").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isOk())
+                // Seeded by migration, so this one is genuinely fixed.
                 .andExpect(jsonPath("$.departments").value(43))
-                .andExpect(jsonPath("$.documents").value(0))
-                .andExpect(jsonPath("$.pendingRequests").value(0))
-                // The seeded admin plus the member registered in setUp.
-                .andExpect(jsonPath("$.members").value(2))
-                .andExpect(jsonPath("$.activeMembers").value(2));
+                .andExpect(jsonPath("$.members").value((int) members))
+                .andExpect(jsonPath("$.activeMembers").value((int) activeMembers))
+                .andExpect(jsonPath("$.documents").value((int) documents))
+                // This class clears the registration requests in setUp, so it does own this one.
+                .andExpect(jsonPath("$.pendingRequests").value(0));
+
+        // The counts are only meaningful if there is something to count.
+        assertThat(members).isGreaterThanOrEqualTo(2);
+        assertThat(activeMembers).isGreaterThanOrEqualTo(2);
     }
 
     @Test

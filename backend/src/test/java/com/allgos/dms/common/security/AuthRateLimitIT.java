@@ -24,6 +24,12 @@ import org.springframework.test.context.TestPropertySource;
  *
  * <p>What matters is not only that the fourth request is refused, but *where*: before any password
  * or OTP work happens, so a flood costs the server a map lookup rather than a BCrypt verification.
+ *
+ * <p><b>Each test declares its own client address.</b> The limiter is a singleton in the application
+ * context with a one-minute window, so without this the first method to run spends the allowance and
+ * every later one starts already throttled — which is what happened the first time these ran. Since
+ * {@code ClientIp} prefers {@code X-Forwarded-For}, giving each test its own address isolates them
+ * and exercises the per-key behaviour at the same time.
  */
 @TestPropertySource(
         properties = {
@@ -37,13 +43,15 @@ class AuthRateLimitIT extends AbstractIntegrationTest {
     @Test
     @DisplayName("a flood of sign-in attempts is refused with 429 and a Retry-After")
     void refusesTooManyAuthRequests() throws Exception {
+        String caller = "203.0.113.10";
+
         for (int attempt = 1; attempt <= 3; attempt++) {
             // Wrong credentials, so these are refused on their merits — but they are *answered*,
             // which is what distinguishes them from being throttled.
-            passwordLogin().andExpect(status().isUnauthorized());
+            passwordLogin(caller).andExpect(status().isUnauthorized());
         }
 
-        passwordLogin()
+        passwordLogin(caller)
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("RATE_LIMITED"))
                 .andExpect(header().exists("Retry-After"));
@@ -52,15 +60,32 @@ class AuthRateLimitIT extends AbstractIntegrationTest {
     @Test
     @DisplayName("the allowance covers the whole of /auth, not one endpoint at a time")
     void countsEveryAuthEndpointTogether() throws Exception {
-        sendOtp().andExpect(status().isAccepted());
-        sendOtp().andExpect(status().isAccepted());
-        passwordLogin().andExpect(status().isUnauthorized());
+        String caller = "203.0.113.11";
+
+        sendOtp(caller).andExpect(status().isAccepted());
+        sendOtp(caller).andExpect(status().isAccepted());
+        passwordLogin(caller).andExpect(status().isUnauthorized());
 
         // A fourth call to a *different* auth endpoint is still refused: an attacker who could
         // reset the count by alternating endpoints would have no limit at all.
-        sendOtp()
+        sendOtp(caller)
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+    }
+
+    @Test
+    @DisplayName("one caller's exhausted allowance does not throttle anybody else")
+    void isolatesCallers() throws Exception {
+        String flooding = "203.0.113.12";
+        String innocent = "203.0.113.13";
+
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            passwordLogin(flooding);
+        }
+        passwordLogin(flooding).andExpect(status().isTooManyRequests());
+
+        // Otherwise one attacker could lock the whole office out by exhausting a shared counter.
+        passwordLogin(innocent).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -68,19 +93,22 @@ class AuthRateLimitIT extends AbstractIntegrationTest {
     void doesNotThrottleTheRestOfTheApi() throws Exception {
         for (int attempt = 1; attempt <= 10; attempt++) {
             // Unauthenticated, so 401 — but never 429, however many times it is called.
-            mockMvc.perform(get("/api/v1/departments")).andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/v1/departments").header("X-Forwarded-For", "203.0.113.14"))
+                    .andExpect(status().isUnauthorized());
         }
     }
 
-    private org.springframework.test.web.servlet.ResultActions passwordLogin() throws Exception {
+    private org.springframework.test.web.servlet.ResultActions passwordLogin(String caller) throws Exception {
         return mockMvc.perform(post("/api/v1/auth/login")
+                .header("X-Forwarded-For", caller)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                         Map.of("mobileNumber", "9123456789", "password", "not-the-password"))));
     }
 
-    private org.springframework.test.web.servlet.ResultActions sendOtp() throws Exception {
+    private org.springframework.test.web.servlet.ResultActions sendOtp(String caller) throws Exception {
         return mockMvc.perform(post("/api/v1/auth/otp/send")
+                .header("X-Forwarded-For", caller)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("mobileNumber", "9123456789"))));
     }

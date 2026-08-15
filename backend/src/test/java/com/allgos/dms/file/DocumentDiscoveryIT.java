@@ -393,6 +393,11 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
     @Test
     @DisplayName("the bell counts a user's own unread notifications and marking one read sticks")
     void notificationsAreScopedToTheirOwner() throws Exception {
+        // setUp registers a member, and registering correctly notifies every admin. That is real
+        // behaviour, not noise — but it is not what this test is about, so the slate is cleared
+        // here and the counts below are exactly what the deletion produces.
+        notificationRepository.deleteAll();
+
         // A deletion by the member notifies every admin — a real event rather than a fixture.
         UUID fileId = uploadOne(folderId, memberToken, "Circular 42.pdf");
         deleteFile(fileId, "Filed in the wrong department", memberToken).andExpect(status().isOk());
@@ -449,6 +454,10 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
     @Test
     @DisplayName("read-all clears the badge in one call")
     void readAllClearsEverythingUnread() throws Exception {
+        // As above: setUp's registration legitimately notifies the admin, and this test is about
+        // the two deletions below.
+        notificationRepository.deleteAll();
+
         deleteFile(uploadOne(folderId, memberToken, "Circular 42.pdf"), "One", memberToken);
         deleteFile(uploadOne(folderId, memberToken, "Circular 43.pdf"), "Two", memberToken);
 
