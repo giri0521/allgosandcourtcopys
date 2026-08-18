@@ -108,7 +108,7 @@ export function FilePreviewPage() {
         ) : preview.isError ? (
           <Alert tone="error">{toApiError(preview.error).message}</Alert>
         ) : (
-          <div className="animate-fade overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+          <div className="animate-fade overflow-hidden rounded-xl border border-line bg-surface shadow-card">
             {preview.isPending || !preview.data ? (
               <div className="skeleton h-[70vh] w-full" aria-hidden />
             ) : preview.data.fileType.startsWith('image/') ? (

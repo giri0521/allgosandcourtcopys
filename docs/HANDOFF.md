@@ -254,6 +254,24 @@ action.
 | `index.css` `@theme` | The navy and gold scales, plus semantic surfaces — `canvas`, `surface`, `surface-sunken`, `line`, `line-strong`. **Use `bg-surface` / `border-line`, not `bg-white` / `border-slate-200`**, so the whole application re-tones from six lines and a dark mode later has somewhere to land |
 | `lib/tones.ts` | What each *thing* is coloured: `categoryTone`, `fileTypeTone`, `departmentTone`, and the nine-tone palette they draw from |
 
+##### Type and elevation
+
+- **Inter, self-hosted** via `@fontsource-variable/inter`, imported from `src/main.tsx`. It must be
+  imported from the **JavaScript entry, not with `@import` in `index.css`** — Tailwind's PostCSS
+  plugin inlines a CSS `@import` before Vite can rewrite the font URLs, so the `@font-face` rules
+  ship, the `.woff2` files do not, and the page silently falls back to the system font while looking
+  almost right. Self-hosted rather than a CDN because a government network may block one.
+- **Three elevation steps**, in `@theme`: `shadow-card` for anything resting on the page,
+  `shadow-lifted` for hover and for the sign-in card, `shadow-dialog` for modals. Each is two layers
+  — a tight contact shadow plus a wider soft one — because a single-layer shadow is what makes an
+  interface look like a slide deck. **Use these rather than Tailwind's `shadow-sm` / `shadow-md`.**
+- **The canvas is deliberately quiet.** An earlier version stacked four gradients at ~30% each and
+  tinted every white card blue by contrast. Two washes at 12–14% remain. If a screen needs more
+  colour, it should come from the content, not the ground.
+- **Large standalone numbers use proportional figures; columns use tabular.** `tabular-nums` is
+  applied to table cells and the `.tabular-nums` class only — at display sizes it makes a number
+  like `121` look loose.
+
 `tones.ts` is the important one. A screen never picks a colour for a category or a department — it
 asks. That is what stops a Court Order being indigo on one screen and amber on the next, and it
 means **a screen built in a later phase inherits the scheme without its author knowing it exists**.

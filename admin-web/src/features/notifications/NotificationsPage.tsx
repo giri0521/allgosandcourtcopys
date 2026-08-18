@@ -74,7 +74,7 @@ export function NotificationsPage() {
         ) : undefined
       }
     >
-      <div className="mb-5 flex flex-wrap gap-1 rounded-lg bg-surface p-1 shadow-sm ring-1 ring-line">
+      <div className="mb-5 flex flex-wrap gap-1 rounded-lg bg-surface p-1 shadow-card ring-1 ring-line">
         {[
           { value: false, label: 'All' },
           { value: true, label: 'Unread' },
@@ -134,8 +134,8 @@ function NotificationRow({
       type="button"
       onClick={onOpen}
       className={`group relative flex w-full gap-4 overflow-hidden rounded-xl border border-line
-        bg-surface p-4 text-left shadow-sm outline-none transition-all duration-[--duration-base]
-        ease-[--ease-settle] hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
+        bg-surface p-4 text-left shadow-card outline-none transition-all duration-[--duration-base]
+        ease-[--ease-settle] hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
         focus-visible:ring-2 focus-visible:ring-navy-300 ${notification.read ? 'opacity-75' : ''}`}
     >
       {/* Unread carries a coloured edge as well as the dot, so the state survives a greyscale print

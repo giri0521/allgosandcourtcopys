@@ -64,9 +64,9 @@ export function DepartmentsPage() {
           <Link
             key={department.id}
             to={`/departments/${department.id}`}
-            className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 pl-6
-              shadow-sm outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-              hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
+            className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface
+              p-5 pl-6 shadow-card outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
+              hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
               focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
           >
             {/* The department's own colour, down the leading edge. It widens on hover, which is
@@ -96,7 +96,7 @@ export function DepartmentsPage() {
                 )}
               </div>
             </div>
-            <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
+            <p className="mt-auto flex items-center gap-1.5 pt-4 text-sm text-slate-500">
               <span>
                 {department.folderCount ?? 0}{' '}
                 {department.folderCount === 1 ? 'folder' : 'folders'}

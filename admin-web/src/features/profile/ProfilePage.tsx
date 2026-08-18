@@ -46,7 +46,7 @@ export function ProfilePage() {
           </div>
 
           <aside className="space-y-4">
-            <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+            <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
               <div className="flex items-center gap-3">
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold
@@ -131,7 +131,7 @@ function DetailsCard({
   const fieldErrors = save.isError ? (toApiError(save.error).fieldErrors ?? {}) : {};
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+    <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
       <h2 className="font-semibold text-slate-900">Your details</h2>
       <p className="mt-1 text-sm text-slate-500">
         These appear beside the documents you upload.
@@ -210,7 +210,7 @@ function PasswordCard() {
   const canSubmit = current.length > 0 && next.length >= 8 && matches && next !== current;
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+    <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
       <h2 className="font-semibold text-slate-900">Password</h2>
       <p className="mt-1 text-sm text-slate-500">
         Used after your daily OTP. Changing it signs you out everywhere, including here.

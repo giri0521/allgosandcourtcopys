@@ -39,7 +39,7 @@ export function DownloadsPage() {
           {downloads.data.items.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-line bg-surface shadow-sm">
+            <div className="overflow-x-auto rounded-xl border border-line bg-surface shadow-card">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b border-line bg-surface-sunken text-xs uppercase tracking-wide text-slate-500">
                   <tr>

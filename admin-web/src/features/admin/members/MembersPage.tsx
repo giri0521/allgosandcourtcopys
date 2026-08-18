@@ -92,7 +92,7 @@ export function MembersPage() {
       }
     >
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-1 rounded-lg bg-white p-1 shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-wrap gap-1 rounded-lg bg-white p-1 shadow-card ring-1 ring-slate-200">
           {TABS.map((option) => (
             <button
               key={option.value}
@@ -128,7 +128,7 @@ export function MembersPage() {
         {error && <Alert tone="error">{toApiError(error).message}</Alert>}
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
         {members.isPending ? (
           <p className="px-5 py-10 text-center text-sm text-slate-500">Loading members…</p>
         ) : items.length === 0 ? (

@@ -93,7 +93,7 @@ export function SearchPage() {
         ) : undefined
       }
     >
-      <div className="mb-5 grid gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid gap-3 rounded-xl border border-line bg-surface p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
         <SelectField
           label="Department"
           value={departmentId}

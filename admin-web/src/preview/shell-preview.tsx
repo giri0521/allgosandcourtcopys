@@ -51,7 +51,7 @@ createRoot(document.getElementById('root')!).render(
             subtitle="Administrator · Department of Information Technology and Digital Services"
             actions={<Button variant="secondary">An action</Button>}
           >
-            <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+            <div className="rounded-xl border border-line bg-surface p-6 shadow-card">
               <h2 className="font-semibold text-slate-900">Page content</h2>
               <p className="mt-1 text-sm text-slate-600">
                 Stand-in for a screen. What matters here is the frame around it.

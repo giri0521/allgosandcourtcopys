@@ -97,7 +97,7 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className="animate-pop relative w-full max-w-md rounded-2xl border border-line bg-surface
-          p-6 shadow-xl shadow-slate-900/10"
+          p-6 shadow-dialog"
       >
         <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
         {description && <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>}

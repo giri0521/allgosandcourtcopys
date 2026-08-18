@@ -75,7 +75,7 @@ export function MemberActivityPage() {
               <Stat label="Sign-ins" value={summary?.logins ?? 0} toneName="emerald" />
             </section>
 
-            <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+            <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
               <div className="border-b border-line px-5 py-3">
                 <h2 className="font-semibold text-slate-900">Activity</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
@@ -123,7 +123,7 @@ export function MemberActivityPage() {
           </div>
 
           <aside>
-            <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+            <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
               <div className="flex items-center gap-3">
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold
@@ -163,7 +163,7 @@ function Stat({
   toneName: Parameters<typeof tone>[0];
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-line bg-surface p-4 shadow-sm">
+    <div className="relative overflow-hidden rounded-xl border border-line bg-surface p-4 shadow-card">
       <span aria-hidden className={`absolute inset-x-0 top-0 h-1 ${tone(toneName).edge}`} />
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums text-navy-800">{value}</p>

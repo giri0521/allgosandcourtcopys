@@ -114,7 +114,7 @@ export function LoginPage() {
             type="button"
             onClick={() => switchTab(option)}
             className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
-              tab === option ? 'bg-white text-navy-700 shadow-sm' : 'text-slate-600 hover:text-navy-700'
+              tab === option ? 'bg-white text-navy-700 shadow-card' : 'text-slate-600 hover:text-navy-700'
             }`}
           >
             {option === 'password' ? 'Password' : 'OTP'}

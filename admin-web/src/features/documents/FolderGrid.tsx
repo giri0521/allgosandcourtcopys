@@ -13,9 +13,9 @@ export function FolderGrid({ folders }: { folders: Folder[] }) {
         <li key={folder.id}>
           <Link
             to={`/folders/${folder.id}`}
-            className="group flex h-full flex-col rounded-xl border border-line bg-surface p-4 shadow-sm
+            className="group flex h-full flex-col rounded-xl border border-line bg-surface p-4 shadow-card
               outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-              hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
+              hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
               focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
           >
             <span className="flex items-center gap-2">

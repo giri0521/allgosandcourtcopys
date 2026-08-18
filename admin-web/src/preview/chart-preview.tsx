@@ -55,7 +55,7 @@ createRoot(document.getElementById('root')!).render(
       {CASES.map((example) => (
         <section
           key={example.title}
-          className="rounded-xl border border-line bg-surface pt-4 shadow-sm"
+          className="rounded-xl border border-line bg-surface pt-4 shadow-card"
         >
           <h2 className="px-5 pb-1 font-semibold text-slate-900">{example.title}</h2>
           <MonthlyActivityChart data={example.data} />

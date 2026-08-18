@@ -71,7 +71,7 @@ export function AuditLogPage() {
         ) : undefined
       }
     >
-      <div className="mb-5 grid gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid gap-3 rounded-xl border border-line bg-surface p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
         <SelectField
           label="Member"
           value={actorId}
@@ -125,7 +125,7 @@ export function AuditLogPage() {
           </p>
 
           {logs.data.items.length > 0 && (
-            <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
               <ul className="divide-y divide-slate-100">
                 {logs.data.items.map((entry) => (
                   <AuditEntryRow key={entry.id} entry={entry} />

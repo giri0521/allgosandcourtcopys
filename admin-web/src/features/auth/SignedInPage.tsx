@@ -96,7 +96,7 @@ export function SignedInPage() {
             to="/admin/requests"
             className="animate-rise flex flex-wrap items-center justify-between gap-3 rounded-xl
               border border-amber-300 bg-amber-50 px-5 py-4 transition-all duration-[--duration-base]
-              ease-[--ease-settle] hover:-translate-y-0.5 hover:shadow-md"
+              ease-[--ease-settle] hover:-translate-y-0.5 hover:shadow-lifted"
           >
             <span>
               <span className="block font-semibold text-amber-900">
@@ -114,7 +114,7 @@ export function SignedInPage() {
         <RecentlyFiled files={recent.data?.items ?? []} loading={recent.isPending} />
 
         {documentCount === 0 && departments.isSuccess && (
-          <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+          <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
             <h2 className="font-semibold text-slate-900">Nothing has been filed yet</h2>
             <p className="mt-1 text-sm text-slate-600">
               Open a department, create a folder, then upload into it. You may file documents into
@@ -131,7 +131,7 @@ export function SignedInPage() {
         )}
 
         {isAdmin && (
-          <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+          <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
             <h2 className="font-semibold text-slate-900">Administration</h2>
             <p className="mt-1 text-sm text-slate-600">
               Nobody can sign in until their registration is approved, so the queue is the first
@@ -166,7 +166,7 @@ export function SignedInPage() {
           </section>
         )}
 
-        <section className="rounded-xl border border-line bg-surface p-6 shadow-sm">
+        <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
           <h2 className="font-semibold text-slate-900">Your account</h2>
           <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <Row label="Mobile" value={`+91 ${user.mobileNumber}`} />
@@ -196,7 +196,7 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+    <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-line px-5 py-3">
         <h2 className="font-semibold text-slate-900">Recently filed</h2>
         <Link to="/departments" className="text-sm font-semibold text-navy-600 hover:underline">
@@ -264,9 +264,9 @@ function Tile({
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm
+      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-card
         outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-        hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
+        hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
         focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
     >
       {/* A colour bar across the top, growing on hover. Enough to tell the three tiles apart at a
@@ -277,7 +277,7 @@ function Tile({
           ease-[--ease-settle] group-hover:h-1.5 ${tone(toneName).edge}`}
       />
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-navy-800 transition-colors
+      <p className="mt-1 text-[2rem] leading-none font-semibold text-navy-800 transition-colors
         duration-[--duration-base] group-hover:text-navy-600">
         {value}
       </p>

@@ -29,7 +29,7 @@ export function AuthLayout({
             alt="All GOs and Court Copies"
             width={96}
             height={96}
-            className="mx-auto mb-3 h-20 w-20 rounded-full object-cover shadow-sm sm:h-24 sm:w-24"
+            className="mx-auto mb-3 h-20 w-20 rounded-full object-cover shadow-card sm:h-24 sm:w-24"
           />
           <h1 className="text-lg font-bold tracking-tight text-navy-800">ALLGOSANDCOURTCOPYS</h1>
           {/* A short gold rule under the name, the way a seal is underlined on a letterhead. */}
@@ -40,8 +40,7 @@ export function AuthLayout({
         </div>
 
         <div
-          className="animate-rise rounded-2xl border border-line bg-surface p-6 shadow-sm
-            shadow-slate-900/5 sm:p-7"
+          className="animate-rise rounded-2xl border border-line bg-surface p-6 shadow-lifted sm:p-7"
           style={{ animationDelay: '70ms' }}
         >
           <h2 className="text-xl font-semibold text-slate-900">{title}</h2>

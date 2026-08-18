@@ -14,7 +14,7 @@ function StaticPage({ title, subtitle, children }: { title: string; subtitle: st
   const { user } = useAuth();
 
   const body = (
-    <article className="prose-none mx-auto max-w-3xl space-y-6 rounded-xl border border-line bg-surface p-6 shadow-sm sm:p-8">
+    <article className="prose-none mx-auto max-w-3xl space-y-6 rounded-xl border border-line bg-surface p-6 shadow-card sm:p-8">
       {children}
     </article>
   );

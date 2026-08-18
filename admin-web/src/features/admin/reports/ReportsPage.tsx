@@ -45,7 +45,7 @@ export function ReportsPage() {
       subtitle="Uploads, downloads and holdings across the office."
     >
       <form
-        className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm"
+        className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-4 shadow-card"
         onSubmit={(event) => {
           event.preventDefault();
           apply();
@@ -94,7 +94,7 @@ export function ReportsPage() {
 
       {report.isSuccess && (
         <div className="space-y-6">
-          <section className="overflow-hidden rounded-xl border border-line bg-surface pt-4 shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-line bg-surface pt-4 shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-2 px-5 pb-1">
               <h2 className="font-semibold text-slate-900">Activity by month</h2>
               <Button
@@ -108,7 +108,7 @@ export function ReportsPage() {
             <MonthlyActivityChart data={report.data.monthly} />
           </section>
 
-          <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
               <div>
                 <h2 className="font-semibold text-slate-900">By department</h2>
@@ -166,7 +166,7 @@ export function ReportsPage() {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
               <h2 className="font-semibold text-slate-900">Most active members</h2>
               <Button

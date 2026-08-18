@@ -168,13 +168,23 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="animate-fade mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        {/*
+          The page title carries a short gold rule above it — the seal's second colour, used the way
+          a letterhead uses one. It is the only ornament on the page, which is what lets it read as
+          deliberate rather than decorative.
+        */}
+        <div className="animate-fade mb-7 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <span aria-hidden className="mb-3 block h-0.5 w-10 rounded-full bg-gold-400" />
+            <h1 className="text-[1.75rem] leading-tight font-semibold text-navy-900">{title}</h1>
+            {subtitle && (
+              <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-relaxed text-slate-500">
+                {subtitle}
+              </p>
+            )}
           </div>
-          {actions}
+          {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
         </div>
         {children}
       </main>

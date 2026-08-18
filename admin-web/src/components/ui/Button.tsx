@@ -8,12 +8,12 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants = {
   primary:
-    'bg-navy-600 text-white shadow-sm hover:bg-navy-700 hover:shadow disabled:bg-navy-300 disabled:shadow-none',
+    'bg-navy-600 text-white shadow-card hover:bg-navy-700 hover:shadow-lifted disabled:bg-navy-300 disabled:shadow-none',
   secondary:
     'bg-white text-navy-700 border border-navy-300 hover:bg-navy-50 hover:border-navy-400 disabled:text-slate-400 disabled:border-slate-200',
   ghost: 'text-navy-600 hover:bg-navy-50 disabled:text-slate-400',
   /** For the one action that removes something; never the default on a screen. */
-  danger: 'bg-red-600 text-white shadow-sm hover:bg-red-700 hover:shadow disabled:bg-red-300 disabled:shadow-none',
+  danger: 'bg-red-600 text-white shadow-card hover:bg-red-700 hover:shadow-lifted disabled:bg-red-300 disabled:shadow-none',
 };
 
 /**

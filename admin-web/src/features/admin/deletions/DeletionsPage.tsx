@@ -65,7 +65,7 @@ export function DeletionsPage() {
               transition-all duration-[--duration-base] ease-[--ease-settle] active:scale-[0.97]
               focus-visible:ring-2 focus-visible:ring-navy-300 ${
                 tab === entry.value
-                  ? 'bg-navy-50 text-navy-700 shadow-sm'
+                  ? 'bg-navy-50 text-navy-700 shadow-card'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-navy-700'
               }`}
           >
@@ -90,8 +90,8 @@ export function DeletionsPage() {
             {deletions.data.items.map((entry) => (
               <li
                 key={entry.id}
-                className="rounded-xl border border-line bg-surface p-5 shadow-sm
-                  transition-all duration-[--duration-base] ease-[--ease-settle] hover:shadow-md"
+                className="rounded-xl border border-line bg-surface p-5 shadow-card
+                  transition-all duration-[--duration-base] ease-[--ease-settle] hover:shadow-lifted"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">

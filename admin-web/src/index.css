@@ -33,12 +33,33 @@
   /*
    * Semantic surfaces. Screens reference these rather than picking a slate number each time, so the
    * whole application re-tones from six lines — and a future dark mode has somewhere to land.
+   *
+   * The canvas is a cool near-white with the faintest blue in it. An earlier version was a much
+   * stronger #dce6f4, which tinted every white card blue by contrast and made the whole application
+   * look like it was printed on sugar paper. The ground should be quiet; the cards are the content.
    */
-  --color-canvas: #dce6f4;        /* the page behind everything — tinted, so white cards read as cards */
-  --color-surface: #ffffff;       /* cards, tables, dialogs */
-  --color-surface-sunken: #f8fafc; /* table headers, wells */
-  --color-line: #e2e8f0;          /* ordinary borders */
-  --color-line-strong: #cbd5e1;   /* dashed empty states, dividers that must be seen */
+  --color-canvas: #eef1f6;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f7f9fc;
+  --color-line: #e4e9f0;
+  --color-line-strong: #c8d2e0;
+
+  /*
+   * Type. Inter is a screen typeface: it was drawn for interfaces at small sizes, its digits line
+   * up, and it holds shape at 12px where a print face falls apart.
+   */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /*
+   * Elevation, as three named steps rather than a shadow picked per component.
+   *
+   * Each is two layers: a tight, dark contact shadow that anchors the element to the page, and a
+   * wider, softer one that gives it height. A single-layer shadow is what makes an interface look
+   * like a slide deck — real objects cast both.
+   */
+  --shadow-card: 0 1px 2px -1px rgb(15 35 64 / 0.08), 0 2px 8px -2px rgb(15 35 64 / 0.06);
+  --shadow-lifted: 0 2px 4px -2px rgb(15 35 64 / 0.10), 0 12px 24px -6px rgb(15 35 64 / 0.12);
+  --shadow-dialog: 0 8px 16px -8px rgb(15 35 64 / 0.20), 0 32px 64px -16px rgb(15 35 64 / 0.28);
 
   /*
    * One easing curve and three durations for the whole application. Motion that varies per screen
@@ -59,23 +80,53 @@
 
 body {
   @apply text-slate-900 antialiased;
+  font-family: var(--font-sans);
   /*
-   * Three washes over a tinted canvas: navy from the top-left, a cooler teal from the top-right,
-   * gold rising from the bottom. Fixed, so they stay put while the page scrolls and the colour
-   * never appears to slide.
+   * Inter's alternates, on purpose: cv11 gives the single-storey 'l' a tail so it cannot be read as
+   * a capital I or a 1 — which matters in a system full of document numbers — and ss03 tidies the
+   * ampersand. calt/liga are Inter's defaults, restated so a browser cannot drop them.
+   */
+  font-feature-settings: 'cv11', 'ss03', 'calt', 'liga';
+  /*
+   * Two soft washes over a quiet canvas: navy falling from the top-left, and a trace of the seal's
+   * gold rising from the bottom-right. Both are weak on purpose.
    *
-   * Strong enough to be seen — a page that is almost-white just looks like unstyled default — but
-   * kept in the brand's own hues so it reads as considered rather than decorative. White cards sit
-   * on top and lift off it, which is the whole reason for tinting the ground in the first place.
+   * An earlier version stacked four gradients at around 30% each — navy, teal and gold all at once
+   * — which read as a decorative wallpaper rather than a considered ground, and fought every card
+   * placed on it. What is left is barely perceptible in isolation and does its whole job: white
+   * cards lift off it, and the page is not flat grey.
+   *
+   * Fixed, so the colour stays put while the page scrolls rather than appearing to slide.
    */
   background-color: var(--color-canvas);
   background-image:
-    radial-gradient(70rem 55rem at 0% 0%, color-mix(in oklab, var(--color-navy-500) 32%, transparent), transparent 70%),
-    radial-gradient(60rem 50rem at 100% 0%, color-mix(in oklab, var(--color-teal-400) 30%, transparent), transparent 68%),
-    radial-gradient(75rem 55rem at 50% 100%, color-mix(in oklab, var(--color-gold-300) 30%, transparent), transparent 70%),
-    /* A whole-page diagonal underneath the three, so nowhere falls back to bare white. */
-    linear-gradient(135deg, color-mix(in oklab, var(--color-navy-400) 14%, transparent), transparent 45%);
+    radial-gradient(60rem 45rem at 0% -10%, color-mix(in oklab, var(--color-navy-500) 14%, transparent), transparent 65%),
+    radial-gradient(50rem 40rem at 105% 110%, color-mix(in oklab, var(--color-gold-300) 12%, transparent), transparent 62%);
   background-attachment: fixed;
+}
+
+/*
+ * Headings tighten as they grow. Letter spacing that suits 14px body text looks loose at 24px, and
+ * the default is tuned for the former — so the large sizes are pulled in rather than left airy.
+ */
+h1 {
+  letter-spacing: -0.021em;
+}
+
+h2,
+h3 {
+  letter-spacing: -0.013em;
+}
+
+/*
+ * Numbers that sit in a column — table cells, axis ticks, stat tiles — line up only if every digit
+ * is the same width. Applied where columns exist rather than globally: tabular figures look loose
+ * in a sentence.
+ */
+table td,
+table th,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------------------------------------------------------------- keyframes */

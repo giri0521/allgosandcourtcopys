@@ -38,7 +38,7 @@ export function AdminDashboardPage() {
           to="/admin/requests"
           className="animate-rise mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl
             border border-amber-300 bg-amber-50 px-5 py-4 transition-all duration-[--duration-base]
-            ease-[--ease-settle] hover:-translate-y-0.5 hover:shadow-md"
+            ease-[--ease-settle] hover:-translate-y-0.5 hover:shadow-lifted"
         >
           <span>
             <span className="block font-semibold text-amber-900">
@@ -105,7 +105,7 @@ export function AdminDashboardPage() {
         ))}
       </nav>
 
-      <section className="mt-6 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+      <section className="mt-6 overflow-hidden rounded-xl border border-line bg-surface shadow-card">
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <h2 className="font-semibold text-slate-900">Recent activity</h2>
           <Link to="/admin/logs" className="text-sm font-semibold text-navy-600 hover:underline">
@@ -149,9 +149,9 @@ function Tile({
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm
+      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-card
         outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-        hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md
+        hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
         focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
     >
       <span
@@ -161,7 +161,7 @@ function Tile({
       />
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p
-        className="mt-1 text-2xl font-semibold tabular-nums text-navy-800 transition-colors
+        className="mt-1 text-[2rem] leading-none font-semibold text-navy-800 transition-colors
           duration-[--duration-base] group-hover:text-navy-600"
       >
         {value ?? '—'}
