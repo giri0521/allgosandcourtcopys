@@ -51,6 +51,44 @@ export async function fetchSubfolders(folderId: string): Promise<Folder[]> {
   return data;
 }
 
+/** A folder in a department's tree, with how deep it sits, for indenting a flat list. */
+export interface FolderChoice {
+  folder: Folder;
+  depth: number;
+}
+
+/**
+ * Every folder in a department, flattened in the order a person reads them.
+ *
+ * <p>For the destination picker on the upload dialog, which has to offer somewhere to file a
+ * document when the user did not start from inside a folder. The API lists one level at a time —
+ * `/departments/{id}/folders` gives the top level and `/folders/{id}/folders` gives one folder's
+ * children — so the tree is walked here.
+ *
+ * <p>That is one request per folder that turns out to have children, which is affordable for a
+ * department holding a few dozen folders and would not be for thousands. The depth cap is a
+ * guard against a cycle in the data rather than a product decision: a malformed parent link would
+ * otherwise walk until the browser gave up.
+ */
+export async function fetchDepartmentFolderTree(
+  departmentId: string,
+  maxDepth = 4,
+): Promise<FolderChoice[]> {
+  const walk = async (folders: Folder[], depth: number): Promise<FolderChoice[]> => {
+    if (depth > maxDepth) return [];
+
+    const branches = await Promise.all(
+      folders.map(async (folder) => {
+        const children = depth < maxDepth ? await fetchSubfolders(folder.id) : [];
+        return [{ folder, depth }, ...(await walk(children, depth + 1))];
+      }),
+    );
+    return branches.flat();
+  };
+
+  return walk(await fetchFolders(departmentId), 0);
+}
+
 export async function fetchFolderFiles(
   folderId: string,
   page = 0,

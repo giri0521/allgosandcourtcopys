@@ -15,9 +15,17 @@ import type { MonthlyActivity } from '@/types/api';
  * <p>Gold does not reach 3:1 against white, so colour alone is never the carrier here: there is a
  * legend, and every number is also available in the table beneath the chart.
  */
+/*
+ * The series colours are the theme's own variables rather than literals, so the bars re-tone with
+ * everything else — navy-500 lifts to a legible blue against the dark canvas, while gold is fixed
+ * at the seal's colour in both themes and does not move.
+ *
+ * They go through `var()` because SVG `fill` is an attribute, and an attribute cannot carry a
+ * utility class. That is also why the gridlines and the tooltip below are written this way.
+ */
 const SERIES = {
-  uploads: { label: 'Uploads', color: '#2f5794' }, // navy-500
-  downloads: { label: 'Downloads', color: '#d9a43a' }, // gold-400
+  uploads: { label: 'Uploads', color: 'var(--color-navy-500)' },
+  downloads: { label: 'Downloads', color: 'var(--color-gold-400)' },
 };
 
 // A fixed viewBox scaled by CSS: the text scales with the chart rather than needing measurement.
@@ -88,7 +96,7 @@ export function MonthlyActivityChart({ data }: { data: MonthlyActivity[] }) {
               x2={WIDTH - PADDING.right}
               y1={y(tick)}
               y2={y(tick)}
-              stroke="#e2e8f0"
+              stroke="var(--color-chart-grid)"
               strokeWidth={1}
             />
             <text
@@ -114,7 +122,7 @@ export function MonthlyActivityChart({ data }: { data: MonthlyActivity[] }) {
                 y={PADDING.top}
                 width={band}
                 height={PLOT_HEIGHT}
-                fill={isHovered ? '#1f407614' : 'transparent'}
+                fill={isHovered ? 'var(--color-chart-hover)' : 'transparent'}
                 onMouseEnter={() => setHovered(index)}
                 onMouseLeave={() => setHovered(null)}
               />
@@ -155,7 +163,7 @@ export function MonthlyActivityChart({ data }: { data: MonthlyActivity[] }) {
           x2={WIDTH - PADDING.right}
           y1={PADDING.top + PLOT_HEIGHT}
           y2={PADDING.top + PLOT_HEIGHT}
-          stroke="#cbd5e1"
+          stroke="var(--color-chart-axis)"
           strokeWidth={1}
         />
 
@@ -206,16 +214,31 @@ function Tooltip({ point, x }: { point: MonthlyActivity; x: number }) {
         width={width}
         height={height}
         rx={8}
-        fill="#0f2340"
+        fill="var(--color-tooltip)"
         opacity={0.94}
       />
-      <text x={left + 10} y={PADDING.top + 22} className="fill-white text-[11px] font-semibold">
+      <text
+        x={left + 10}
+        y={PADDING.top + 22}
+        fill="var(--color-tooltip-fg)"
+        className="text-[11px] font-semibold"
+      >
         {point.month}
       </text>
-      <text x={left + 10} y={PADDING.top + 38} className="fill-slate-200 text-[11px]">
+      <text
+        x={left + 10}
+        y={PADDING.top + 38}
+        fill="var(--color-tooltip-fg-muted)"
+        className="text-[11px]"
+      >
         Uploads: {point.uploads}
       </text>
-      <text x={left + 10} y={PADDING.top + 52} className="fill-slate-200 text-[11px]">
+      <text
+        x={left + 10}
+        y={PADDING.top + 52}
+        fill="var(--color-tooltip-fg-muted)"
+        className="text-[11px]"
+      >
         Downloads: {point.downloads}
       </text>
     </g>

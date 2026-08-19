@@ -1,5 +1,17 @@
 @import 'tailwindcss';
 
+/*
+ * Point Tailwind's own `dark:` variant at our attribute.
+ *
+ * Out of the box `dark:bg-slate-800` compiles to `@media (prefers-color-scheme: dark)`, which asks
+ * the operating system rather than this application — so it would ignore the toggle entirely and
+ * fire on a user who has explicitly chosen light on a dark machine. Almost nothing needs `dark:`,
+ * because restating the palette below re-tones the ordinary utilities on its own; but the day
+ * somebody does reach for it, it should agree with the rest of the interface rather than contradict
+ * it.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 /* navy/blue government branding, from docs/Logo.png */
 @theme {
   --color-navy-50: #eef2f9;
@@ -12,6 +24,7 @@
   --color-navy-700: #163059;
   --color-navy-800: #0f2340;
   --color-navy-900: #0a1729;
+  --color-navy-950: #060d18;
 
   /*
    * Gold, taken from the seal on the logo. The secondary brand colour, used sparingly — a highlight,
@@ -29,6 +42,7 @@
   --color-gold-700: #7a531b;
   --color-gold-800: #5c3f1a;
   --color-gold-900: #3d2a13;
+  --color-gold-950: #24180a;
 
   /*
    * Semantic surfaces. Screens reference these rather than picking a slate number each time, so the
@@ -45,6 +59,36 @@
   --color-line-strong: #c8d2e0;
 
   /*
+   * Role colours, for the handful of places where a palette step cannot serve both themes.
+   *
+   * Almost every colour in this application is written as a palette step - text-slate-500,
+   * bg-navy-50 - and dark mode works by restating those steps further down. That trick relies on a
+   * step meaning one thing: text-navy-700 is text, so in the dark theme navy-700 becomes light.
+   *
+   * A few steps are used for the opposite job. bg-navy-600 is the primary button, and a button fill
+   * cannot go light without taking its white label with it. Those sites use the tokens below
+   * instead, which are set per theme rather than derived from the ramp - the button stays a
+   * saturated blue carrying white text in both, which is what it was always meant to be.
+   */
+  --color-brand: #1f4076;
+  --color-brand-hover: #163059;
+  --color-brand-muted: #7f9ccd;
+  --color-on-brand: #ffffff;
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-muted: #fca5a5;
+  --color-on-danger: #ffffff;
+
+  /* Only ever a filled dot behind a white tick - never text, never a button. */
+  --color-success: #059669;
+  --color-on-success: #ffffff;
+
+  /* What a dialog dims the page with. Darker and more opaque in dark, where a 40% wash over an
+     already dark page does not separate the dialog from anything. */
+  --color-scrim: rgb(15 23 42 / 0.40);
+
+  /*
    * Type. Inter is a screen typeface: it was drawn for interfaces at small sizes, its digits line
    * up, and it holds shape at 12px where a print face falls apart.
    */
@@ -57,9 +101,9 @@
    * wider, softer one that gives it height. A single-layer shadow is what makes an interface look
    * like a slide deck — real objects cast both.
    */
-  --shadow-card: 0 1px 2px -1px rgb(15 35 64 / 0.08), 0 2px 8px -2px rgb(15 35 64 / 0.06);
-  --shadow-lifted: 0 2px 4px -2px rgb(15 35 64 / 0.10), 0 12px 24px -6px rgb(15 35 64 / 0.12);
-  --shadow-dialog: 0 8px 16px -8px rgb(15 35 64 / 0.20), 0 32px 64px -16px rgb(15 35 64 / 0.28);
+  --shadow-card: 0 1px 2px -1px var(--shadow-contact), 0 2px 8px -2px var(--shadow-ambient);
+  --shadow-lifted: 0 2px 4px -2px var(--shadow-contact-strong), 0 12px 24px -6px var(--shadow-ambient-strong);
+  --shadow-dialog: 0 8px 16px -8px var(--shadow-contact-dialog), 0 32px 64px -16px var(--shadow-ambient-dialog);
 
   /*
    * One easing curve and three durations for the whole application. Motion that varies per screen
@@ -72,10 +116,422 @@
   --duration-quick: 120ms;   /* a button acknowledging a press */
   --duration-base: 220ms;    /* hovers, panels, anything the eye follows */
   --duration-slow: 400ms;    /* content arriving */
+
+  /*
+   * The theme swap, which is its own thing: slower than anything else, and on a symmetric curve
+   * rather than the settle. A whole page changing at once needs to be seen to move; the settle
+   * curve is 80% done in the first third and reads as a jump at this scale.
+   */
+  --duration-theme: 340ms;
+  --ease-theme: cubic-bezier(0.45, 0, 0.25, 1);
 }
 
+/* ------------------------------------------------------------------- themes */
+
+/*
+ * Light is the default and needs no selector; dark is a full restatement of the palette under
+ * <html data-theme="dark">, which the inline script in index.html stamps before first paint.
+ *
+ * The mode is resolved to an explicit light or dark in JavaScript rather than left to a
+ * prefers-color-scheme media query, so "follow the system" and "always dark" arrive at the same one
+ * place. There is no no-JavaScript fallback because this is a single-page application: without
+ * JavaScript there is no interface to theme.
+ */
 :root {
   color-scheme: light;
+
+  /*
+   * Shadow tints, kept out of @theme because Tailwind inlines a shadow's colour at build time -
+   * shadow-card compiles to the literal value, so restating --shadow-card per theme would do
+   * nothing. Restating what it points at works.
+   *
+   * In light they are navy rather than black: a neutral grey shadow on a cool-white page reads as
+   * dirt rather than depth.
+   */
+  --shadow-contact: rgb(15 35 64 / 0.08);
+  --shadow-ambient: rgb(15 35 64 / 0.06);
+  --shadow-contact-strong: rgb(15 35 64 / 0.10);
+  --shadow-ambient-strong: rgb(15 35 64 / 0.12);
+  --shadow-contact-dialog: rgb(15 35 64 / 0.20);
+  --shadow-ambient-dialog: rgb(15 35 64 / 0.28);
+
+  /* The strength of the two washes on the body - see the note there. */
+  --wash-navy: 14%;
+  --wash-gold: 12%;
+
+  /* The loading shimmer: a base, and the sweep that crosses it. */
+  --color-skeleton-base: var(--color-slate-200);
+  --color-skeleton-sheen: var(--color-slate-100);
+
+  /* The chart paints into SVG attributes, which cannot take a utility class. */
+  --color-chart-grid: var(--color-slate-200);
+  --color-chart-axis: var(--color-line-strong);
+  --color-chart-hover: rgb(31 64 118 / 0.08);
+  --color-tooltip: #0f2340;
+  --color-tooltip-fg: #ffffff;
+  --color-tooltip-fg-muted: #cbd5e1;
+}
+
+/*
+ * Dark.
+ *
+ * Each ramp is turned over rather than mirrored. The low steps (50-200) are how this application
+ * writes "a tint behind something" and the high steps (700-900) are how it writes "text", so in
+ * dark the low end goes deep and the high end goes bright - every existing bg-navy-50 and
+ * text-navy-700 in the codebase then means exactly what it always meant, with no class changed.
+ *
+ * The values are hand-set rather than computed inversions. A mechanical flip leaves the mid steps
+ * where the eye reads them as text at around 4:1, which is a fail; these were checked pairwise
+ * against the surfaces they actually land on and clear AA for text, 3:1 for borders and markers.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /*
+   * Not black. A true #000 canvas makes every shadow invisible and every white glyph bloom, and it
+   * leaves nowhere below the surface to put a sunken panel. This is a deep navy - the same hue the
+   * light theme is built from, taken to the bottom of its range.
+   */
+  --color-canvas: #0a1020;
+  --color-surface: #131c2e;
+  --color-surface-sunken: #0e1626;
+  --color-line: #22304a;
+  --color-line-strong: #3b4a68;
+
+  /*
+   * Neutrals. 300 is the decorative step - separators, the rule between crumbs, the outline of an
+   * empty-state glyph - and sits deliberately below the text steps; 400 is the lowest that carries
+   * words.
+   */
+  --color-slate-50: #182236;
+  --color-slate-100: #1f2b43;
+  --color-slate-200: #2b3852;
+  --color-slate-300: #4a5876;
+  --color-slate-400: #8b98b5;
+  --color-slate-500: #a4afc9;
+  --color-slate-600: #bdc6db;
+  --color-slate-700: #d4dbeb;
+  --color-slate-800: #e5eaf5;
+  --color-slate-900: #f1f5fc;
+  --color-slate-950: #f4f8ff;
+
+  /* Brand. 500 upward are the text and link steps; the button fill lives in --color-brand. */
+  --color-navy-50: #16233c;
+  --color-navy-100: #1b2c4a;
+  --color-navy-200: #2f4a78;
+  --color-navy-300: #4a72b8;
+  --color-navy-400: #5f8ed0;
+  --color-navy-500: #7aa4e0;
+  --color-navy-600: #9bc0f2;
+  --color-navy-700: #bcd6f8;
+  --color-navy-800: #d6e6fc;
+  --color-navy-900: #eaf2fe;
+  --color-navy-950: #f3f8ff;
+
+  /*
+   * Gold keeps its 400 and 500 exactly. The rule under a heading and the favourited star are the
+   * seal's colour, and a gold that shifts per theme stops being the seal's colour.
+   */
+  --color-gold-50: #2a2110;
+  --color-gold-100: #35290f;
+  --color-gold-200: #4a3a15;
+  --color-gold-300: #7a5f22;
+  --color-gold-400: #d9a43a;
+  --color-gold-500: #e5bd5b;
+  --color-gold-600: #edcd7c;
+  --color-gold-700: #f2d998;
+  --color-gold-800: #f7e6bb;
+  --color-gold-900: #fbf1d8;
+  --color-gold-950: #fff7e3;
+
+  --color-red-50: #33161a;
+  --color-red-100: #3f1a1f;
+  --color-red-200: #5a2229;
+  --color-red-300: #7c2d36;
+  --color-red-400: #e06a75;
+  --color-red-500: #ef5f6d;
+  --color-red-600: #f08a92;
+  --color-red-700: #f5aab0;
+  --color-red-800: #fbc7cb;
+  --color-red-900: #fde4e6;
+  --color-red-950: #fff4f5;
+
+  --color-amber-50: #2e2410;
+  --color-amber-100: #3a2c11;
+  --color-amber-200: #523d16;
+  --color-amber-300: #78591f;
+  --color-amber-400: #d9a43a;
+  --color-amber-500: #f0b429;
+  --color-amber-600: #f6c860;
+  --color-amber-700: #f8d68a;
+  --color-amber-800: #fbe3b0;
+  --color-amber-900: #fdf0d5;
+  --color-amber-950: #fff7e5;
+
+  --color-emerald-50: #0e2a22;
+  --color-emerald-100: #12332a;
+  --color-emerald-200: #1b4c3d;
+  --color-emerald-300: #256b55;
+  --color-emerald-400: #2f9d7b;
+  --color-emerald-500: #34d399;
+  --color-emerald-600: #6ee7b7;
+  --color-emerald-700: #9df0cf;
+  --color-emerald-800: #bff5e1;
+  --color-emerald-900: #dcfaef;
+  --color-emerald-950: #e4fff5;
+
+  --color-sky-50: #0d2536;
+  --color-sky-100: #0f2d42;
+  --color-sky-200: #17435e;
+  --color-sky-300: #20607f;
+  --color-sky-400: #38a3d1;
+  --color-sky-500: #38bdf8;
+  --color-sky-600: #6fd0fb;
+  --color-sky-700: #a2e2fd;
+  --color-sky-800: #c7eefe;
+  --color-sky-900: #e2f6ff;
+  --color-sky-950: #eefaff;
+
+  --color-violet-50: #231a3d;
+  --color-violet-100: #2b2049;
+  --color-violet-200: #3c2e63;
+  --color-violet-300: #523f87;
+  --color-violet-400: #8b6fdb;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #b199f5;
+  --color-violet-700: #cbbcfa;
+  --color-violet-800: #ded4fc;
+  --color-violet-900: #eee8fe;
+  --color-violet-950: #f8f6ff;
+
+  --color-rose-50: #33161f;
+  --color-rose-100: #3f1a25;
+  --color-rose-200: #5a2233;
+  --color-rose-300: #7c2d45;
+  --color-rose-400: #e06a8b;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #f28fa5;
+  --color-rose-700: #f6b2c1;
+  --color-rose-800: #fbcdd7;
+  --color-rose-900: #fde7ec;
+  --color-rose-950: #fff4f7;
+
+  --color-teal-50: #0c2a2b;
+  --color-teal-100: #0f3334;
+  --color-teal-200: #164c4c;
+  --color-teal-300: #1f6b6b;
+  --color-teal-400: #2f9d9d;
+  --color-teal-500: #2dd4bf;
+  --color-teal-600: #6ee0d3;
+  --color-teal-700: #9fece3;
+  --color-teal-800: #c3f4ee;
+  --color-teal-900: #e0faf7;
+  --color-teal-950: #e4fefb;
+
+  --color-indigo-50: #1b1f42;
+  --color-indigo-100: #22264f;
+  --color-indigo-200: #2f356c;
+  --color-indigo-300: #414a91;
+  --color-indigo-400: #7481e8;
+  --color-indigo-500: #818cf8;
+  --color-indigo-600: #a5aefb;
+  --color-indigo-700: #c4cafc;
+  --color-indigo-800: #dbdffd;
+  --color-indigo-900: #edeffe;
+  --color-indigo-950: #f6f7ff;
+
+
+  /*
+   * ---------------------------------------------------------------------------------------------
+   * Everything below is generated. Do not hand-edit it; run scripts/generate-dark-palette.mjs.
+   * ---------------------------------------------------------------------------------------------
+   *
+   * The families above are the ones this application actually uses, and they were tuned by hand and
+   * checked on screen. These are the rest of the palette — every family Tailwind ships that nothing
+   * references yet.
+   *
+   * They exist so that a screen written next month gets both themes for free. Without them, someone
+   * reaching for `text-green-700` on a new page would get a colour that never changes: correct in
+   * light, invisible in dark, on one screen, found by a user rather than by us.
+   *
+   * They are not guesses. The lightness of each step is measured off the eleven hand-tuned ramps, so
+   * a generated family sits exactly where its neighbours sit; the hue is Tailwind's own, so a green
+   * still reads as green; and the chroma is scaled by how saturated that family is in the light
+   * palette, so a yellow does not arrive as loud as a blue. Every one of them is checked against the
+   * same contrast targets the hand-tuned families meet — see the script.
+   */
+  --color-blue-50: #0a2341; --color-blue-100: #0d2b50; --color-blue-200: #0e3e72; --color-blue-300: #075ba2;
+  --color-blue-400: #3995ff; --color-blue-500: #6fa6ff; --color-blue-600: #9cbeff; --color-blue-700: #bcd2ff;
+  --color-blue-800: #d5e2ff; --color-blue-900: #e9f0ff; --color-blue-950: #f4f7ff;
+
+  --color-cyan-50: #01292b; --color-cyan-100: #003236; --color-cyan-200: #00474e; --color-cyan-300: #006670;
+  --color-cyan-400: #00a7bd; --color-cyan-500: #00bad8; --color-cyan-600: #66ceef; --color-cyan-700: #9adef7;
+  --color-cyan-800: #c0eafb; --color-cyan-900: #dff4fe; --color-cyan-950: #eff9ff;
+
+  --color-fuchsia-50: #35103c; --color-fuchsia-100: #40134b; --color-fuchsia-200: #5d1a6b; --color-fuchsia-300: #862596;
+  --color-fuchsia-400: #d84bed; --color-fuchsia-500: #ea61ff; --color-fuchsia-600: #f394ff; --color-fuchsia-700: #fab7ff;
+  --color-fuchsia-800: #fdd1ff; --color-fuchsia-900: #ffe7ff; --color-fuchsia-950: #fff3ff;
+
+  --color-gray-50: #202327; --color-gray-100: #282b30; --color-gray-200: #3b3e45; --color-gray-300: #545a63;
+  --color-gray-400: #8d95a3; --color-gray-500: #9da6b8; --color-gray-600: #b6bfcc; --color-gray-700: #ccd2dc;
+  --color-gray-800: #dee2e8; --color-gray-900: #eef0f3; --color-gray-950: #f6f7f9;
+
+  --color-green-50: #002b15; --color-green-100: #00351c; --color-green-200: #004b29; --color-green-300: #006c3a;
+  --color-green-400: #00b25a; --color-green-500: #00c75a; --color-green-600: #67db82; --color-green-700: #99e8a9;
+  --color-green-800: #bef1c9; --color-green-900: #ddf8e4; --color-green-950: #edfcf1;
+
+  --color-lime-50: #1f2700; --color-lime-100: #253000; --color-lime-200: #344600; --color-lime-300: #486500;
+  --color-lime-400: #72a800; --color-lime-500: #79bd00; --color-lime-600: #94d553; --color-lime-700: #b4e38c;
+  --color-lime-800: #d0eeb6; --color-lime-900: #e6f7d9; --color-lime-950: #f2fbeb;
+
+  --color-mauve-50: #252126; --color-mauve-100: #2e292e; --color-mauve-200: #433b43; --color-mauve-300: #605660;
+  --color-mauve-400: #9e8f9f; --color-mauve-500: #b19fb3; --color-mauve-600: #c6b9c8; --color-mauve-700: #d8ced9;
+  --color-mauve-800: #e5e0e7; --color-mauve-900: #f2eff3; --color-mauve-950: #f9f7f9;
+
+  --color-mist-50: #1f2424; --color-mist-100: #272c2c; --color-mist-200: #384041; --color-mist-300: #525c5f;
+  --color-mist-400: #89989b; --color-mist-500: #98aaae; --color-mist-600: #b4c1c4; --color-mist-700: #cad4d7;
+  --color-mist-800: #dde3e5; --color-mist-900: #edf1f2; --color-mist-950: #f6f8f8;
+
+  --color-olive-50: #23231e; --color-olive-100: #2b2b25; --color-olive-200: #3f3f36; --color-olive-300: #5b5b4e;
+  --color-olive-400: #969684; --color-olive-500: #a8a891; --color-olive-600: #c0c0af; --color-olive-700: #d3d3c7;
+  --color-olive-800: #e2e3db; --color-olive-900: #f0f0ec; --color-olive-950: #f7f8f5;
+
+  --color-orange-50: #321e00; --color-orange-100: #3c2600; --color-orange-200: #583600; --color-orange-300: #804c00;
+  --color-orange-400: #de7400; --color-orange-500: #ff7a26; --color-orange-600: #ffa482; --color-orange-700: #ffc1ae;
+  --color-orange-800: #ffd8cc; --color-orange-900: #ffebe5; --color-orange-950: #fff5f2;
+
+  --color-pink-50: #39122c; --color-pink-100: #461536; --color-pink-200: #651e4e; --color-pink-300: #912c6b;
+  --color-pink-400: #ea52a7; --color-pink-500: #ff68ae; --color-pink-600: #ff9cba; --color-pink-700: #ffbdcc;
+  --color-pink-800: #ffd5de; --color-pink-900: #ffeaef; --color-pink-950: #fff4f6;
+
+  --color-purple-50: #2e153f; --color-purple-100: #371a4f; --color-purple-200: #502671; --color-purple-300: #7237a1;
+  --color-purple-400: #b665ff; --color-purple-500: #bf86ff; --color-purple-600: #cdabff; --color-purple-700: #dbc6ff;
+  --color-purple-800: #e9daff; --color-purple-900: #f4ecff; --color-purple-950: #f9f5ff;
+
+  --color-stone-50: #232321; --color-stone-100: #2b2b28; --color-stone-200: #413d3b; --color-stone-300: #5d5955;
+  --color-stone-400: #9a938e; --color-stone-500: #ada49e; --color-stone-600: #c2bdb8; --color-stone-700: #d5d1cd;
+  --color-stone-800: #e5e1e0; --color-stone-900: #f1f0ef; --color-stone-950: #f8f7f7;
+
+  --color-taupe-50: #252220; --color-taupe-100: #2e2929; --color-taupe-200: #433c3b; --color-taupe-300: #615754;
+  --color-taupe-400: #9f918c; --color-taupe-500: #b3a29c; --color-taupe-600: #c8bbb7; --color-taupe-700: #d9d0cd;
+  --color-taupe-800: #e7e0df; --color-taupe-900: #f2efee; --color-taupe-950: #f9f7f6;
+
+  --color-yellow-50: #282300; --color-yellow-100: #302c00; --color-yellow-200: #473f00; --color-yellow-300: #685900;
+  --color-yellow-400: #b39100; --color-yellow-500: #cf9e00; --color-yellow-600: #f1b14c; --color-yellow-700: #fec68c;
+  --color-yellow-800: #ffdabb; --color-yellow-900: #ffecdf; --color-yellow-950: #fff5ef;
+
+  --color-zinc-50: #222225; --color-zinc-100: #2a2a2e; --color-zinc-200: #3e3e42; --color-zinc-300: #59595f;
+  --color-zinc-400: #94949d; --color-zinc-500: #a5a5b0; --color-zinc-600: #bdbdc6; --color-zinc-700: #d1d1d7;
+  --color-zinc-800: #e1e1e5; --color-zinc-900: #f0f0f2; --color-zinc-950: #f7f7f8;
+
+  /*
+   * The role colours. Lighter than their light-theme counterparts so they separate from the dark
+   * ground, but held down far enough to keep white text above 4.5:1 - a bright button with a white
+   * label is the most common way a dark theme fails an audit.
+   */
+  --color-brand: #2563c9;
+  --color-brand-hover: #2f6fd0;
+  --color-brand-muted: #24406c;
+  --color-danger: #c8323f;
+  --color-danger-hover: #d43b48;
+  --color-danger-muted: #4d2026;
+  --color-success: #0f9b6c;
+
+  /*
+   * Still white, restated here rather than inherited. The fills above are different colours in this
+   * theme, so what sits on them is a fresh decision every time, not a leftover - and anyone who
+   * lightens a fill has to look straight at the label it has to carry. White clears 4.5:1 on both
+   * the blue and the red, and 3:1 on the success dot, which is a glyph rather than text.
+   */
+  --color-on-brand: #ffffff;
+  --color-on-danger: #ffffff;
+  --color-on-success: #ffffff;
+
+  /*
+   * Black, and much heavier. In light a shadow is the page showing through; in dark there is no
+   * light to block, so a shadow only reads if it is close to opaque - otherwise every card looks
+   * pasted flat onto the background.
+   */
+  --shadow-contact: rgb(0 0 0 / 0.44);
+  --shadow-ambient: rgb(0 0 0 / 0.34);
+  --shadow-contact-strong: rgb(0 0 0 / 0.50);
+  --shadow-ambient-strong: rgb(0 0 0 / 0.44);
+  --shadow-contact-dialog: rgb(0 0 0 / 0.60);
+  --shadow-ambient-dialog: rgb(0 0 0 / 0.66);
+
+  /* The wash has to work harder here: at the light theme's strength it vanishes entirely. */
+  --wash-navy: 30%;
+  --wash-gold: 10%;
+
+  --color-scrim: rgb(2 6 16 / 0.66);
+
+  /* The sweep goes lighter than the base in both themes, so the shimmer travels the same way. */
+  --color-skeleton-base: var(--color-slate-100);
+  --color-skeleton-sheen: var(--color-slate-200);
+
+  --color-chart-grid: var(--color-slate-200);
+  --color-chart-axis: var(--color-line-strong);
+  --color-chart-hover: rgb(155 192 242 / 0.10);
+  /*
+   * The tooltip stays a dark chip - the one surface that is dark in both themes. It floats over the
+   * plot rather than sitting in the page, and inverting it would lose that.
+   */
+  --color-tooltip: #050b16;
+  --color-tooltip-fg: #ffffff;
+  --color-tooltip-fg-muted: #a4afc9;
+}
+
+/*
+ * ------------------------------------------------------------------ changing theme
+ *
+ * The switch is a circle of the new theme opening from the control that was pressed. The browser
+ * photographs the page either side of the change and cross-fades the two on the compositor, which
+ * is the only way to bring the gradient ground, the shadows and the images along with the colours —
+ * `background-image` cannot be transitioned, and an earlier attempt to fade every colour left the
+ * two washes snapping while the cards faded underneath them.
+ *
+ * The default cross-fade is turned off here; src/lib/theme.ts supplies the reveal instead.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  /* The default is plus-lighter, which is right for two fading images and wrong for two opaque
+     ones — it would blow the overlap out to white halfway through the sweep. */
+  mix-blend-mode: normal;
+}
+
+/* The new page rides over the old, and is the one that gets clipped. */
+::view-transition-new(root) {
+  z-index: 1;
+}
+
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+/*
+ * Firefox, and Safari before 18, have no view transitions. They get the older behaviour: a blanket
+ * crossfade of everything that is a colour, for one transition only. Left on permanently this would
+ * put a lag behind every hover in the application.
+ *
+ * A slower, symmetric curve than the rest of the application uses. --ease-settle is deliberately
+ * front-loaded — most of the way there in the first third — which is right for a button
+ * acknowledging a press and wrong for a whole page, where it reads as a flip rather than a change.
+ *
+ * The reduced-motion block at the foot of this file overrides it, being later and equally
+ * important: someone who has asked for no motion gets the new theme instantly.
+ */
+:root.theme-changing,
+:root.theme-changing *,
+:root.theme-changing *::before,
+:root.theme-changing *::after {
+  transition:
+    background-color var(--duration-theme) var(--ease-theme),
+    border-color var(--duration-theme) var(--ease-theme),
+    color var(--duration-theme) var(--ease-theme),
+    fill var(--duration-theme) var(--ease-theme),
+    stroke var(--duration-theme) var(--ease-theme),
+    box-shadow var(--duration-theme) var(--ease-theme) !important;
 }
 
 body {
@@ -100,8 +556,8 @@ body {
    */
   background-color: var(--color-canvas);
   background-image:
-    radial-gradient(60rem 45rem at 0% -10%, color-mix(in oklab, var(--color-navy-500) 14%, transparent), transparent 65%),
-    radial-gradient(50rem 40rem at 105% 110%, color-mix(in oklab, var(--color-gold-300) 12%, transparent), transparent 62%);
+    radial-gradient(60rem 45rem at 0% -10%, color-mix(in oklab, var(--color-navy-500) var(--wash-navy), transparent), transparent 65%),
+    radial-gradient(50rem 40rem at 105% 110%, color-mix(in oklab, var(--color-gold-300) var(--wash-gold), transparent), transparent 62%);
   background-attachment: fixed;
 }
 
@@ -223,9 +679,9 @@ table th,
 @utility skeleton {
   background-image: linear-gradient(
     90deg,
-    var(--color-slate-200) 0%,
-    var(--color-slate-100) 40%,
-    var(--color-slate-200) 80%
+    var(--color-skeleton-base) 0%,
+    var(--color-skeleton-sheen) 40%,
+    var(--color-skeleton-base) 80%
   );
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;

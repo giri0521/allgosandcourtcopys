@@ -86,7 +86,7 @@ export function NotificationsPage() {
             className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors
               duration-[--duration-base] ease-[--ease-settle] ${
                 unreadOnly === option.value
-                  ? 'bg-navy-600 text-white'
+                  ? 'bg-brand text-on-brand'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-navy-700'
               }`}
           >

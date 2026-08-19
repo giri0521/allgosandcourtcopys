@@ -2,11 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { DepartmentAvatar } from '@/components/ui/DepartmentAvatar';
 import { Alert } from '@/components/ui/Alert';
 import { SkeletonCards } from '@/components/ui/Skeleton';
 import { fetchDepartments } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
-import { departmentTone, initials } from '@/lib/tones';
+import { departmentTone } from '@/lib/tones';
 
 /**
  * All 43 departments, browsable by anyone signed in.
@@ -59,15 +60,15 @@ export function DepartmentsPage() {
           than silently losing rows. */}
       <div key={query} className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((department) => {
-          const tone = departmentTone(department.id);
+          const tone = departmentTone(department.name);
           return (
           <Link
             key={department.id}
             to={`/departments/${department.id}`}
-            className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface
+            className={`group relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface
               p-5 pl-6 shadow-card outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-              hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
-              focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
+              hover:-translate-y-0.5 hover:shadow-lifted
+              focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0 ${tone.wash}`}
           >
             {/* The department's own colour, down the leading edge. It widens on hover, which is
                 what makes 43 near-identical cards feel individually chosen. */}
@@ -77,14 +78,11 @@ export function DepartmentsPage() {
                 ease-[--ease-settle] group-hover:w-1.5 ${tone.edge}`}
             />
             <div className="flex items-start gap-3">
-              <span
-                aria-hidden
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm
-                  font-bold transition-transform duration-[--duration-base] ease-[--ease-settle]
-                  group-hover:scale-105 ${tone.chip}`}
-              >
-                {initials(department.name)}
-              </span>
+              <DepartmentAvatar
+                name={department.name}
+                className="transition-transform duration-[--duration-base] ease-[--ease-settle]
+                  group-hover:scale-105"
+              />
               <div className="min-w-0">
                 <h2 className="font-semibold text-navy-800 transition-colors duration-[--duration-base] group-hover:text-navy-600">
                   {department.name}
@@ -109,8 +107,8 @@ export function DepartmentsPage() {
               {/* Slides in on hover; a quiet cue that the whole card is the target. */}
               <span
                 aria-hidden
-                className="ml-auto text-navy-500 opacity-0 transition-all duration-[--duration-base]
-                  ease-[--ease-settle] group-hover:translate-x-0.5 group-hover:opacity-100"
+                className={`ml-auto opacity-0 transition-all duration-[--duration-base]
+                  ease-[--ease-settle] group-hover:translate-x-0.5 group-hover:opacity-100 ${tone.text}`}
               >
                 →
               </span>

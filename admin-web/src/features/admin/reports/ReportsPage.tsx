@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { AppShell } from '@/components/layout/AppShell';
+import { DepartmentAvatar } from '@/components/ui/DepartmentAvatar';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/Field';
@@ -9,7 +10,7 @@ import { MonthlyActivityChart } from '@/features/admin/reports/MonthlyActivityCh
 import { downloadReportCsv, fetchReport, type ReportType } from '@/features/admin/api';
 import { toApiError } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
-import { departmentTone, initials } from '@/lib/tones';
+
 
 /**
  * How much the system is being used, and by whom.
@@ -140,13 +141,7 @@ export function ReportsPage() {
                     <tr key={row.departmentId} className="hover:bg-navy-50/40">
                       <td className="px-5 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <span
-                            aria-hidden
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md
-                              text-[11px] font-bold ${departmentTone(row.departmentId).chip}`}
-                          >
-                            {initials(row.departmentName)}
-                          </span>
+                          <DepartmentAvatar name={row.departmentName} size="sm" />
                           <span className="text-slate-800">{row.departmentName}</span>
                         </div>
                       </td>

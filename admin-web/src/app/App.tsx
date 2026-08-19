@@ -25,6 +25,7 @@ import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { SignedInPage } from '@/features/auth/SignedInPage';
 import { AuthProvider } from '@/lib/AuthProvider';
+import { ThemeProvider } from '@/lib/ThemeProvider';
 import { RequireAdmin, RequireAuth } from '@/lib/RouteGuards';
 
 /**
@@ -49,6 +50,9 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
+    {/* Outermost of the three: the appearance of the sign-in screen should not depend on whether
+        there is a session, and nothing below here should have to ask permission to be themed. */}
+    <ThemeProvider>
     <BrowserRouter>
       <AuthProvider>
       <Routes>
@@ -104,6 +108,7 @@ export function App() {
       </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ThemeProvider>
     </QueryClientProvider>
   );
 }

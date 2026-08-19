@@ -8,6 +8,7 @@ import { fetchMyUploads } from '@/features/documents/api';
 import { DeleteFileDialog } from '@/features/documents/DeleteFileDialog';
 import { FileTable } from '@/features/documents/FileTable';
 import { ReplaceFileDialog } from '@/features/documents/ReplaceFileDialog';
+import { UploadDialog } from '@/features/documents/UploadDialog';
 import { toApiError } from '@/lib/errors';
 import type { FileItem } from '@/types/api';
 
@@ -16,11 +17,18 @@ import type { FileItem } from '@/types/api';
  *
  * <p>Scoped by the server to the caller, so it is the one place where every row is deletable — with
  * a reason.
+ *
+ * <p>It also carries an Upload button, which is the only place in the application you can start an
+ * upload without first navigating to the folder it belongs in. Filing from inside a folder is still
+ * the better path — it knows where you are — but a screen headed "My Uploads" that offers no way to
+ * upload anything is a screen that answers a question nobody asked. The dialog collects the
+ * destination itself.
  */
 export function MyUploadsPage() {
   const [page, setPage] = useState(0);
   const [deleting, setDeleting] = useState<FileItem | null>(null);
   const [replacing, setReplacing] = useState<FileItem | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const uploads = useQuery({
     queryKey: ['my-uploads', page],
@@ -28,7 +36,11 @@ export function MyUploadsPage() {
   });
 
   return (
-    <AppShell title="My Uploads" subtitle="Documents you have added to the system.">
+    <AppShell
+      title="My Uploads"
+      subtitle="Documents you have added to the system."
+      actions={<Button onClick={() => setUploading(true)}>Upload documents</Button>}
+    >
       {uploads.isPending && <SkeletonRows count={4} label="Loading your uploads" />}
       {uploads.isError && <Alert tone="error">{toApiError(uploads.error).message}</Alert>}
 
@@ -38,6 +50,9 @@ export function MyUploadsPage() {
             files={uploads.data.items}
             showLocation
             emptyMessage="You have not uploaded anything yet."
+            emptyAction={
+              <Button onClick={() => setUploading(true)}>Choose files to upload</Button>
+            }
             onDelete={setDeleting}
             onReplace={setReplacing}
           />
@@ -67,6 +82,8 @@ export function MyUploadsPage() {
           )}
         </div>
       )}
+
+      <UploadDialog open={uploading} onClose={() => setUploading(false)} />
 
       <DeleteFileDialog file={deleting} onClose={() => setDeleting(null)} />
       <ReplaceFileDialog file={replacing} onClose={() => setReplacing(null)} />

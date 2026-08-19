@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -19,12 +20,21 @@ import type { FileItem } from '@/types/api';
 export function FileTable({
   files,
   emptyMessage,
+  emptyAction,
   showLocation = false,
   onDelete,
   onReplace,
 }: {
   files: FileItem[];
   emptyMessage: string;
+  /**
+   * The way out of an empty screen.
+   *
+   * <p>An empty state that only explains itself leaves the user to work out where to go next. Where
+   * there is an obvious next step — uploading, on a list of your own uploads — it belongs here,
+   * under the sentence that says nothing is there.
+   */
+  emptyAction?: ReactNode;
   /** My Uploads spans departments, so it needs the "where" column that a folder does not. */
   showLocation?: boolean;
   onDelete: (file: FileItem) => void;
@@ -61,7 +71,7 @@ export function FileTable({
   if (files.length === 0) {
     return (
       <div className="animate-rise flex flex-col items-center rounded-xl border border-dashed border-line-strong
-        bg-white px-6 py-12 text-center">
+        bg-surface px-6 py-12 text-center">
         <svg
           aria-hidden
           viewBox="0 0 24 24"
@@ -76,6 +86,7 @@ export function FileTable({
           <path d="M14 2v6h6" />
         </svg>
         <p className="mt-3 text-sm text-slate-500">{emptyMessage}</p>
+        {emptyAction && <div className="mt-4">{emptyAction}</div>}
       </div>
     );
   }

@@ -122,8 +122,8 @@ export function SignedInPage() {
             </p>
             <Link
               to="/departments"
-              className="mt-4 inline-flex rounded-lg bg-navy-600 px-4 py-2.5 text-sm font-semibold
-                text-white transition hover:bg-navy-700"
+              className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold
+                text-on-brand transition hover:bg-brand-hover"
             >
               Browse departments
             </Link>
@@ -140,25 +140,25 @@ export function SignedInPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 to="/admin/requests"
-                className="rounded-lg bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-700"
+                className="rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-on-brand transition hover:bg-brand-hover"
               >
                 Registration Requests
               </Link>
               <Link
                 to="/admin/members"
-                className="rounded-lg border border-navy-300 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+                className="rounded-lg border border-navy-300 bg-surface px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
               >
                 Members
               </Link>
               <Link
                 to="/admin/deletions"
-                className="rounded-lg border border-navy-300 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+                className="rounded-lg border border-navy-300 bg-surface px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
               >
                 Deleted documents
               </Link>
               <Link
                 to="/downloads"
-                className="rounded-lg border border-navy-300 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+                className="rounded-lg border border-navy-300 bg-surface px-4 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
               >
                 My downloads
               </Link>

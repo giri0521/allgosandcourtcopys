@@ -6,14 +6,21 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
+/*
+ * The filled variants use the role tokens rather than a palette step. A step means one thing per
+ * theme, and in dark the navy and red ramps light up so that `text-navy-700` stays readable — which
+ * is right for text and ruinous for a button, whose white label would end up on a pale blue field.
+ * `bg-brand` and `bg-danger` are set per theme instead, and stay dark enough to carry white in both.
+ */
 const variants = {
   primary:
-    'bg-navy-600 text-white shadow-card hover:bg-navy-700 hover:shadow-lifted disabled:bg-navy-300 disabled:shadow-none',
+    'bg-brand text-on-brand shadow-card hover:bg-brand-hover hover:shadow-lifted disabled:bg-brand-muted disabled:shadow-none',
   secondary:
-    'bg-white text-navy-700 border border-navy-300 hover:bg-navy-50 hover:border-navy-400 disabled:text-slate-400 disabled:border-slate-200',
+    'bg-surface text-navy-700 border border-navy-300 hover:bg-navy-50 hover:border-navy-400 disabled:text-slate-400 disabled:border-slate-200',
   ghost: 'text-navy-600 hover:bg-navy-50 disabled:text-slate-400',
   /** For the one action that removes something; never the default on a screen. */
-  danger: 'bg-red-600 text-white shadow-card hover:bg-red-700 hover:shadow-lifted disabled:bg-red-300 disabled:shadow-none',
+  danger:
+    'bg-danger text-on-danger shadow-card hover:bg-danger-hover hover:shadow-lifted disabled:bg-danger-muted disabled:shadow-none',
 };
 
 /**

@@ -50,7 +50,7 @@ export function NotificationBell() {
         // The number is the signal; the colour only reinforces it, so this still reads without it.
         <span
           className="animate-pop absolute -right-0.5 -top-0.5 flex h-4.5 min-w-4.5 items-center
-            justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold tabular-nums text-white"
+            justify-center rounded-full bg-danger px-1 text-[10px] font-bold tabular-nums text-on-danger"
         >
           {count > 99 ? '99+' : count}
         </span>

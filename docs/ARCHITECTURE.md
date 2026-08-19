@@ -70,6 +70,67 @@ opens in the right application.
 
 **The bucket is never publicly readable.** Every read is a presigned URL valid for five minutes.
 
+### The browser — colour, and both themes
+
+The application ships light and dark, and the dark theme is **not** written as `dark:` variants on
+the screens. It is one restatement of the palette in `admin-web/src/index.css`.
+
+This works because Tailwind v4 compiles every colour utility to a variable reference —
+`text-slate-500` becomes `color: var(--color-slate-500)` — so redefining those variables under
+`:root[data-theme='dark']` re-tones the whole application without touching a single component. Some
+five hundred colour usages across forty files change theme from one block.
+
+The rule that makes it coherent: **a palette step means one thing.** The low steps (50–200) are a
+tint behind something; the high steps (700–950) are text. So the dark theme turns each ramp over —
+low goes deep, high goes bright — and every existing `bg-navy-50` and `text-navy-700` keeps meaning
+what it meant.
+
+Coverage is **total**: all 27 families × 11 steps have dark values, whether or not anything uses them
+yet. That is what lets a screen written next month get both themes without touching this file.
+
+A few places use a step for the opposite job, and those cannot ride the ramp:
+
+| Token | Why it exists |
+|---|---|
+| `--color-brand`, `--color-danger`, `--color-success` (+ `-hover`, `-muted`, `on-`) | Filled buttons and status dots. `bg-navy-600` is a fill carrying a white label; if it lightened with the text ramp the label would vanish. Set per theme instead, dark enough for white in both. |
+| `--color-scrim` | A dialog backdrop must darken the page in a theme that is already dark. |
+| `--shadow-contact`, `--shadow-ambient` (and `-strong`, `-dialog`) | Tailwind inlines a shadow's colour at build time, so `--shadow-card` cannot be restated per theme — it points at these instead. Dark needs near-opaque black; the light theme's translucent navy is invisible on a dark page. |
+| `--color-chart-*`, `--color-tooltip*` | SVG paints through attributes, which cannot take a utility class. |
+
+#### Writing a new screen
+
+**You do not have to think about dark mode.** Use the ordinary utilities — `text-slate-500`,
+`bg-navy-50`, `border-line` — and both themes come out right, because every family Tailwind ships
+has dark values, at every step. Nothing needs a `dark:` prefix.
+
+Three things will bite, and each one fails the test suite rather than reaching a user:
+
+| Don't | Do | Why |
+|---|---|---|
+| `bg-white` | `bg-surface` | A white surface cannot re-tone; it stays a white card on a dark page. `text-white` is fine — it labels a filled button and sits on a colour we chose. |
+| `#1f4076`, `rgb(...)` in a `className`, `style` or `fill` | a palette step or a token | A literal is outside the variable system: correct in whichever theme it was written in, stuck there forever. The chart carried six of these and none of them re-toned. |
+| A saturated fill under white text, e.g. `bg-navy-600 text-white` | `bg-brand text-on-brand` | The 600 step lightens in dark so `text-navy-600` stays readable. That is right for text and ruinous for a button, whose white label would end up on pale blue. |
+
+`dark:` is available if you genuinely need it — it has been rebound to `[data-theme='dark']`, so it
+follows the toggle. Out of the box it compiles to `prefers-color-scheme`, which asks the machine and
+would fire for someone who has explicitly chosen light on a dark laptop.
+
+Consequences worth knowing before changing the theme itself:
+
+- **The palette is complete and audited.** `npm run palette` checks all 27 families against their
+  contrast targets and prints ready-to-paste CSS for anything missing. `src/lib/theme-coverage.test.ts`
+  runs it, so a gap fails the build.
+- **The eleven families in use were tuned by hand and checked on screen; the rest are generated**
+  against a curve measured off those eleven (`scripts/dark-palette.mjs`). Hue comes from Tailwind's
+  own ramp, chroma is scaled by how saturated the family is in light. Nothing is written
+  automatically — the script prints, you paste.
+- **The theme is applied by a blocking script in `index.html`**, duplicated from `src/lib/theme.ts`
+  on purpose. Anything shipped in the bundle arrives after first paint, and a white flash before the
+  dark page is worse than no dark mode. The storage key `allgos.theme` is shared between the two.
+- Preference is `light`, `dark`, or `system`; `system` is resolved through `useSyncExternalStore`, so
+  a machine that switches at sunset takes the page with it. Choices follow between tabs.
+- Both themes can be screenshotted: `THEME=both node scripts/preview-screens.mjs`.
+
 ---
 
 ## 3. How a request works

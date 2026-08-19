@@ -8,8 +8,41 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
+    <!-- Rewritten to the dark canvas by the script below, so the address bar on Android and the
+         title bar of an installed app match the page instead of contradicting it. -->
     <meta name="theme-color" content="#1f4076" />
     <title>ALLGOSANDCOURTCOPYS — Document Management System</title>
+    <script>
+      /*
+       * The theme, applied before the browser paints anything.
+       *
+       * This is deliberately inline, blocking, and duplicated from src/lib/theme.ts. Anything that
+       * arrives with the bundle arrives too late: the page would paint white, then flip to dark a
+       * few hundred milliseconds later, and that flash is worse than having no dark mode at all.
+       * The cost is one storage read on a thread nobody else is using yet.
+       *
+       * Keep 'allgos.theme' and the attribute name in step with src/lib/theme.ts.
+       */
+      (function () {
+        try {
+          var stored = window.localStorage.getItem('allgos.theme');
+          var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+          var dark =
+            mode === 'dark' ||
+            (mode === 'system' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var theme = dark ? 'dark' : 'light';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.content = dark ? '#0a1020' : '#1f4076';
+        } catch (error) {
+          /* A blocked localStorage must not take the page down with it; light is the default. */
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

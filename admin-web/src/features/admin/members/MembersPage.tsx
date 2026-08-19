@@ -92,7 +92,7 @@ export function MembersPage() {
       }
     >
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-1 rounded-lg bg-white p-1 shadow-card ring-1 ring-slate-200">
+        <div className="flex flex-wrap gap-1 rounded-lg bg-surface p-1 shadow-card ring-1 ring-slate-200">
           {TABS.map((option) => (
             <button
               key={option.value}
@@ -103,7 +103,7 @@ export function MembersPage() {
               }}
               className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                 tab === option.value
-                  ? 'bg-navy-600 text-white'
+                  ? 'bg-brand text-on-brand'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-navy-700'
               }`}
             >

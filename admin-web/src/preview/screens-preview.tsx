@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
 import { api } from '@/lib/api';
 import { fixtureAdapter } from '@/preview/fixtures';
+import { THEME_STORAGE_KEY } from '@/lib/theme';
 import '@/index.css';
 
 /**
@@ -27,12 +28,28 @@ import '@/index.css';
 api.defaults.adapter = fixtureAdapter;
 
 /**
+ * `?theme=dark` on the URL, so both appearances can be screenshotted without clicking anything.
+ *
+ * <p>Written to the same storage key the application uses, before the first render, which means the
+ * preview goes through the real provider rather than a special path — if the theme were forced some
+ * other way here, this harness would stop being evidence about the real thing.
+ */
+const requestedTheme = new URLSearchParams(window.location.search).get('theme');
+if (requestedTheme === 'dark' || requestedTheme === 'light' || requestedTheme === 'system') {
+  window.localStorage.setItem(THEME_STORAGE_KEY, requestedTheme);
+}
+
+/**
  * The app uses a browser router, so it reads the path — which on this page is
  * `/screens-preview.html` and matches nothing. The route to render is passed in the hash instead
  * (`/screens-preview.html#/admin/reports`) and rewritten into the path before the router mounts.
  *
  * <p>The hash rather than the path because a real path would be served the *application's*
  * index.html by the dev server, not this harness.
+ *
+ * <p>This has to stay below the theme block above: `replaceState` swaps the entire URL for the
+ * route and takes the query string with it, so anything reading `?theme=` must already have its
+ * copy by the time this runs.
  */
 const requested = window.location.hash.replace(/^#/, '');
 if (requested.startsWith('/')) {

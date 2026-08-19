@@ -6,17 +6,24 @@ import type {
 } from 'react';
 import { useId } from 'react';
 
-interface BaseProps {
+export interface BaseProps {
   label: string;
   error?: string;
   hint?: string;
 }
 
-const controlClass =
+/**
+ * The look of every control on every form: border, padding, focus ring, disabled state.
+ *
+ * <p>Exported so a control that is not a bare input — the combobox, which is an input wearing a
+ * listbox — can look identical to one without copying six utilities and drifting from them.
+ */
+export const controlClass =
   'w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-slate-900 outline-none ' +
   'transition focus:border-navy-500 focus:ring-2 focus:ring-navy-200 disabled:bg-slate-100';
 
-function Wrapper({
+/** Label, hint and error around a control. Exported for the same reason as `controlClass`. */
+export function FieldWrapper({
   label,
   error,
   hint,
@@ -47,14 +54,14 @@ export function TextField({
 }: BaseProps & InputHTMLAttributes<HTMLInputElement>) {
   const id = useId();
   return (
-    <Wrapper label={label} error={error} hint={hint} id={id}>
+    <FieldWrapper label={label} error={error} hint={hint} id={id}>
       <input
         id={id}
         aria-invalid={Boolean(error)}
         className={`${controlClass} ${error ? 'border-red-400' : ''}`}
         {...props}
       />
-    </Wrapper>
+    </FieldWrapper>
   );
 }
 
@@ -66,14 +73,14 @@ export function TextAreaField({
 }: BaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const id = useId();
   return (
-    <Wrapper label={label} error={error} hint={hint} id={id}>
+    <FieldWrapper label={label} error={error} hint={hint} id={id}>
       <textarea
         id={id}
         aria-invalid={Boolean(error)}
         className={`${controlClass} resize-y ${error ? 'border-red-400' : ''}`}
         {...props}
       />
-    </Wrapper>
+    </FieldWrapper>
   );
 }
 
@@ -86,7 +93,7 @@ export function SelectField({
 }: BaseProps & SelectHTMLAttributes<HTMLSelectElement>) {
   const id = useId();
   return (
-    <Wrapper label={label} error={error} hint={hint} id={id}>
+    <FieldWrapper label={label} error={error} hint={hint} id={id}>
       <select
         id={id}
         aria-invalid={Boolean(error)}
@@ -95,6 +102,6 @@ export function SelectField({
       >
         {children}
       </select>
-    </Wrapper>
+    </FieldWrapper>
   );
 }

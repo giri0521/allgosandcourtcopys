@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { HeaderSearch } from '@/components/layout/HeaderSearch';
 import { NotificationBell } from '@/components/layout/NotificationBell';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/lib/auth-context';
 
 interface NavItem {
@@ -137,6 +138,10 @@ export function AppShell({
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <HeaderSearch />
             <NotificationBell />
+            {/* Beside the bell rather than buried in the profile screen: people who want a dark
+                interface want it now, not after two navigations. The three-way choice, including
+                following the operating system, is on My Profile. */}
+            <ThemeToggle />
             {/* The name is the way into My Profile — the place people look for it. */}
             <NavLink
               to="/profile"

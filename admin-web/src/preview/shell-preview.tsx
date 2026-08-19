@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { AuthContext } from '@/lib/auth-context';
+import { THEME_STORAGE_KEY } from '@/lib/theme';
+import { ThemeProvider } from '@/lib/ThemeProvider';
 import type { CurrentUser } from '@/types/api';
 import '@/index.css';
 
@@ -39,8 +41,22 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
 
+
+/**
+ * `?theme=dark` on the URL, so both appearances can be screenshotted without clicking anything.
+ *
+ * <p>Written to the same storage key the application uses, before the first render, which means the
+ * preview goes through the real provider rather than a special path — if the theme were forced some
+ * other way here, this harness would stop being evidence about the real thing.
+ */
+const requestedTheme = new URLSearchParams(window.location.search).get('theme');
+if (requestedTheme === 'dark' || requestedTheme === 'light' || requestedTheme === 'system') {
+  window.localStorage.setItem(THEME_STORAGE_KEY, requestedTheme);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ThemeProvider>
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/home']}>
         <AuthContext.Provider
@@ -61,5 +77,6 @@ createRoot(document.getElementById('root')!).render(
         </AuthContext.Provider>
       </MemoryRouter>
     </QueryClientProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

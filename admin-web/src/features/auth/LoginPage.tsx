@@ -107,14 +107,18 @@ export function LoginPage() {
         </>
       }
     >
-      <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+      {/* The track is sunken and the selected pill is the surface, rather than a grey track under a
+          white pill: `bg-slate-100` is *lighter* than the card in the dark theme, which would leave the
+          selected tab looking pressed in rather than raised. Sunken-under-surface reads the same way in
+          both. */}
+      <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface-sunken p-1">
         {(['password', 'otp'] as const).map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => switchTab(option)}
             className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
-              tab === option ? 'bg-white text-navy-700 shadow-card' : 'text-slate-600 hover:text-navy-700'
+              tab === option ? 'bg-surface text-navy-700 shadow-card' : 'text-slate-600 hover:text-navy-700'
             }`}
           >
             {option === 'password' ? 'Password' : 'OTP'}

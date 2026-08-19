@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/Field';
 import { SkeletonRows } from '@/components/ui/Skeleton';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ThemeModeChoice } from '@/components/ui/ThemeToggle';
 import { changePassword, fetchMe, updateProfile } from '@/features/profile/api';
 import { useAuth } from '@/lib/auth-context';
 import { toApiError } from '@/lib/errors';
@@ -46,6 +47,8 @@ export function ProfilePage() {
           </div>
 
           <aside className="space-y-4">
+            <AppearanceCard />
+
             <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
               <div className="flex items-center gap-3">
                 <span
@@ -255,6 +258,31 @@ function PasswordCard() {
           </Button>
         </div>
       </form>
+    </section>
+  );
+}
+
+/**
+ * Where the third option lives.
+ *
+ * <p>The button in the header is a switch — light, dark, done. This is the place to say "match my
+ * machine" instead, which is the setting most people actually want and none of them want to find
+ * by hunting through a header.
+ *
+ * <p>It sits above the identity card rather than below the password form: appearance is the one
+ * thing on this screen a member can change without an administrator, and burying it under two
+ * forms they cannot always use would be a poor trade.
+ */
+function AppearanceCard() {
+  return (
+    <section className="rounded-xl border border-line bg-surface p-5 shadow-card">
+      <h2 className="font-semibold text-slate-900">Appearance</h2>
+      <p className="mt-1 text-sm leading-relaxed text-slate-500">
+        System follows your device, and changes with it when it switches at sunset.
+      </p>
+      <div className="mt-4">
+        <ThemeModeChoice />
+      </div>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 /**
  * The frame around every screen a signed-out visitor sees.
@@ -19,7 +20,16 @@ export function AuthLayout({
   footer?: ReactNode;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center px-4 py-10">
+      {/*
+        Signed out is where the theme matters most and where there is no chrome to put a control
+        in — somebody signing in at night should not have to get past a white page first to reach
+        the setting that would have prevented it. Pinned to the corner, out of the card's way.
+      */}
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md">
         <div className="animate-rise mb-6 text-center">
           {/* The source artwork sits on a square canvas with a thin frame; clipping to a circle

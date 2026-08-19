@@ -1,3 +1,5 @@
+import { departmentIcon } from '@/lib/department-icons';
+import type { DepartmentIconName } from '@/lib/department-icons';
 import type { FolderCategory } from '@/types/api';
 
 /**
@@ -18,18 +20,48 @@ export interface Tone {
   text: string;
   /** A 3px marker down the side of a card. */
   edge: string;
+  /**
+   * A wash across a whole card, and the border that goes with it.
+   *
+   * <p>Deliberately weak, and deliberately only used on hover. Forty-three cards each tinted at
+   * rest is a paint chart, not a directory — the eye has nowhere to settle. Held back until the
+   * pointer arrives, the same colour becomes the card acknowledging you rather than shouting.
+   *
+   * <p>`hover:` and not `group-hover:`. The card is itself the group, and a group-hover variant
+   * only ever reaches the group's descendants — applied to the group it silently does nothing,
+   * which is exactly what it did until somebody read the computed background back off the page.
+   */
+  wash: string;
 }
 
 const TONES = {
-  navy: { chip: 'bg-navy-50 text-navy-700', text: 'text-navy-600', edge: 'bg-navy-500' },
-  gold: { chip: 'bg-gold-50 text-gold-800', text: 'text-gold-600', edge: 'bg-gold-400' },
-  emerald: { chip: 'bg-emerald-50 text-emerald-800', text: 'text-emerald-600', edge: 'bg-emerald-500' },
-  sky: { chip: 'bg-sky-50 text-sky-800', text: 'text-sky-600', edge: 'bg-sky-500' },
-  violet: { chip: 'bg-violet-50 text-violet-800', text: 'text-violet-600', edge: 'bg-violet-500' },
-  rose: { chip: 'bg-rose-50 text-rose-800', text: 'text-rose-600', edge: 'bg-rose-500' },
-  teal: { chip: 'bg-teal-50 text-teal-800', text: 'text-teal-600', edge: 'bg-teal-500' },
-  indigo: { chip: 'bg-indigo-50 text-indigo-800', text: 'text-indigo-600', edge: 'bg-indigo-500' },
-  slate: { chip: 'bg-slate-100 text-slate-700', text: 'text-slate-500', edge: 'bg-slate-400' },
+  navy: { chip: 'bg-navy-50 text-navy-700', text: 'text-navy-600', edge: 'bg-navy-500', wash: 'hover:bg-navy-50/60 hover:border-navy-300' },
+  gold: { chip: 'bg-gold-50 text-gold-800', text: 'text-gold-600', edge: 'bg-gold-400', wash: 'hover:bg-gold-50/60 hover:border-gold-300' },
+  emerald: { chip: 'bg-emerald-50 text-emerald-800', text: 'text-emerald-600', edge: 'bg-emerald-500', wash: 'hover:bg-emerald-50/60 hover:border-emerald-300' },
+  sky: { chip: 'bg-sky-50 text-sky-800', text: 'text-sky-600', edge: 'bg-sky-500', wash: 'hover:bg-sky-50/60 hover:border-sky-300' },
+  violet: { chip: 'bg-violet-50 text-violet-800', text: 'text-violet-600', edge: 'bg-violet-500', wash: 'hover:bg-violet-50/60 hover:border-violet-300' },
+  rose: { chip: 'bg-rose-50 text-rose-800', text: 'text-rose-600', edge: 'bg-rose-500', wash: 'hover:bg-rose-50/60 hover:border-rose-300' },
+  teal: { chip: 'bg-teal-50 text-teal-800', text: 'text-teal-600', edge: 'bg-teal-500', wash: 'hover:bg-teal-50/60 hover:border-teal-300' },
+  indigo: { chip: 'bg-indigo-50 text-indigo-800', text: 'text-indigo-600', edge: 'bg-indigo-500', wash: 'hover:bg-indigo-50/60 hover:border-indigo-300' },
+  slate: { chip: 'bg-slate-100 text-slate-700', text: 'text-slate-500', edge: 'bg-slate-400', wash: 'hover:bg-slate-50/60 hover:border-slate-300' },
+
+  /*
+   * The second rank, added when departments stopped taking a colour at random and started taking
+   * one that agrees with their icon. Nine hues could not do that: a tree, a droplet and a bolt each
+   * want a particular colour, and there are forty-three departments to place.
+   *
+   * Every family here has values in both themes — see the dark block in index.css — so these tint
+   * and re-tone exactly like the nine above, with no further work.
+   */
+  green: { chip: 'bg-green-50 text-green-800', text: 'text-green-600', edge: 'bg-green-500', wash: 'hover:bg-green-50/60 hover:border-green-300' },
+  lime: { chip: 'bg-lime-50 text-lime-800', text: 'text-lime-600', edge: 'bg-lime-500', wash: 'hover:bg-lime-50/60 hover:border-lime-300' },
+  amber: { chip: 'bg-amber-50 text-amber-800', text: 'text-amber-600', edge: 'bg-amber-500', wash: 'hover:bg-amber-50/60 hover:border-amber-300' },
+  orange: { chip: 'bg-orange-50 text-orange-800', text: 'text-orange-600', edge: 'bg-orange-500', wash: 'hover:bg-orange-50/60 hover:border-orange-300' },
+  cyan: { chip: 'bg-cyan-50 text-cyan-800', text: 'text-cyan-600', edge: 'bg-cyan-500', wash: 'hover:bg-cyan-50/60 hover:border-cyan-300' },
+  blue: { chip: 'bg-blue-50 text-blue-800', text: 'text-blue-600', edge: 'bg-blue-500', wash: 'hover:bg-blue-50/60 hover:border-blue-300' },
+  purple: { chip: 'bg-purple-50 text-purple-800', text: 'text-purple-600', edge: 'bg-purple-500', wash: 'hover:bg-purple-50/60 hover:border-purple-300' },
+  pink: { chip: 'bg-pink-50 text-pink-800', text: 'text-pink-600', edge: 'bg-pink-500', wash: 'hover:bg-pink-50/60 hover:border-pink-300' },
+  stone: { chip: 'bg-stone-100 text-stone-700', text: 'text-stone-500', edge: 'bg-stone-400', wash: 'hover:bg-stone-50/60 hover:border-stone-300' },
 } satisfies Record<string, Tone>;
 
 export type ToneName = keyof typeof TONES;
@@ -70,24 +102,92 @@ export function fileTypeTone(contentType: string): Tone {
 }
 
 /**
- * A stable colour for a department, derived from its id.
+ * The colour that goes with each department glyph.
  *
- * <p>Forty-three departments in one grid is a wall of identical white cards. Giving each a colour
- * makes the one you use every day findable by shape rather than by reading — and deriving it from
- * the id rather than the row's position means it is the same colour tomorrow, on every screen, for
- * every user.
+ * <p>This used to be a hash of the department's id, which gave every department a stable colour and
+ * no reason for it: Environment and Forests came out rose, Energy came out teal, and the tree and
+ * the lightning bolt sat in tints that argued with them. A hash spreads colour evenly, which is a
+ * property nobody asked for; what the eye wants is for the colour and the picture to say the same
+ * thing.
  *
- * <p>Drawn from a fixed set rather than a generated hue, so nothing lands on an unreadable colour
- * or clashes with the status palette.
+ * <p>So the colour follows the icon, and the icon follows the name. A tree is green, a droplet is
+ * sky, a bolt is amber, money is emerald, a hard hat is the orange of high-visibility clothing, and
+ * the temple takes the gold of the seal. The two signals reinforce each other instead of competing,
+ * and a department keeps its colour for as long as it keeps its name — which is longer than it
+ * keeps its id.
+ *
+ * <p>Departments that share an icon share a colour. That is the honest outcome: the three that
+ * reduce to a crowd of people are the three about the welfare of communities, and pretending
+ * otherwise with a different hue each would be decoration rather than meaning.
  */
-const DEPARTMENT_TONES: ToneName[] = ['navy', 'teal', 'indigo', 'emerald', 'sky', 'violet', 'gold', 'rose'];
+const ICON_TONES: Record<DepartmentIconName, ToneName> = {
+  // Land and living things.
+  sprout: 'green',
+  tree: 'emerald',
+  village: 'lime',
+  mountain: 'stone',
+  fish: 'cyan',
 
-export function departmentTone(id: string): Tone {
-  let hash = 0;
-  for (let index = 0; index < id.length; index += 1) {
-    hash = (hash * 31 + id.charCodeAt(index)) >>> 0;
-  }
-  return TONES[DEPARTMENT_TONES[hash % DEPARTMENT_TONES.length]];
+  // Water.
+  droplet: 'sky',
+  waves: 'blue',
+
+  // Power, industry and work.
+  bolt: 'amber',
+  factory: 'slate',
+  hardhat: 'orange',
+  chip: 'indigo',
+  briefcase: 'stone',
+
+  // Money and trade.
+  banknote: 'emerald',
+  receipt: 'teal',
+  store: 'amber',
+  basket: 'orange',
+  textile: 'pink',
+
+  // People.
+  people: 'violet',
+  wheelchair: 'purple',
+  heart: 'rose',
+  badge: 'teal',
+  renew: 'cyan',
+
+  // Learning, language and culture.
+  cap: 'indigo',
+  book: 'blue',
+  speech: 'violet',
+  temple: 'gold',
+
+  // The state, and its instruments.
+  scales: 'navy',
+  shield: 'navy',
+  columns: 'gold',
+  flag: 'navy',
+  ballot: 'indigo',
+  alert: 'orange',
+  megaphone: 'rose',
+  archive: 'slate',
+
+  // Places and movement.
+  buildings: 'slate',
+  road: 'stone',
+  bus: 'blue',
+  globe: 'sky',
+  compass: 'teal',
+  target: 'rose',
+  trophy: 'gold',
+};
+
+/**
+ * A department's colour, taken from what it does.
+ *
+ * <p>Keyed on the name rather than the id so that the colour and the glyph cannot disagree — they
+ * are now two readings of the same fact. A department the office adds later gets the archive glyph
+ * and its slate, which is dull but never wrong.
+ */
+export function departmentTone(name: string): Tone {
+  return TONES[ICON_TONES[departmentIcon(name)] ?? 'slate'];
 }
 
 /**

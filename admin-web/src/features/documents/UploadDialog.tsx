@@ -4,8 +4,11 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { uploadFiles } from '@/features/documents/api';
+import { UploadDestination } from '@/features/documents/UploadDestination';
+import type { Destination } from '@/features/documents/UploadDestination';
 import { toApiError } from '@/lib/errors';
 import { formatFileSize } from '@/lib/format';
+import { invalidateFileLists } from '@/lib/queryKeys';
 
 type Status = 'waiting' | 'uploading' | 'done' | 'failed';
 
@@ -26,8 +29,12 @@ interface Item {
  * what the server does anyway.
  *
  * <p>Not a TanStack mutation: this is progressive per-file state driven by upload callbacks rather
- * than a single request with a single result. The folder's queries are invalidated at the end, which
+ * than a single request with a single result. The document lists are invalidated at the end, which
  * is the part that has to go through the query client.
+ *
+ * <p>Opened from a folder it files there and says so. Opened from anywhere else — My Uploads, which
+ * has no folder to speak of — it asks for a destination first, because there is no such thing as a
+ * document that belongs to nothing.
  */
 export function UploadDialog({
   open,
@@ -36,13 +43,20 @@ export function UploadDialog({
   onClose,
 }: {
   open: boolean;
-  folderId: string;
-  folderName: string;
+  /** Omit both to have the dialog ask where the documents should be filed. */
+  folderId?: string;
+  folderName?: string;
   onClose: () => void;
 }) {
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<Destination | null>(null);
   const queryClient = useQueryClient();
+
+  // The folder passed in always wins; the picker only exists to fill the gap when there is none.
+  const asking = folderId === undefined;
+  const targetId = folderId ?? picked?.id;
+  const targetName = folderName ?? picked?.name;
 
   const update = (index: number, patch: Partial<Item>) => {
     setItems((current) =>
@@ -51,6 +65,7 @@ export function UploadDialog({
   };
 
   const start = async () => {
+    if (!targetId) return;
     setBusy(true);
 
     for (let index = 0; index < items.length; index += 1) {
@@ -58,7 +73,7 @@ export function UploadDialog({
       update(index, { status: 'uploading', percent: 0, error: undefined });
 
       try {
-        const result = await uploadFiles(folderId, [items[index].file], (percent) =>
+        const result = await uploadFiles(targetId, [items[index].file], (percent) =>
           update(index, { percent }),
         );
 
@@ -75,14 +90,15 @@ export function UploadDialog({
     }
 
     setBusy(false);
-    void queryClient.invalidateQueries({ queryKey: ['folder-files', folderId] });
-    void queryClient.invalidateQueries({ queryKey: ['my-uploads'] });
-    void queryClient.invalidateQueries({ queryKey: ['folders'] });
+    // Every document-bearing list, not a hand-picked three: a document arriving changes the folder,
+    // My Uploads, the home dashboard's recents and the counts on the department cards.
+    void invalidateFileLists(queryClient);
   };
 
   const close = () => {
     if (busy) return; // closing mid-upload would leave the bars lying about what happened
     setItems([]);
+    setPicked(null);
     onClose();
   };
 
@@ -90,8 +106,17 @@ export function UploadDialog({
   const done = items.filter((item) => item.status === 'done').length;
 
   return (
-    <Modal open={open} title="Upload documents" description={`Into ${folderName}`} onClose={close}>
+    <Modal
+      open={open}
+      title="Upload documents"
+      description={targetName ? `Into ${targetName}` : 'Choose the files and where they should be filed.'}
+      onClose={close}
+    >
       <div className="space-y-4">
+        {asking && (
+          <UploadDestination value={picked} onChange={setPicked} disabled={busy} />
+        )}
+
         <div>
           <label
             htmlFor="upload-input"
@@ -193,7 +218,7 @@ export function UploadDialog({
 
         {done > 0 && !busy && pending === 0 && (
           <Alert tone="success">
-            {done} {done === 1 ? 'document is' : 'documents are'} now filed in {folderName}.
+            {done} {done === 1 ? 'document is' : 'documents are'} now filed in {targetName}.
           </Alert>
         )}
 
@@ -201,8 +226,19 @@ export function UploadDialog({
           <Button type="button" variant="secondary" onClick={close} disabled={busy}>
             {items.some((item) => item.status === 'done') ? 'Done' : 'Cancel'}
           </Button>
-          <Button type="button" onClick={start} loading={busy} disabled={pending === 0}>
-            Upload {pending > 0 ? `${pending} file${pending === 1 ? '' : 's'}` : ''}
+          {/* Both halves are required, so the button says which one is still missing rather than
+              sitting there greyed out with no explanation. */}
+          <Button
+            type="button"
+            onClick={start}
+            loading={busy}
+            disabled={pending === 0 || !targetId}
+          >
+            {pending === 0
+              ? 'Upload'
+              : !targetId
+                ? 'Choose a folder'
+                : `Upload ${pending} file${pending === 1 ? '' : 's'}`}
           </Button>
         </div>
       </div>
@@ -230,7 +266,7 @@ function StatusMark({ status }: { status: Status }) {
     return (
       <span
         aria-hidden
-        className="animate-pop flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600"
+        className="animate-pop flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-success"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
           <path d="M20 6 9 17l-5-5" />
@@ -243,7 +279,7 @@ function StatusMark({ status }: { status: Status }) {
     return (
       <span
         aria-hidden
-        className="animate-pop flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-600"
+        className="animate-pop flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-danger"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3.5} strokeLinecap="round" className="h-2.5 w-2.5">
           <path d="M18 6 6 18M6 6l12 12" />
