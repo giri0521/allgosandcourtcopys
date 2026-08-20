@@ -197,7 +197,7 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
 
   return (
     <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-      <div className="flex items-center justify-between border-b border-line px-5 py-3">
+      <div className="flex items-center justify-between border-b border-line bg-surface-sunken px-5 py-3">
         <h2 className="font-semibold text-slate-900">Recently filed</h2>
         <Link to="/departments" className="text-sm font-semibold text-navy-600 hover:underline">
           Browse all
@@ -209,7 +209,7 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
             <Link
               to={`/files/${file.id}`}
               className="flex items-center gap-3 px-5 py-3 outline-none transition-colors
-                duration-[--duration-base] hover:bg-navy-50/40 focus-visible:bg-navy-50/40"
+                duration-[--duration-base] hover:bg-navy-50/70 focus-visible:bg-navy-50/70"
             >
               <span
                 aria-hidden

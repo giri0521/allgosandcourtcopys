@@ -43,19 +43,28 @@ export function AuthLayout({
           />
           <h1 className="text-lg font-bold tracking-tight text-navy-800">ALLGOSANDCOURTCOPYS</h1>
           {/* A short gold rule under the name, the way a seal is underlined on a letterhead. */}
-          <span aria-hidden className="mx-auto mt-1.5 block h-0.5 w-12 rounded-full bg-gold-400" />
+          <span
+            aria-hidden
+            className="mx-auto mt-1.5 block h-[3px] w-12 rounded-full bg-gradient-to-r from-gold-400 to-navy-400"
+          />
           <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
             Document Management System
           </p>
         </div>
 
         <div
-          className="animate-rise rounded-2xl border border-line bg-surface p-6 shadow-lifted sm:p-7"
+          className="animate-rise overflow-hidden rounded-2xl border border-line bg-surface shadow-lifted"
           style={{ animationDelay: '70ms' }}
         >
-          <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
-          <div className="mt-5">{children}</div>
+          <div
+            aria-hidden
+            className="h-1 w-full bg-gradient-to-r from-navy-600 via-navy-400 to-gold-400"
+          />
+          <div className="p-6 sm:p-7">
+            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+            <div className="mt-5">{children}</div>
+          </div>
         </div>
 
         {footer && <div className="mt-5 text-center text-sm text-slate-600">{footer}</div>}

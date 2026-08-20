@@ -101,7 +101,7 @@ export function FileTable({
 
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-line bg-surface-sunken text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-line bg-navy-50/60 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th scope="col" className="px-5 py-3 font-semibold">Document</th>
               {showLocation && <th scope="col" className="px-5 py-3 font-semibold">Location</th>}
@@ -115,7 +115,7 @@ export function FileTable({
               <tr
                 key={file.id}
                 className="group/row transition-colors duration-[--duration-base] ease-[--ease-settle]
-                  hover:bg-navy-50/40"
+                  hover:bg-navy-50/70"
               >
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">

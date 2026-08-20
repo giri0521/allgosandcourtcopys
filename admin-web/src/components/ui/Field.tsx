@@ -20,7 +20,11 @@ export interface BaseProps {
  */
 export const controlClass =
   'w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-slate-900 outline-none ' +
-  'transition focus:border-navy-500 focus:ring-2 focus:ring-navy-200 disabled:bg-slate-100';
+  'shadow-[inset_0_1px_2px_var(--shadow-contact)] ' +
+  'transition duration-[--duration-base] ease-[--ease-settle] ' +
+  'hover:border-navy-300 ' +
+  'focus:border-navy-500 focus:ring-4 focus:ring-navy-100 focus:shadow-none ' +
+  'disabled:bg-slate-100 disabled:shadow-none';
 
 /** Label, hint and error around a control. Exported for the same reason as `controlClass`. */
 export function FieldWrapper({

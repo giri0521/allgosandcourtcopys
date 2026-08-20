@@ -86,7 +86,7 @@ export function LoginPage() {
           </Link>
         </div>
 
-        <div className="flex items-center justify-center gap-2 rounded-lg bg-slate-50 py-2.5 text-xs text-slate-500">
+        <div className="flex items-center justify-center gap-2 rounded-lg border border-line bg-navy-50/70 py-2.5 text-xs font-medium text-navy-700">
           <span aria-hidden>🔒</span> Secure login
         </div>
       </form>

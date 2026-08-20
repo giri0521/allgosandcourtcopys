@@ -76,7 +76,7 @@ export function MemberActivityPage() {
             </section>
 
             <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-              <div className="border-b border-line px-5 py-3">
+              <div className="border-b border-line bg-surface-sunken px-5 py-3">
                 <h2 className="font-semibold text-slate-900">Activity</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
                   Everything recorded against this account, newest first.

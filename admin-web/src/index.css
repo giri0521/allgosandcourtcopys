@@ -14,8 +14,8 @@
 
 /* navy/blue government branding, from docs/Logo.png */
 @theme {
-  --color-navy-50: #eef2f9;
-  --color-navy-100: #d6e0f0;
+  --color-navy-50: #eaf1fb;
+  --color-navy-100: #d2e0f4;
   --color-navy-200: #adc1e1;
   --color-navy-300: #7f9ccd;
   --color-navy-400: #5077b6;
@@ -52,11 +52,11 @@
    * stronger #dce6f4, which tinted every white card blue by contrast and made the whole application
    * look like it was printed on sugar paper. The ground should be quiet; the cards are the content.
    */
-  --color-canvas: #eef1f6;
+  --color-canvas: #e7ecf6;
   --color-surface: #ffffff;
-  --color-surface-sunken: #f7f9fc;
-  --color-line: #e4e9f0;
-  --color-line-strong: #c8d2e0;
+  --color-surface-sunken: #f4f7fd;
+  --color-line: #e0e7f2;
+  --color-line-strong: #c3cfe2;
 
   /*
    * Role colours, for the handful of places where a palette step cannot serve both themes.
@@ -106,6 +106,15 @@
   --shadow-dialog: 0 8px 16px -8px var(--shadow-contact-dialog), 0 32px 64px -16px var(--shadow-ambient-dialog);
 
   /*
+   * The filled buttons cast their own colour rather than a grey one. A saturated fill over a neutral
+   * shadow reads as a sticker laid on the page; the same fill over a shadow tinted with itself reads
+   * as an object above it. This is the single biggest difference between an interface that looks
+   * assembled and one that looks made.
+   */
+  --shadow-brand: 0 1px 2px -1px var(--shadow-brand-contact), 0 8px 20px -8px var(--shadow-brand-ambient);
+  --shadow-brand-lifted: 0 2px 4px -2px var(--shadow-brand-contact), 0 14px 28px -10px var(--shadow-brand-ambient-strong);
+
+  /*
    * One easing curve and three durations for the whole application. Motion that varies per screen
    * reads as sloppiness rather than personality, so everything borrows from here.
    *
@@ -148,16 +157,22 @@
    * In light they are navy rather than black: a neutral grey shadow on a cool-white page reads as
    * dirt rather than depth.
    */
-  --shadow-contact: rgb(15 35 64 / 0.08);
-  --shadow-ambient: rgb(15 35 64 / 0.06);
-  --shadow-contact-strong: rgb(15 35 64 / 0.10);
-  --shadow-ambient-strong: rgb(15 35 64 / 0.12);
+  --shadow-contact: rgb(15 35 64 / 0.10);
+  --shadow-ambient: rgb(15 35 64 / 0.09);
+  --shadow-contact-strong: rgb(15 35 64 / 0.12);
+  --shadow-ambient-strong: rgb(15 35 64 / 0.16);
+
+  /* What a filled button casts. Navy, and stronger than the neutral pair above: it is carrying a
+     saturated block of colour, which needs more shadow to sit convincingly above the page. */
+  --shadow-brand-contact: rgb(15 35 64 / 0.28);
+  --shadow-brand-ambient: rgb(31 64 118 / 0.34);
+  --shadow-brand-ambient-strong: rgb(31 64 118 / 0.42);
   --shadow-contact-dialog: rgb(15 35 64 / 0.20);
   --shadow-ambient-dialog: rgb(15 35 64 / 0.28);
 
   /* The strength of the two washes on the body - see the note there. */
-  --wash-navy: 14%;
-  --wash-gold: 12%;
+  --wash-navy: 22%;
+  --wash-gold: 16%;
 
   /* The loading shimmer: a base, and the sweep that crosses it. */
   --color-skeleton-base: var(--color-slate-200);
@@ -459,6 +474,16 @@
   --shadow-contact-dialog: rgb(0 0 0 / 0.60);
   --shadow-ambient-dialog: rgb(0 0 0 / 0.66);
 
+  /*
+   * The filled button's own shadow stays black here rather than navy. On a dark page a coloured
+   * glow around a blue button reads as a lit sign, which is the wrong register for this system —
+   * and the fill is already lighter than its surroundings, so it needs depth beneath it, not light
+   * around it.
+   */
+  --shadow-brand-contact: rgb(0 0 0 / 0.46);
+  --shadow-brand-ambient: rgb(0 0 0 / 0.40);
+  --shadow-brand-ambient-strong: rgb(0 0 0 / 0.50);
+
   /* The wash has to work harder here: at the light theme's strength it vanishes entirely. */
   --wash-navy: 30%;
   --wash-gold: 10%;
@@ -640,6 +665,69 @@ table th,
 }
 
 /* ------------------------------------------------------------------ helpers */
+
+/**
+ * A filled button, as an object rather than a coloured rectangle.
+ *
+ * Three things, none of which is visible on its own and which together are the whole difference:
+ * a sheen down the face, so the fill has a light source; a shadow tinted with the fill's own colour
+ * rather than grey; and a press that puts both away, so the button reads as going *into* the page.
+ *
+ * The sheen is a translucent white overlay rather than a second colour, so one rule serves the navy
+ * button and the red one, and neither has a gradient to keep in step with its token.
+ *
+ * Hover and disabled belong here rather than on the call site: the sheen is a background *image*,
+ * which paints over any `hover:bg-…` a variant might add — the class would appear to work and do
+ * nothing.
+ */
+@utility fill-brand {
+  background-color: var(--color-brand);
+  background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.02) 55%, transparent);
+  box-shadow: var(--shadow-brand);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-brand-hover);
+    box-shadow: var(--shadow-brand-lifted);
+  }
+
+  /* The shadow goes with the press. A button that sinks while still casting a tall shadow is
+     lit from two directions at once, and the eye catches it even when it cannot say why. */
+  &:active:not(:disabled) {
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Both properties, and both from the neutral ramp: an inert control is grey, not a paler
+     version of the live one. Nested inside the utility, so it outranks the `text-on-brand`
+     the call site sets. */
+  &:disabled {
+    background-color: var(--color-slate-200);
+    background-image: none;
+    box-shadow: none;
+    color: var(--color-slate-400);
+  }
+}
+
+@utility fill-danger {
+  background-color: var(--color-danger);
+  background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.02) 55%, transparent);
+  box-shadow: var(--shadow-brand);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-danger-hover);
+    box-shadow: var(--shadow-brand-lifted);
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: var(--shadow-card);
+  }
+
+  &:disabled {
+    background-color: var(--color-slate-200);
+    background-image: none;
+    box-shadow: none;
+    color: var(--color-slate-400);
+  }
+}
 
 @utility animate-rise {
   animation: rise var(--duration-slow) var(--ease-settle) both;

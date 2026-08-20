@@ -110,7 +110,7 @@ export function ReportsPage() {
           </section>
 
           <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-sunken px-5 py-3">
               <div>
                 <h2 className="font-semibold text-slate-900">By department</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
@@ -128,7 +128,7 @@ export function ReportsPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-left text-sm">
-                <thead className="border-b border-line bg-surface-sunken text-xs uppercase tracking-wide text-slate-500">
+                <thead className="border-b border-line bg-navy-50/60 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
                     <th scope="col" className="px-5 py-3 font-semibold">Department</th>
                     <th scope="col" className="px-5 py-3 text-right font-semibold">Held</th>
@@ -138,7 +138,7 @@ export function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {report.data.departments.map((row) => (
-                    <tr key={row.departmentId} className="hover:bg-navy-50/40">
+                    <tr key={row.departmentId} className="hover:bg-navy-50/70">
                       <td className="px-5 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <DepartmentAvatar name={row.departmentName} size="sm" />
@@ -162,7 +162,7 @@ export function ReportsPage() {
           </section>
 
           <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-sunken px-5 py-3">
               <h2 className="font-semibold text-slate-900">Most active members</h2>
               <Button
                 variant="secondary"

@@ -77,7 +77,10 @@ export function AppShell({
     // No background of its own: the body's wash shows through, so every screen sits on the same
     // ground rather than a flat grey panel over it.
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur-md">
+      <header
+        className="sticky top-0 z-40 border-b border-line bg-surface/80 backdrop-blur-xl
+          shadow-[0_10px_30px_-24px_var(--shadow-ambient-strong)]"
+      >
         {/* A hairline of the brand colours across the very top — navy into gold, the seal's two
             colours. It is the one piece of pure decoration in the chrome. */}
         <div
@@ -113,7 +116,9 @@ export function AppShell({
                   `relative rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap outline-none
                    transition-colors duration-[--duration-base] ease-[--ease-settle]
                    focus-visible:ring-2 focus-visible:ring-navy-300 ${
-                     isActive ? 'text-navy-700' : 'text-slate-600 hover:text-navy-700'
+                     isActive
+                       ? 'bg-navy-50 text-navy-700'
+                       : 'text-slate-600 hover:bg-navy-50/70 hover:text-navy-700'
                    }`
                 }
               >
@@ -181,7 +186,10 @@ export function AppShell({
         */}
         <div className="animate-fade mb-7 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <span aria-hidden className="mb-3 block h-0.5 w-10 rounded-full bg-gold-400" />
+            <span
+              aria-hidden
+              className="mb-3 block h-[3px] w-12 rounded-full bg-gradient-to-r from-gold-400 to-navy-400"
+            />
             <h1 className="text-[1.75rem] leading-tight font-semibold text-navy-900">{title}</h1>
             {subtitle && (
               <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-relaxed text-slate-500">

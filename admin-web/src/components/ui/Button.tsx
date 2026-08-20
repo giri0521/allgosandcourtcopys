@@ -13,22 +13,23 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
  * `bg-brand` and `bg-danger` are set per theme instead, and stay dark enough to carry white in both.
  */
 const variants = {
-  primary:
-    'bg-brand text-on-brand shadow-card hover:bg-brand-hover hover:shadow-lifted disabled:bg-brand-muted disabled:shadow-none',
+  /* `fill-brand` carries the face, the shadow, hover, press and disabled together — see index.css
+     for why hover cannot live here. */
+  primary: 'fill-brand text-on-brand hover:-translate-y-px',
   secondary:
-    'bg-surface text-navy-700 border border-navy-300 hover:bg-navy-50 hover:border-navy-400 disabled:text-slate-400 disabled:border-slate-200',
-  ghost: 'text-navy-600 hover:bg-navy-50 disabled:text-slate-400',
+    'bg-surface text-navy-700 border border-navy-200 shadow-card hover:bg-navy-50 hover:border-navy-300 hover:shadow-lifted hover:-translate-y-px disabled:text-slate-400 disabled:border-slate-200 disabled:shadow-none',
+  ghost: 'text-navy-600 hover:bg-navy-50 hover:text-navy-800 disabled:text-slate-400',
   /** For the one action that removes something; never the default on a screen. */
-  danger:
-    'bg-danger text-on-danger shadow-card hover:bg-danger-hover hover:shadow-lifted disabled:bg-danger-muted disabled:shadow-none',
+  danger: 'fill-danger text-on-danger hover:-translate-y-px',
 };
 
 /**
  * The button, and with it most of how the application feels.
  *
- * <p>Three deliberate touches: it lifts a little on hover, presses *down* on click
- * (`active:scale-[0.97]`), and its label stays put while loading rather than being replaced by a
- * spinner — the width never jumps, so a row of buttons does not reflow mid-click.
+ * <p>Four deliberate touches: it lifts a pixel on hover and its shadow grows with it, it presses
+ * *down* on click (`active:scale-[0.97]`, and the shadow shrinks to match), the filled variants
+ * cast their own colour rather than grey, and its label stays put while loading rather than being
+ * replaced by a spinner — the width never jumps, so a row of buttons does not reflow mid-click.
  *
  * <p>The press is the important one. It is the only feedback that arrives before the server
  * answers, and on a slow connection it is the difference between "I clicked it" and "did I click
@@ -50,7 +51,8 @@ export function Button({
       className={`group inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold
         transition-all duration-[--duration-quick] ease-[--ease-settle]
         focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-300 focus-visible:ring-offset-1
-        active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100
+        active:scale-[0.97] active:translate-y-0
+        disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:translate-y-0
         ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >

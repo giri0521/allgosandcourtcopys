@@ -106,7 +106,7 @@ export function AdminDashboardPage() {
       </nav>
 
       <section className="mt-6 overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+        <div className="flex items-center justify-between border-b border-line bg-surface-sunken px-5 py-3">
           <h2 className="font-semibold text-slate-900">Recent activity</h2>
           <Link to="/admin/logs" className="text-sm font-semibold text-navy-600 hover:underline">
             Open the full log

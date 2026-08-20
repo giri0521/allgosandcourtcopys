@@ -41,7 +41,7 @@ export function DownloadsPage() {
           ) : (
             <div className="overflow-x-auto rounded-xl border border-line bg-surface shadow-card">
               <table className="w-full min-w-[640px] text-left text-sm">
-                <thead className="border-b border-line bg-surface-sunken text-xs uppercase tracking-wide text-slate-500">
+                <thead className="border-b border-line bg-navy-50/60 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
                     <th scope="col" className="px-5 py-3 font-semibold">Document</th>
                     <th scope="col" className="px-5 py-3 font-semibold">Location</th>
@@ -89,7 +89,7 @@ export function DownloadsPage() {
 
 function Row({ record }: { record: DownloadRecord }) {
   return (
-    <tr className="transition-colors duration-[--duration-base] hover:bg-navy-50/40">
+    <tr className="transition-colors duration-[--duration-base] hover:bg-navy-50/70">
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
           <span

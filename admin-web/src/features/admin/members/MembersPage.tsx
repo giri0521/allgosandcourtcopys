@@ -137,7 +137,7 @@ export function MembersPage() {
           </p>
         ) : (
           <table className="w-full min-w-3xl text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-line bg-navy-50/60 text-xs uppercase tracking-wide text-slate-600">
               <tr>
                 <th scope="col" className="px-5 py-3 font-semibold">Name</th>
                 <th scope="col" className="px-5 py-3 font-semibold">Department</th>
