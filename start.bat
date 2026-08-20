@@ -31,13 +31,31 @@ if errorlevel 1 (
   echo [x] npm is not on PATH.
   goto :fail
 )
-where java >nul 2>&1
-if errorlevel 1 (
-  if not defined JAVA_HOME (
-    echo [x] No JDK on PATH and JAVA_HOME is not set. JDK 21 is required.
-    goto :fail
-  )
+rem  Maven needs JAVA_HOME to point at the JDK *root* - the folder that holds
+rem  bin\java.exe - not at the bin folder itself, and not at a JRE. Getting that
+rem  wrong is the most common cause of "The JAVA_HOME environment variable is
+rem  not defined correctly", and the message does not say which mistake it was.
+rem
+rem  So the value is checked rather than trusted, and a JDK is located when it is
+rem  wrong or missing. Whatever is resolved here is passed to the backend window,
+rem  so a machine with a broken JAVA_HOME still starts.
+set "JDK="
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" set "JDK=%JAVA_HOME%"
+if not defined JDK if defined JAVA_HOME echo       JAVA_HOME is set but is not a JDK root - searching instead
+
+rem  21 first: that is the version the project targets.
+for /d %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-21*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
+for /d %%D in ("%ProgramFiles%\Java\jdk-21*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
+for /d %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
+for /d %%D in ("%ProgramFiles%\Java\jdk-*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
+
+if not defined JDK (
+  echo [x] No JDK found. JDK 21 is required. Install it with:
+  echo       winget install EclipseAdoptium.Temurin.21.JDK
+  goto :fail
 )
+set "JAVA_HOME=%JDK%"
+echo       JDK      %JAVA_HOME%
 where docker >nul 2>&1
 if errorlevel 1 (
   echo [x] Docker is not on PATH. Install Docker Desktop and retry.
