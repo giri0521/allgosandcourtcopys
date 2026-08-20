@@ -125,11 +125,11 @@ function Row({ record }: { record: DownloadRecord }) {
           </div>
         </div>
       </td>
-      <td className="px-5 py-3 text-slate-600">
+      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
         <p>{record.departmentName}</p>
         <p className="text-xs text-slate-400">{record.folderName}</p>
       </td>
-      <td className="px-5 py-3 text-slate-600">{formatDateTime(record.downloadedAt)}</td>
+      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">{formatDateTime(record.downloadedAt)}</td>
       <td className="px-5 py-3 text-right">
         {record.available ? (
           <Link

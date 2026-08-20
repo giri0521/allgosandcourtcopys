@@ -2,9 +2,22 @@ import type { ButtonHTMLAttributes } from 'react';
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  /**
+   * `md` is a button somebody came to the screen to press. `sm` is one of several offered per row
+   * in a table, where full-size padding pushes the last action off the edge and makes a dense list
+   * read as a stack of buttons with some text beside them.
+   */
+  size?: 'sm' | 'md';
   loading?: boolean;
   fullWidth?: boolean;
 }
+
+/* A prop rather than a className: `px-2.5` and `px-4` are the same utility family, so which one
+   won would depend on their order in the generated stylesheet rather than on the call site. */
+const sizes = {
+  sm: 'px-2.5 py-1.5 text-[0.8125rem] gap-1.5',
+  md: 'px-4 py-2.5 text-sm gap-2',
+};
 
 /*
  * The filled variants use the role tokens rather than a palette step. A step means one thing per
@@ -37,6 +50,7 @@ const variants = {
  */
 export function Button({
   variant = 'primary',
+  size = 'md',
   loading = false,
   fullWidth = false,
   disabled,
@@ -48,12 +62,12 @@ export function Button({
     <button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`group inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold
+      className={`group inline-flex items-center justify-center rounded-lg font-semibold
         transition-all duration-[--duration-quick] ease-[--ease-settle]
         focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-300 focus-visible:ring-offset-1
         active:scale-[0.97] active:translate-y-0
         disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:translate-y-0
-        ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
+        ${sizes[size]} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
       {loading && (

@@ -74,7 +74,7 @@ export function NotificationsPage() {
         ) : undefined
       }
     >
-      <div className="mb-5 flex flex-wrap gap-1 rounded-lg bg-surface p-1 shadow-card ring-1 ring-line">
+      <div className="mb-5 inline-flex flex-wrap gap-1 rounded-lg bg-surface-sunken p-1 ring-1 ring-line">
         {[
           { value: false, label: 'All' },
           { value: true, label: 'Unread' },
@@ -86,8 +86,8 @@ export function NotificationsPage() {
             className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors
               duration-[--duration-base] ease-[--ease-settle] ${
                 unreadOnly === option.value
-                  ? 'bg-brand text-on-brand'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-navy-700'
+                  ? 'bg-brand text-on-brand shadow-card'
+                  : 'text-slate-600 hover:bg-navy-50/70 hover:text-navy-700'
               }`}
           >
             {option.label}

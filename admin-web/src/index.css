@@ -121,6 +121,20 @@
    * The curve settles rather than bounces: this is a government records system, and a document
    * being filed should feel dependable, not playful.
    */
+  /*
+   * Corner radius, one step softer than Tailwind's defaults at the three sizes this application
+   * actually uses. Set here rather than by changing `rounded-xl` to `rounded-2xl` across forty
+   * files: the shapes stay named for their role — a control is `lg`, a card is `xl`, a dialog is
+   * `2xl` — and the whole set can be tuned again from one place.
+   *
+   * The ratio between them is what reads as considered. Bumping only the cards would leave a 12px
+   * input sitting inside a 18px card, which the eye catches as a mismatch long before anyone can
+   * name it.
+   */
+  --radius-lg: 0.625rem;   /* 10px — inputs, buttons, small chips */
+  --radius-xl: 0.875rem;   /* 14px — cards, panels, table shells */
+  --radius-2xl: 1.125rem;  /* 18px — dialogs, the signed-out card */
+
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-quick: 120ms;   /* a button acknowledging a press */
   --duration-base: 220ms;    /* hovers, panels, anything the eye follows */

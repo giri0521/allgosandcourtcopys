@@ -14,7 +14,14 @@ import type { FolderCategory } from '@/types/api';
  * type its label. Colour is for recognition at a glance, never for meaning.
  */
 export interface Tone {
-  /** Background + foreground, for a badge or a glyph. */
+  /**
+   * Background + foreground, for a badge or a glyph — with a hairline of the same hue at 15%.
+   *
+   * <p>The ring is what stops a pale tint reading as a smudge. A 50-step fill on white has almost
+   * no edge of its own, so the badge dissolves into the card at a glance; the ring gives it a
+   * boundary without darkening the fill or the text. Taken from the 500 step so it re-tones with
+   * the family in dark, where 500 is the bright end and the same 15% reads as a lit edge.
+   */
   chip: string;
   /** Just the foreground, for an icon sitting on white. */
   text: string;
@@ -35,15 +42,15 @@ export interface Tone {
 }
 
 const TONES = {
-  navy: { chip: 'bg-navy-50 text-navy-700', text: 'text-navy-600', edge: 'bg-navy-500', wash: 'hover:bg-navy-50/60 hover:border-navy-300' },
-  gold: { chip: 'bg-gold-50 text-gold-800', text: 'text-gold-600', edge: 'bg-gold-400', wash: 'hover:bg-gold-50/60 hover:border-gold-300' },
-  emerald: { chip: 'bg-emerald-50 text-emerald-800', text: 'text-emerald-600', edge: 'bg-emerald-500', wash: 'hover:bg-emerald-50/60 hover:border-emerald-300' },
-  sky: { chip: 'bg-sky-50 text-sky-800', text: 'text-sky-600', edge: 'bg-sky-500', wash: 'hover:bg-sky-50/60 hover:border-sky-300' },
-  violet: { chip: 'bg-violet-50 text-violet-800', text: 'text-violet-600', edge: 'bg-violet-500', wash: 'hover:bg-violet-50/60 hover:border-violet-300' },
-  rose: { chip: 'bg-rose-50 text-rose-800', text: 'text-rose-600', edge: 'bg-rose-500', wash: 'hover:bg-rose-50/60 hover:border-rose-300' },
-  teal: { chip: 'bg-teal-50 text-teal-800', text: 'text-teal-600', edge: 'bg-teal-500', wash: 'hover:bg-teal-50/60 hover:border-teal-300' },
-  indigo: { chip: 'bg-indigo-50 text-indigo-800', text: 'text-indigo-600', edge: 'bg-indigo-500', wash: 'hover:bg-indigo-50/60 hover:border-indigo-300' },
-  slate: { chip: 'bg-slate-100 text-slate-700', text: 'text-slate-500', edge: 'bg-slate-400', wash: 'hover:bg-slate-50/60 hover:border-slate-300' },
+  navy: { chip: 'bg-navy-50 text-navy-700 ring-1 ring-inset ring-navy-500/15', text: 'text-navy-600', edge: 'bg-navy-500', wash: 'hover:bg-navy-50/60 hover:border-navy-300' },
+  gold: { chip: 'bg-gold-50 text-gold-800 ring-1 ring-inset ring-gold-500/15', text: 'text-gold-600', edge: 'bg-gold-400', wash: 'hover:bg-gold-50/60 hover:border-gold-300' },
+  emerald: { chip: 'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-500/15', text: 'text-emerald-600', edge: 'bg-emerald-500', wash: 'hover:bg-emerald-50/60 hover:border-emerald-300' },
+  sky: { chip: 'bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-500/15', text: 'text-sky-600', edge: 'bg-sky-500', wash: 'hover:bg-sky-50/60 hover:border-sky-300' },
+  violet: { chip: 'bg-violet-50 text-violet-800 ring-1 ring-inset ring-violet-500/15', text: 'text-violet-600', edge: 'bg-violet-500', wash: 'hover:bg-violet-50/60 hover:border-violet-300' },
+  rose: { chip: 'bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-500/15', text: 'text-rose-600', edge: 'bg-rose-500', wash: 'hover:bg-rose-50/60 hover:border-rose-300' },
+  teal: { chip: 'bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-500/15', text: 'text-teal-600', edge: 'bg-teal-500', wash: 'hover:bg-teal-50/60 hover:border-teal-300' },
+  indigo: { chip: 'bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-500/15', text: 'text-indigo-600', edge: 'bg-indigo-500', wash: 'hover:bg-indigo-50/60 hover:border-indigo-300' },
+  slate: { chip: 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-500/15', text: 'text-slate-500', edge: 'bg-slate-400', wash: 'hover:bg-slate-50/60 hover:border-slate-300' },
 
   /*
    * The second rank, added when departments stopped taking a colour at random and started taking
@@ -53,15 +60,15 @@ const TONES = {
    * Every family here has values in both themes — see the dark block in index.css — so these tint
    * and re-tone exactly like the nine above, with no further work.
    */
-  green: { chip: 'bg-green-50 text-green-800', text: 'text-green-600', edge: 'bg-green-500', wash: 'hover:bg-green-50/60 hover:border-green-300' },
-  lime: { chip: 'bg-lime-50 text-lime-800', text: 'text-lime-600', edge: 'bg-lime-500', wash: 'hover:bg-lime-50/60 hover:border-lime-300' },
-  amber: { chip: 'bg-amber-50 text-amber-800', text: 'text-amber-600', edge: 'bg-amber-500', wash: 'hover:bg-amber-50/60 hover:border-amber-300' },
-  orange: { chip: 'bg-orange-50 text-orange-800', text: 'text-orange-600', edge: 'bg-orange-500', wash: 'hover:bg-orange-50/60 hover:border-orange-300' },
-  cyan: { chip: 'bg-cyan-50 text-cyan-800', text: 'text-cyan-600', edge: 'bg-cyan-500', wash: 'hover:bg-cyan-50/60 hover:border-cyan-300' },
-  blue: { chip: 'bg-blue-50 text-blue-800', text: 'text-blue-600', edge: 'bg-blue-500', wash: 'hover:bg-blue-50/60 hover:border-blue-300' },
-  purple: { chip: 'bg-purple-50 text-purple-800', text: 'text-purple-600', edge: 'bg-purple-500', wash: 'hover:bg-purple-50/60 hover:border-purple-300' },
-  pink: { chip: 'bg-pink-50 text-pink-800', text: 'text-pink-600', edge: 'bg-pink-500', wash: 'hover:bg-pink-50/60 hover:border-pink-300' },
-  stone: { chip: 'bg-stone-100 text-stone-700', text: 'text-stone-500', edge: 'bg-stone-400', wash: 'hover:bg-stone-50/60 hover:border-stone-300' },
+  green: { chip: 'bg-green-50 text-green-800 ring-1 ring-inset ring-green-500/15', text: 'text-green-600', edge: 'bg-green-500', wash: 'hover:bg-green-50/60 hover:border-green-300' },
+  lime: { chip: 'bg-lime-50 text-lime-800 ring-1 ring-inset ring-lime-500/15', text: 'text-lime-600', edge: 'bg-lime-500', wash: 'hover:bg-lime-50/60 hover:border-lime-300' },
+  amber: { chip: 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-500/15', text: 'text-amber-600', edge: 'bg-amber-500', wash: 'hover:bg-amber-50/60 hover:border-amber-300' },
+  orange: { chip: 'bg-orange-50 text-orange-800 ring-1 ring-inset ring-orange-500/15', text: 'text-orange-600', edge: 'bg-orange-500', wash: 'hover:bg-orange-50/60 hover:border-orange-300' },
+  cyan: { chip: 'bg-cyan-50 text-cyan-800 ring-1 ring-inset ring-cyan-500/15', text: 'text-cyan-600', edge: 'bg-cyan-500', wash: 'hover:bg-cyan-50/60 hover:border-cyan-300' },
+  blue: { chip: 'bg-blue-50 text-blue-800 ring-1 ring-inset ring-blue-500/15', text: 'text-blue-600', edge: 'bg-blue-500', wash: 'hover:bg-blue-50/60 hover:border-blue-300' },
+  purple: { chip: 'bg-purple-50 text-purple-800 ring-1 ring-inset ring-purple-500/15', text: 'text-purple-600', edge: 'bg-purple-500', wash: 'hover:bg-purple-50/60 hover:border-purple-300' },
+  pink: { chip: 'bg-pink-50 text-pink-800 ring-1 ring-inset ring-pink-500/15', text: 'text-pink-600', edge: 'bg-pink-500', wash: 'hover:bg-pink-50/60 hover:border-pink-300' },
+  stone: { chip: 'bg-stone-100 text-stone-700 ring-1 ring-inset ring-stone-500/15', text: 'text-stone-500', edge: 'bg-stone-400', wash: 'hover:bg-stone-50/60 hover:border-stone-300' },
 } satisfies Record<string, Tone>;
 
 export type ToneName = keyof typeof TONES;

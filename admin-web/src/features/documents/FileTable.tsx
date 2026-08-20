@@ -100,13 +100,15 @@ export function FileTable({
       )}
 
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table
+          className={`w-full text-left text-sm ${showLocation ? 'min-w-[880px]' : 'min-w-[760px]'}`}
+        >
           <thead className="border-b border-line bg-navy-50/60 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th scope="col" className="px-5 py-3 font-semibold">Document</th>
               {showLocation && <th scope="col" className="px-5 py-3 font-semibold">Location</th>}
-              <th scope="col" className="px-5 py-3 font-semibold">Uploaded by</th>
-              <th scope="col" className="px-5 py-3 font-semibold">Uploaded</th>
+              <th scope="col" className="px-5 py-3 font-semibold whitespace-nowrap">Uploaded by</th>
+              <th scope="col" className="px-5 py-3 font-semibold whitespace-nowrap">Uploaded</th>
               <th scope="col" className="px-5 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
@@ -117,7 +119,7 @@ export function FileTable({
                 className="group/row transition-colors duration-[--duration-base] ease-[--ease-settle]
                   hover:bg-navy-50/70"
               >
-                <td className="px-5 py-3">
+                <td className="max-w-[22rem] px-5 py-3">
                   <div className="flex items-center gap-3">
                     <StarButton
                       file={file}
@@ -140,14 +142,20 @@ export function FileTable({
                   </div>
                 </td>
                 {showLocation && (
-                  <td className="px-5 py-3 text-slate-600">
-                    <p>{file.departmentName}</p>
-                    <p className="text-xs text-slate-400">{file.folderName}</p>
+                  <td className="max-w-[14rem] px-5 py-3.5 text-slate-600">
+                    <p className="truncate" title={file.departmentName}>
+                      {file.departmentName}
+                    </p>
+                    <p className="truncate text-xs text-slate-400" title={file.folderName}>
+                      {file.folderName}
+                    </p>
                   </td>
                 )}
-                <td className="px-5 py-3 text-slate-600">{file.uploadedByName}</td>
-                <td className="px-5 py-3 text-slate-600">{formatDateTime(file.uploadedAt)}</td>
-                <td className="px-5 py-3">
+                <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">{file.uploadedByName}</td>
+                <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                  {formatDateTime(file.uploadedAt)}
+                </td>
+                <td className="px-3 py-3">
                   {/* Actions fade up on row hover on a pointer device, but stay permanently visible
                       on touch and for keyboard users — hover-only controls are unreachable there. */}
                   <div className="flex justify-end gap-1 sm:opacity-60 sm:transition-opacity
@@ -158,15 +166,17 @@ export function FileTable({
                     {file.previewable && (
                       <Link
                         to={`/files/${file.id}`}
-                        className="inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-semibold
-                          text-navy-600 outline-none transition-all duration-[--duration-quick]
-                          ease-[--ease-settle] hover:bg-navy-50 focus-visible:ring-2 focus-visible:ring-navy-300"
+                        className="inline-flex items-center rounded-lg px-2.5 py-1.5 text-[0.8125rem]
+                          font-semibold text-navy-600 outline-none transition-all
+                          duration-[--duration-quick] ease-[--ease-settle] hover:bg-navy-50
+                          focus-visible:ring-2 focus-visible:ring-navy-300"
                       >
                         Preview
                       </Link>
                     )}
                     <Button
                       variant="ghost"
+                      size="sm"
                       onClick={() => void download(file)}
                       loading={downloading === file.id}
                     >
@@ -176,11 +186,12 @@ export function FileTable({
                         re-checks anyway, so this is tidiness rather than protection. */}
                     {file.canModify && (
                       <>
-                        <Button variant="ghost" onClick={() => onReplace(file)}>
+                        <Button variant="ghost" size="sm" onClick={() => onReplace(file)}>
                           Replace
                         </Button>
                         <Button
                           variant="ghost"
+                          size="sm"
                           onClick={() => onDelete(file)}
                           className="text-red-600! hover:bg-red-50!"
                         >
