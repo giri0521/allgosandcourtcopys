@@ -36,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -74,6 +75,7 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
 
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private DepartmentRepository departmentRepository;
     @Autowired private FolderRepository folderRepository;
     @Autowired private StoredFileRepository fileRepository;
@@ -110,15 +112,21 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
         userRepository.findByMobileNumber(MEMBER_MOBILE).ifPresent(userRepository::delete);
         userRepository.findByMobileNumber(OTHER_MEMBER_MOBILE).ifPresent(userRepository::delete);
 
+        // The seeded admin has no password of its own — in production the operator sets one through
+        // the OTP reset before first use. Here it is given one directly, so these tests can sign in
+        // the same way every other account does.
         User admin = userRepository.findByMobileNumber(ADMIN_MOBILE).orElseThrow();
         admin.setStatus(UserStatus.ACTIVE);
+        admin.setPasswordHash(passwordEncoder.encode(PASSWORD));
+        admin.setFailedLoginCount(0);
+        admin.setLockedUntil(null);
         userRepository.saveAndFlush(admin);
 
         List<Department> departments = departmentRepository.findByActiveTrueOrderByNameAsc();
         ownDepartment = departments.get(0);
         otherDepartment = departments.get(1);
 
-        adminToken = signInWithOtp(ADMIN_MOBILE);
+        adminToken = signIn(ADMIN_MOBILE);
         memberToken = registerApproveAndSignIn(MEMBER_MOBILE, "Meena Rajan");
 
         folderId = createFolder(otherDepartment.getId(), "Circulars 2026", memberToken);
@@ -574,19 +582,15 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
                 .andExpect(status().isOk());
 
-        return signInWithOtp(mobile);
+        return signIn(mobile);
     }
 
-    private String signInWithOtp(String mobile) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("mobileNumber", mobile))))
-                .andExpect(status().isAccepted());
-
-        String body = mockMvc.perform(post("/api/v1/auth/otp/verify")
+    /** A password sign-in, exactly as a user performs it, returning the access token. */
+    private String signIn(String mobile) throws Exception {
+        String body = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("mobileNumber", mobile, "otp", otpProvider.lastOtpFor(mobile)))))
+                                Map.of("mobileNumber", mobile, "password", PASSWORD))))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

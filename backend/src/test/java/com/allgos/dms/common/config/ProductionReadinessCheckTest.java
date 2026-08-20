@@ -14,7 +14,8 @@ import org.springframework.mock.env.MockEnvironment;
  *
  * <p>Each of these values works perfectly — that is the whole problem. A placeholder signing secret
  * issues tokens that verify, MinIO's default credentials read and write documents happily, and the
- * mock OTP provider lets everyone in. Nothing fails, nothing is logged, and the system is wide open.
+ * mock OTP provider writes password-reset codes to the log. Nothing fails, nothing is logged, and
+ * the system is wide open.
  */
 class ProductionReadinessCheckTest {
 

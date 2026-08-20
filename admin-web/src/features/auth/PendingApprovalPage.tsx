@@ -3,7 +3,7 @@ import { AuthLayout } from '@/features/auth/AuthLayout';
 
 export function PendingApprovalPage() {
   const location = useLocation();
-  const state = location.state as { mobileNumber?: string; verified?: boolean } | null;
+  const state = location.state as { mobileNumber?: string } | null;
   const mobileNumber = state?.mobileNumber;
 
   return (
@@ -23,17 +23,13 @@ export function PendingApprovalPage() {
           </p>
         </div>
 
-        {mobileNumber &&
-          (state?.verified ? (
-            <p>
-              <span className="font-semibold">+91 {mobileNumber}</span> has been confirmed.
-            </p>
-          ) : (
-            <p>
-              <span className="font-semibold">+91 {mobileNumber}</span> was not confirmed. Your
-              request has still reached the administrators.
-            </p>
-          ))}
+        {mobileNumber && (
+          <p>
+            Your request was submitted for{' '}
+            <span className="font-semibold">+91 {mobileNumber}</span>. Sign in with that number and
+            the password you chose, once it has been approved.
+          </p>
+        )}
 
         <p>
           You will be notified once your request has been reviewed. If it is urgent, contact your

@@ -9,7 +9,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,7 +30,10 @@ public class User extends BaseEntity {
     @Column
     private String email;
 
-    /** Null until the user sets one; the daily OTP is what actually admits them. */
+    /**
+     * The sign-in credential. Null only for a seeded account that has never set one — that operator
+     * completes an OTP password reset before the account can be used.
+     */
     @Column(name = "password_hash")
     private String passwordHash;
 
@@ -47,13 +49,6 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     private UserStatus status = UserStatus.PENDING;
-
-    /**
-     * The last date, in the configured application timezone, on which this user completed an OTP
-     * login. Password login is refused until this equals today — see LoginPolicyService.
-     */
-    @Column(name = "last_otp_login_date")
-    private LocalDate lastOtpLoginDate;
 
     /** Bumped by "logout from all devices"; refresh tokens carrying an older value are rejected. */
     @Column(name = "token_version", nullable = false)

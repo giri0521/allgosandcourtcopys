@@ -68,8 +68,8 @@ public class ProductionReadinessCheck implements ApplicationListener<Application
         }
 
         if ("mock".equals(properties.otp().provider())) {
-            // The mock provider writes the code to the log instead of sending it, so every account
-            // is open to anyone who can read the logs.
+            // The mock provider writes the code to the log instead of sending it, so anyone who can
+            // read the logs can complete a password reset on any account.
             problems.add("app.otp.provider is 'mock' — no OTP is actually sent; set OTP_PROVIDER");
         }
 

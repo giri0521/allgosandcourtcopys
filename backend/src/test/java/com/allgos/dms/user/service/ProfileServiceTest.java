@@ -17,7 +17,6 @@ import com.allgos.dms.user.entity.User;
 import com.allgos.dms.user.entity.UserRole;
 import com.allgos.dms.user.entity.UserStatus;
 import com.allgos.dms.user.repository.UserRepository;
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,7 +64,6 @@ class ProfileServiceTest {
         user.setRole(UserRole.MEMBER);
         user.setStatus(UserStatus.ACTIVE);
         user.setPasswordHash(passwordEncoder.encode(CURRENT_PASSWORD));
-        user.setLastOtpLoginDate(LocalDate.of(2026, 8, 12));
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
     }
@@ -132,14 +130,6 @@ class ProfileServiceTest {
             assertThat(passwordEncoder.matches("N3wPassword!", user.getPasswordHash())).isTrue();
             verify(auditService).record(
                     eq(user), eq(AuditAction.PASSWORD_CHANGED), eq("user"), eq(user.getId()), any());
-        }
-
-        @Test
-        @DisplayName("the daily-OTP stamp is left alone — a password change proves nothing about a phone")
-        void doesNotDisturbTheDailyOtpStamp() {
-            service.changePassword(user, new ProfileRequests.ChangePassword(CURRENT_PASSWORD, "N3wPassword!"));
-
-            assertThat(user.getLastOtpLoginDate()).isEqualTo(LocalDate.of(2026, 8, 12));
         }
 
         @Test

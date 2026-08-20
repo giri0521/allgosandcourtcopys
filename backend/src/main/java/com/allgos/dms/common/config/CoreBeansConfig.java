@@ -10,8 +10,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class CoreBeansConfig {
 
     /**
-     * Injected everywhere a date or time is needed rather than calling Instant.now() inline, so the
-     * daily-OTP rule can be tested across a date rollover without waiting for midnight.
+     * Injected everywhere a date or time is needed rather than calling Instant.now() inline, so
+     * time-dependent behaviour — the rate limiter's window, report periods — can be tested against a
+     * fixed clock instead of the wall clock.
      */
     @Bean
     public Clock clock() {

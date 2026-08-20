@@ -129,7 +129,49 @@ public class FileService {
             }
         }
 
+        if (!uploaded.isEmpty()) {
+            announceUpload(folder, uploaded, uploader);
+        }
+
         return new UploadResult(uploaded, rejected);
+    }
+
+    /**
+     * Tells the whole office that a document has arrived — every active account except the uploader,
+     * admins and members alike.
+     *
+     * <p>One notification per upload <em>action</em>, not per file. A member filing twenty scans
+     * would otherwise write twenty rows into a hundred people's bells, and the twenty-first thing
+     * anyone wants is a bell they have learned to ignore.
+     *
+     * <p>Failures are swallowed on purpose. The files are already stored and committed by this
+     * point, and refusing the request now would tell the uploader their upload failed when it did
+     * not — leaving them to do it again and file everything twice.
+     */
+    private void announceUpload(
+            FileRecordWriter.FolderRef folder, List<FileView> uploaded, User uploader) {
+        try {
+            FileView first = uploaded.getFirst();
+            boolean single = uploaded.size() == 1;
+
+            String what = single
+                    ? "\"%s\"".formatted(first.fileName())
+                    : "%d documents".formatted(uploaded.size());
+
+            notificationService.notifyEveryoneExcept(
+                    uploader,
+                    NotificationType.FILE_UPLOADED,
+                    single ? "A new document was uploaded" : "New documents were uploaded",
+                    "%s uploaded %s to %s / %s."
+                            .formatted(
+                                    uploader.getFullName(),
+                                    what,
+                                    folder.departmentName(),
+                                    folder.folderName()),
+                    single ? "file:" + first.id() : "folder:" + folder.folderId());
+        } catch (RuntimeException ex) {
+            log.error("Upload by {} was stored but could not be announced", uploader.getId(), ex);
+        }
     }
 
     private FileView uploadOne(FileRecordWriter.FolderRef folder, MultipartFile part, User uploader) {

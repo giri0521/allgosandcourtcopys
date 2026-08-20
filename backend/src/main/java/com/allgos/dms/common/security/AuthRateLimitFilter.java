@@ -22,8 +22,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * Caps how often one network address may call the authentication endpoints.
  *
- * <p><b>Why this exists.</b> The application already bounds brute force per <em>account</em>: OTP
- * codes expire and are attempt-limited, and password failures lock the account. Neither of those
+ * <p><b>Why this exists.</b> The application already bounds brute force per <em>account</em>:
+ * password failures lock the account, and reset codes expire and are attempt-limited. Neither of those
  * bounds an attacker who spreads attempts across many accounts — a script trying one password
  * against ten thousand mobile numbers never trips a per-account counter, and every attempt costs a
  * BCrypt verification. This is the per-caller bound that the account-level ones cannot provide.

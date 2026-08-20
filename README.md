@@ -14,7 +14,8 @@ API surface, phases, security and test strategy.
 Both Admins and Members self-register. **No account works until an Admin approves it** — that approval
 is the only access gate in the system. Once approved, a user can view, download and upload documents in
 **any** department. A member may delete a file they uploaded, but must give a reason, which is sent to
-every Admin as a notification.
+every Admin as a notification. **Every upload is announced to everyone** — admins and members
+alike, except the person who uploaded it.
 
 | | Member | Admin |
 |---|---|---|
@@ -26,8 +27,9 @@ every Admin as a notification.
 | Manage departments & folders | — | ✅ |
 | Monitor all member activity, reports, audit logs | — | ✅ |
 
-**Login:** mobile number is the identity. OTP is mandatory on the **first login of each calendar day**;
-for the rest of that day, password or OTP both work.
+**Login:** mobile number is the identity and the password is the credential. Five wrong passwords lock
+the account for fifteen minutes. The only OTP left in the system authorises a password reset;
+registration and sign-in never ask for one.
 
 ## Stack
 
@@ -37,7 +39,7 @@ for the rest of that day, password or OTP both work.
 | Backend API | Java 21 + Spring Boot 3.3 |
 | Database | PostgreSQL 16, Flyway migrations |
 | File storage | S3-compatible — MinIO in dev, S3 or on-prem MinIO in prod |
-| Auth | JWT (access + refresh) via Spring Security; OTP over a pluggable SMS provider |
+| Auth | JWT (access + refresh) via Spring Security; password (BCrypt), with OTP over a pluggable SMS provider for registration and password reset |
 
 There is no mobile app. `admin-web/` is a single responsive SPA that serves both roles.
 
@@ -79,8 +81,14 @@ match. Note the two deliberate port choices — the database is published on **5
 a PostgreSQL installed directly on the machine, and the MinIO console on **9002** because Windows
 frequently reserves 9001.
 
-In development `OTP_PROVIDER=mock`, so OTP codes are printed to the backend log instead of being sent
-over SMS — no gateway account needed to work on the app.
+In development `OTP_PROVIDER=mock`, so registration and password-reset codes are printed to the backend
+log instead of being sent over SMS — no gateway account needed to work on the app.
+
+**Signing in the first time:** the seeded admin is **9999999999 / `Admin@12345`**. The migration seeds
+that account with *no* password — in a real deployment the operator claims it through Forgot password —
+so `DevAdminPasswordSeeder` sets one on start-up, and only on a machine still running every shipped
+default. Override with `SEED_ADMIN_PASSWORD`, or blank it to turn the whole thing off. Members sign in
+with the password they chose at registration, once an admin has approved them.
 
 ### Checks
 

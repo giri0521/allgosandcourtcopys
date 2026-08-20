@@ -216,7 +216,7 @@ function PasswordCard() {
     <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
       <h2 className="font-semibold text-slate-900">Password</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Used after your daily OTP. Changing it signs you out everywhere, including here.
+        This is how you sign in. Changing it signs you out everywhere, including here.
       </p>
 
       <form

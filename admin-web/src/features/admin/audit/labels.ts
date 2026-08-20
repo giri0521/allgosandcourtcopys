@@ -13,13 +13,9 @@ import type { ToneName } from '@/lib/tones';
  */
 const LABELS: Record<string, string> = {
   register: 'Registered',
-  otp_sent: 'OTP sent',
-  otp_verified: 'Signed in with OTP',
-  otp_failed: 'OTP rejected',
   login_password: 'Signed in with password',
   login_failed: 'Sign-in failed',
   login_blocked_status: 'Sign-in blocked — account not active',
-  login_blocked_otp_required: 'Sign-in blocked — OTP required today',
   logout: 'Signed out',
   logout_all: 'Signed out everywhere',
   password_changed: 'Password changed',

@@ -69,8 +69,8 @@ public class AdminUserService {
     }
 
     /**
-     * Approves a registration: the account becomes ACTIVE and, from this moment, can sign in with an
-     * OTP.
+     * Approves a registration: the account becomes ACTIVE and, from this moment, can sign in with
+     * the password chosen at registration.
      *
      * <p>The applicant's role is left exactly as registered. Promotion to admin is a separate,
      * deliberate act, so an approval click can never hand out administrative access by accident.

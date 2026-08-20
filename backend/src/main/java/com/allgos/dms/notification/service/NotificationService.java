@@ -30,13 +30,18 @@ public class NotificationService {
 
     @Transactional
     public void notify(User recipient, String type, String title, String body, String entityRef) {
+        notificationRepository.save(build(recipient, type, title, body, entityRef));
+    }
+
+    private static Notification build(
+            User recipient, String type, String title, String body, String entityRef) {
         Notification notification = new Notification();
         notification.setUser(recipient);
         notification.setType(type);
         notification.setTitle(title);
         notification.setBody(body);
         notification.setEntityRef(entityRef);
-        notificationRepository.save(notification);
+        return notification;
     }
 
     /**
@@ -49,6 +54,27 @@ public class NotificationService {
     public void notifyAllAdmins(String type, String title, String body, String entityRef) {
         List<User> admins = userRepository.findByRoleAndStatus(UserRole.ADMIN, UserStatus.ACTIVE);
         admins.forEach(admin -> notify(admin, type, title, body, entityRef));
+    }
+
+    /**
+     * Fans a notification out to the whole office — every active account except the one that caused
+     * it. Admins and members alike: an upload is news to everyone, and the person who just did it
+     * does not need telling.
+     *
+     * <p>Written in one {@code saveAll} rather than a save per recipient. With a hundred accounts
+     * that is the difference between one statement batch and a hundred round trips on a request the
+     * user is waiting on.
+     */
+    @Transactional
+    public void notifyEveryoneExcept(User actor, String type, String title, String body, String entityRef) {
+        List<Notification> notifications = userRepository.findByStatus(UserStatus.ACTIVE).stream()
+                .filter(recipient -> !recipient.getId().equals(actor.getId()))
+                .map(recipient -> build(recipient, type, title, body, entityRef))
+                .toList();
+
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
     }
 
     public void notifyAdminsOfNewRegistration(User applicant) {
@@ -70,7 +96,7 @@ public class NotificationService {
                 applicant,
                 NotificationType.REGISTRATION_APPROVED,
                 "Your account has been approved",
-                "You can now sign in. The first sign-in of each day is verified with an OTP.",
+                "You can now sign in with your mobile number and password.",
                 "user:" + applicant.getId());
     }
 

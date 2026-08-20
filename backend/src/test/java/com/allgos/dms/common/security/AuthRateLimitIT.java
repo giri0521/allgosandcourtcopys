@@ -23,7 +23,7 @@ import org.springframework.test.context.TestPropertySource;
  * indistinguishable from the attack this defends against.
  *
  * <p>What matters is not only that the fourth request is refused, but *where*: before any password
- * or OTP work happens, so a flood costs the server a map lookup rather than a BCrypt verification.
+ * work happens, so a flood costs the server a map lookup rather than a BCrypt verification.
  *
  * <p><b>Each test declares its own client address.</b> The limiter is a singleton in the application
  * context with a one-minute window, so without this the first method to run spends the allowance and
@@ -62,13 +62,13 @@ class AuthRateLimitIT extends AbstractIntegrationTest {
     void countsEveryAuthEndpointTogether() throws Exception {
         String caller = "203.0.113.11";
 
-        sendOtp(caller).andExpect(status().isAccepted());
-        sendOtp(caller).andExpect(status().isAccepted());
+        forgotPassword(caller).andExpect(status().isAccepted());
+        forgotPassword(caller).andExpect(status().isAccepted());
         passwordLogin(caller).andExpect(status().isUnauthorized());
 
         // A fourth call to a *different* auth endpoint is still refused: an attacker who could
         // reset the count by alternating endpoints would have no limit at all.
-        sendOtp(caller)
+        forgotPassword(caller)
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
     }
@@ -106,8 +106,9 @@ class AuthRateLimitIT extends AbstractIntegrationTest {
                         Map.of("mobileNumber", "9123456789", "password", "not-the-password"))));
     }
 
-    private org.springframework.test.web.servlet.ResultActions sendOtp(String caller) throws Exception {
-        return mockMvc.perform(post("/api/v1/auth/otp/send")
+    /** The forgotten-password endpoint: a different /auth route, answered whether or not the number exists. */
+    private org.springframework.test.web.servlet.ResultActions forgotPassword(String caller) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/password/forgot")
                 .header("X-Forwarded-For", caller)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("mobileNumber", "9123456789"))));

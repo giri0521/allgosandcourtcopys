@@ -22,8 +22,8 @@ as the source of the wireframe screen inventory.
   already ignores `backend/target/` and `backend/.mvn/`).
 - **Storage**: code against the S3 SDK only. MinIO locally, AWS S3 or on-prem MinIO in production.
 - **No profile pictures.** Initials only in the UI.
-- **Login**: mobile number identity. **OTP is mandatory on the first login of each calendar day**;
-  for the rest of that day the user may log in with either password or OTP. SMS goes through a
+- **Login**: mobile number identity, **password credential**. OTP is not a way in and is not asked
+  for at registration; the one that remains authorises a forgotten-password reset. SMS goes through a
   pluggable `OtpProvider` (mock in dev, MSG91/Twilio in prod), so DLT registration does not block work.
 - **Permissions**: approval is the *only* gate. Once approved, everyone — member or admin — can view,
   download and **upload to any department**.
@@ -48,8 +48,8 @@ no permission-matrix screen. **The only authorization questions in the system ar
 ### Intended outcome
 
 An Admin approves each self-registered user; once approved, that user works freely across the whole
-document library, logging in with a daily OTP and a password thereafter, while every upload, download
-and deletion is recorded and visible to Admins.
+document library, signing in with their mobile number and password, while every upload, download and
+deletion is recorded and visible to Admins.
 
 ---
 
@@ -70,26 +70,23 @@ layer, never only in the UI.
 - The **first Admin is seeded by migration**, not self-registered. Subsequent Admin registrations require
   approval by an existing Admin, so no one can grant themselves administrative access.
 
-## Core requirement 2 — daily-OTP login
+## Core requirement 2 — password login
 
-Registration collects a password (used from the second login of the day onward) and the mobile number
-is verified by OTP before the request reaches the Admin queue.
+Registration collects the password the user will sign in with, and the request goes straight to the
+Admin queue — approval is the gate, so there is nothing a confirmation code would add.
 
 ```
-POST /auth/login  { mobile, password? }
+POST /auth/login  { mobile, password }
         │
-        ├─ users.last_otp_login_date  <  today (server date, Asia/Kolkata)
-        │       → 403 OTP_REQUIRED_TODAY   (password is not accepted; UI jumps to OTP)
-        │
-        └─ last_otp_login_date == today
-                → password accepted  → tokens
-                → OTP also still accepted, always
+        ├─ status ≠ active            → 403 ACCOUNT_PENDING | _REJECTED | _INACTIVE
+        ├─ locked_until > now         → 403 ACCOUNT_LOCKED
+        ├─ BCrypt mismatch            → 401 INVALID_CREDENTIALS  (failed_login_count++)
+        └─ otherwise                  → tokens
 ```
 
-`POST /auth/otp/verify` on success sets `users.last_otp_login_date = today` and issues tokens.
-The date is computed **server-side** in a configured timezone; the client never supplies it. This is
-one nullable `date` column and one comparison — deliberately simpler than a trusted-device table, and it
-matches the rule as stated ("mandatory once a day").
+Five consecutive failures lock the account for fifteen minutes; the counter is committed in its own
+transaction, so the rejection that follows cannot roll it back. One OTP remains — the
+forgotten-password reset — and it issues no token of its own.
 
 ## Core requirement 3 — delete with reason
 
@@ -118,7 +115,7 @@ admin-web  (React 18 + TS + Vite + Tailwind)         responsive; Admin + Member 
     ▼
 backend   (Spring Boot 3.x, Java 21, Maven)
     ├── Spring Security → JwtAuthFilter → @PreAuthorize
-    ├── LoginPolicyService   ← the daily-OTP rule
+    ├── LoginPolicyService   ← the approval gate
     ├── Spring Data JPA + Flyway migrations
     ├── OtpProvider  (Mock | Msg91 | Twilio)   ← @ConditionalOnProperty
     └── StorageService (S3 SDK v2)  → MinIO (dev) / S3 (prod), presigned URLs
@@ -147,13 +144,13 @@ on every table.
 
 | Table | Key columns |
 |---|---|
-| `users` | full_name, mobile_number **unique**, email (optional), password_hash, department_id, designation, role `admin\|member`, status `pending\|active\|rejected\|inactive`, **last_otp_login_date** (date, nullable), token_version, last_login_at |
+| `users` | full_name, mobile_number **unique**, email (optional), password_hash, department_id, designation, role `admin\|member`, status `pending\|active\|rejected\|inactive`, failed_login_count, locked_until, token_version, last_login_at |
 | `departments` | name **unique**, code, description, is_active — **seeded with the 43 departments** from `docs/Department list.txt` |
 | `folders` | department_id, name, parent_folder_id (self-FK), category `contract\|govt_order\|court_order\|circular\|act_rule\|general`, file_count, created_by |
 | `files` | folder_id, department_id (denormalised for filtering/reports), file_name, file_type, size_bytes, storage_key, checksum, uploaded_by, version, **is_deleted** |
 | `file_deletions` | file_id, deleted_by, **reason** (text, not null), deleted_at, restored_by, restored_at |
 | `registration_requests` | user_id, requested_role, status, reviewed_by, review_note, reviewed_at |
-| `otp_verifications` | mobile_number, otp_hash, purpose `registration\|login`, attempt_count, expires_at, verified_at |
+| `otp_verifications` | mobile_number, otp_hash, purpose `password_reset`, attempt_count, expires_at, verified_at |
 | `downloads` | user_id, file_id, ip_address, created_at |
 | `favorites` | user_id, file_id — unique pair |
 | `notifications` | user_id, type, title, body, entity_ref, is_read |
@@ -180,10 +177,9 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
 
 **Auth (public)**
 - `POST /auth/register` — full name, mobile, department, designation, password, optional email →
-  OTP verify → user `PENDING` + `registration_request`
-- `POST /auth/otp/send` — rate-limited
-- `POST /auth/otp/verify` — issues tokens **only if** status = `active`; stamps `last_otp_login_date`
-- `POST /auth/login` — password path; `403 OTP_REQUIRED_TODAY` when today's OTP is missing
+  user `PENDING` + `registration_request`; nothing is sent
+- `POST /auth/login` — mobile + password; issues tokens **only if** status = `active`
+- `POST /auth/password/forgot` — rate-limited; sends a reset code
 - `POST /auth/password/reset` — OTP-verified reset (no email link; mobile is the identity)
 - `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/logout-all` (bumps `token_version`)
 
@@ -215,12 +211,11 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
 ### Public
 1. **Landing** — branding, Login, Register.
 2. **Registration** — full name, mobile (+91, 10-digit validated), department dropdown, designation,
-   password + confirm, optional email → OTP verification → **Pending Approval** screen.
-3. **Login** — `+91` prefix. Two tabs: **Password** and **OTP**. Password tab, on
-   `OTP_REQUIRED_TODAY`, shows "For security, verify with OTP once each day" and switches to the OTP
-   tab automatically. OTP tab: "Send OTP" → 6 boxes with auto-advance, **45-second resend countdown**,
-   "Secure Login" banner, "Don't have access? Contact your administrator".
-4. **Forgot password** — mobile → OTP → new password.
+   password + confirm, optional email → **Pending Approval** screen.
+3. **Login** — `+91` prefix, mobile number and password, "Forgot password?", "Secure Login" banner,
+   "Don't have access? Contact your administrator".
+4. **Forgot password** — mobile → OTP (6 boxes with auto-advance, **45-second resend countdown**) →
+   new password.
 5. **Access Restricted** — rendered on any 403, single "Go Back" action.
 
 ### All authenticated users
@@ -283,14 +278,14 @@ from the web app.
 **Phase 1 — Data model & auth (weeks 2–3)**
 All Flyway migrations; entities and repositories; 43-department seed; first-admin seed; `OtpProvider` +
 `MockOtpProvider` (logs the OTP) + `Msg91OtpProvider`; OTP send/verify with rate limiting; BCrypt
-passwords; **`LoginPolicyService` implementing the daily-OTP rule**; JWT issue/refresh/revoke with
+passwords; **`LoginPolicyService` implementing the approval gate**; JWT issue/refresh/revoke with
 `token_version`; `GlobalExceptionHandler`; audit-log interceptor.
-*Done when* an integration test proves: password login on a fresh day → `OTP_REQUIRED_TODAY`; OTP login
-→ tokens; password login immediately after → tokens; clock rolled to tomorrow → `OTP_REQUIRED_TODAY`
-again; and a `PENDING` account gets nothing through either path.
+*Done when* an integration test proves: password login → tokens; a wrong password five times →
+`ACCOUNT_LOCKED`; a forgotten password reset over OTP lets the new one in; and a `PENDING` account
+gets nothing.
 
 **Phase 2 — Registration & approval end-to-end (weeks 3–4)**
-Registration, OTP verification, Pending Approval, dual-tab Login and forgot-password screens; admin
+Registration, Pending Approval, Login and forgot-password screens; admin
 request queue, approve, reject with reason, enable/disable; SMS + in-app notification on approval.
 *Done when* a real person can register on staging and an Admin can approve them, every transition
 audited. **Client demo milestone.**
@@ -327,14 +322,14 @@ Non-negotiable; each gets a dedicated test:
 
 - **Approval is the gate, enforced server-side.** A `PENDING`, `REJECTED` or `INACTIVE` account can never
   obtain a token by either login path. Never assume the client hides it.
-- **The daily-OTP rule is evaluated server-side** from the server clock. The client never sends a date,
-  and no request parameter can skip the OTP.
+- **Lockout is evaluated server-side.** The failure counter and `locked_until` live on the user row,
+  and no request parameter can clear them.
 - Admin-only endpoints are protected by `@PreAuthorize`, not by hiding menu items.
 - Delete and replace re-check ownership on the server; a member cannot remove another member's file by
   guessing an id.
-- OTP: 6 digits, hashed at rest, 5-minute expiry, max 5 attempts, per-mobile and per-IP rate limits,
-  single-use. Passwords: BCrypt, minimum length and complexity enforced server-side, throttled login
-  attempts with lockout.
+- Passwords: BCrypt, minimum length enforced server-side, throttled login attempts with lockout.
+  Reset OTP: 6 digits, hashed at rest, 5-minute expiry, max 5 attempts, per-mobile and per-IP rate
+  limits, single-use.
 - JWT signed with a per-environment secret; refresh tokens revocable; `logout-all` bumps `token_version`.
 - File access only via short-lived presigned URLs; the bucket is never public.
 - Upload validation: extension **and** magic-byte MIME check, size cap, filename sanitisation.
@@ -351,8 +346,8 @@ Non-negotiable; each gets a dedicated test:
 |---|---|
 | Unit | JUnit 5 + Mockito on services (`LoginPolicyService` gets its own suite with a fixed `Clock`); Vitest on hooks and utils |
 | Integration | Spring Boot Test + **Testcontainers** (Postgres + MinIO) for every controller |
-| Authorization | `AuthorizationIT`: non-active statuses get no token by either path; daily-OTP rule across a simulated date rollover; member hitting `/admin/**` 403s; member deleting another's file 403s; delete without a reason 400s |
-| E2E | Playwright: register → approve → OTP login → browse → upload to another department → download → delete with reason → admin sees the notification. Runs in CI against docker-compose |
+| Authorization | `AuthorizationIT`: non-active statuses get no token; lockout after five failures; member hitting `/admin/**` 403s; member deleting another's file 403s; delete without a reason 400s |
+| E2E | Playwright: register → approve → password login → browse → upload to another department → download → delete with reason → admin sees the notification. Runs in CI against docker-compose |
 | Load | k6, 150 concurrent users, p95 < 500 ms on list endpoints |
 | Manual | Responsive matrix + screen-by-screen checklist against the 29 screens above |
 
@@ -364,12 +359,11 @@ Non-negotiable; each gets a dedicated test:
 2. `cd backend && ./mvnw verify` → green, including Testcontainers integration tests.
 3. `cd admin-web && npm run build && npm run lint` → clean.
 4. `./mvnw spring-boot:run` + `npm run dev`, then walk the happy path in a browser:
-   - Register a member in "Agriculture" with a password → OTP appears in the backend log via
-     `MockOtpProvider` → verify → **Pending Approval**.
+   - Register a member in "Agriculture" with a password → **Pending Approval**, nothing sent.
    - Confirm login is refused while `PENDING`.
    - Log in as the seeded Admin, approve the request.
-   - Member logs in: password alone → "verify with OTP once each day" → complete OTP → in.
-   - Log out and back in with **password only** → succeeds, no OTP.
+   - Member logs in with their password → in.
+   - Log out, get the password wrong five times → `ACCOUNT_LOCKED`.
    - Browse: all 43 departments visible. Preview and download a file.
    - Upload a PDF into a **Health** folder (not their department) → succeeds.
    - Delete that own upload with the reason "uploaded to the wrong folder" → gone from listings.
@@ -377,7 +371,8 @@ Non-negotiable; each gets a dedicated test:
      **Deletions log** with its reason, and **Restore** brings it back.
 5. `curl` negative checks: member token → `DELETE /api/v1/files/{id}` for someone else's file → 403;
    `DELETE` without `reason` → 400; member token → any `/api/v1/admin/**` → 403.
-6. Roll the container clock forward a day → password login returns `OTP_REQUIRED_TODAY`.
+6. **Forgot password** → the reset code appears in the backend log → the new password signs in and
+   the old one does not.
 7. `SELECT count(*) FROM departments;` → 43.
 
 ---

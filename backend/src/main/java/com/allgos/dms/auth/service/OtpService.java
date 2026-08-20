@@ -16,9 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Issues and verifies one-time codes.
  *
- * <p>OTP is the only credential that can start a session — a password is never accepted until an OTP
- * has already succeeded that day — so the limits enforced here are the application's entire front
- * door. Weakening any of them is a release blocker, not a tuning decision:
+ * <p>An OTP never starts a session; it proves control of a mobile number, at registration and when
+ * resetting a forgotten password. That second use is a way into an account, so the limits enforced
+ * here still guard the front door. Weakening any of them is a release blocker, not a tuning
+ * decision:
  *
  * <ul>
  *   <li>the code is stored only as a hash, so a database read cannot be replayed

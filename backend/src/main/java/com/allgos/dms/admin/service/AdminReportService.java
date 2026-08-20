@@ -136,8 +136,7 @@ public class AdminReportService {
                 fileRepository.countByUploadedByIdAndDeletedFalse(userId),
                 downloadRepository.countByUserId(userId),
                 deletionRepository.countByDeletedById(userId),
-                auditLogRepository.countByActorIdAndAction(userId, AuditAction.OTP_VERIFIED)
-                        + auditLogRepository.countByActorIdAndAction(userId, AuditAction.LOGIN_PASSWORD),
+                auditLogRepository.countByActorIdAndAction(userId, AuditAction.LOGIN_PASSWORD),
                 member.getLastLoginAt());
 
         PageResponse<AuditEntry> timeline = PageResponse.of(

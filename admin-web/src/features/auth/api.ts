@@ -28,15 +28,6 @@ export async function register(
   return data;
 }
 
-export async function sendLoginOtp(mobileNumber: string): Promise<void> {
-  await api.post('/auth/otp/send', { mobileNumber });
-}
-
-export async function loginWithOtp(mobileNumber: string, otp: string): Promise<Session> {
-  const { data } = await api.post<Session>('/auth/otp/verify', { mobileNumber, otp });
-  return data;
-}
-
 export async function loginWithPassword(mobileNumber: string, password: string): Promise<Session> {
   const { data } = await api.post<Session>('/auth/login', { mobileNumber, password });
   return data;
@@ -69,9 +60,4 @@ export async function resetPassword(
   newPassword: string,
 ): Promise<void> {
   await api.post('/auth/password/reset', { mobileNumber, otp, newPassword });
-}
-
-/** Confirms the mobile number given at registration. Issues no session: the account is pending. */
-export async function verifyRegistrationOtp(mobileNumber: string, otp: string): Promise<void> {
-  await api.post('/auth/otp/verify-registration', { mobileNumber, otp });
 }

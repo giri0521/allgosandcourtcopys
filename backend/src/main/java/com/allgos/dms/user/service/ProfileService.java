@@ -87,9 +87,6 @@ public class ProfileService {
      * access and refresh token already issued — including the one making this request — stops being
      * accepted. If the reason for the change was that somebody else had the old password, leaving
      * their session alive would defeat the point.
-     *
-     * <p>The daily-OTP stamp is deliberately left alone. It records that this person proved
-     * possession of their phone today, which changing a password neither confirms nor invalidates.
      */
     @Transactional
     public void changePassword(User user, ProfileRequests.ChangePassword request) {

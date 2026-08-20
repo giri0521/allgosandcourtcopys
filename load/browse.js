@@ -11,11 +11,10 @@ import { Rate, Trend } from 'k6/metrics';
  *   cd backend && ./mvnw spring-boot:run
  *   k6 run -e TOKEN="$ACCESS_TOKEN" load/browse.js
  *
- * `TOKEN` is an access token for an approved account. It has to be supplied rather than obtained
- * here because signing in requires an OTP, and the code is only ever sent to a phone — in
- * development, printed to the backend log by the mock provider. Get one by signing in through the
- * web app and copying the token, or by running the OTP flow with curl. Access tokens live 15
- * minutes, so re-fetch before a long run.
+ * `TOKEN` is an access token for an approved account. It is supplied rather than obtained here so
+ * that the run measures browsing rather than a BCrypt verification per iteration. Get one by
+ * signing in through the web app and copying the token, or by POSTing to `/api/v1/auth/login` with
+ * curl. Access tokens live 15 minutes, so re-fetch before a long run.
  *
  * Use an **admin** token to include the reporting endpoints; a member token will make those 403 and
  * the run will report them as failures, which is the point of `ADMIN=false`.

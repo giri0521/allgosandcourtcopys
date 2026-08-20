@@ -9,13 +9,9 @@ public final class AuditAction {
 
     // authentication
     public static final String REGISTER = "register";
-    public static final String OTP_SENT = "otp_sent";
-    public static final String OTP_VERIFIED = "otp_verified";
-    public static final String OTP_FAILED = "otp_failed";
     public static final String LOGIN_PASSWORD = "login_password";
     public static final String LOGIN_FAILED = "login_failed";
     public static final String LOGIN_BLOCKED_STATUS = "login_blocked_status";
-    public static final String LOGIN_BLOCKED_OTP_REQUIRED = "login_blocked_otp_required";
     public static final String LOGOUT = "logout";
     public static final String LOGOUT_ALL = "logout_all";
     public static final String PASSWORD_CHANGED = "password_changed";

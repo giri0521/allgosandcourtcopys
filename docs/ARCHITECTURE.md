@@ -49,9 +49,9 @@ even when the archive is large.
 | `file_deletions` | Who deleted what, **and the reason they gave** |
 | `downloads` | One row each time a user is handed a download link |
 | `favorites` | Private per user; unique on `(user_id, file_id)` |
-| `notifications` | Approvals, rejections, deletions, restores |
+| `notifications` | Approvals, rejections, uploads (fanned out to the whole office), deletions, restores |
 | `audit_logs` | Append-only record of every action, with JSONB metadata |
-| `otp_verifications` | Hashed codes, expiry, attempt and send counts |
+| `otp_verifications` | Hashed password-reset codes, expiry, attempt and send counts |
 
 Flyway owns the schema; Hibernate is `validate` only and never writes DDL. Three migrations, and
 none has changed since Phase 1 — later phases only started using tables that were already there.
@@ -142,13 +142,10 @@ sequenceDiagram
     participant U as User
     participant W as Web app
     participant A as API
-    participant S as SMS gateway
 
-    U->>W: mobile number
-    W->>A: POST /auth/otp/send
-    A->>S: 6-digit code (hashed at rest, 5-min expiry)
-    U->>W: the code
-    W->>A: POST /auth/otp/verify
+    U->>W: mobile number + password
+    W->>A: POST /auth/login
+    A->>A: status check, then BCrypt verify
     A-->>W: access token (15 min, in memory)
     A-->>W: refresh token (7 days, httpOnly cookie)
 ```
@@ -156,10 +153,9 @@ sequenceDiagram
 Three rules are enforced here and cannot be bypassed by any client:
 
 1. **A token is issued only to an approved, ACTIVE account.** Pending, rejected and disabled
-   accounts are refused by both sign-in paths.
-2. **The first sign-in of each calendar day must be an OTP.** Afterwards a password works until
-   midnight. The date comes from the server clock in Asia/Kolkata, so nothing the client sends can
-   skip it.
+   accounts are refused.
+2. **The password is the credential.** OTP never starts a session; the one that remains authorises a
+   forgotten-password reset. Five wrong passwords lock the account for fifteen minutes.
 3. **The access token lives in memory only**, never in localStorage, so a cross-site scripting bug
    cannot read it. Continuity across a page reload comes from the httpOnly refresh cookie.
 
@@ -255,15 +251,15 @@ earlier, stricter model.
 | Session revocation | `token_version` on the user row; "sign out everywhere" and password changes increment it, invalidating every issued token at once |
 | Authorization | `@PreAuthorize("hasRole('ADMIN')")` on the **class** of each admin controller, so a new endpoint cannot be left unguarded |
 | Ownership | Delete and replace re-check against the stored row; a member cannot touch another's document by guessing an id |
-| Brute force — per account | OTP: 6 digits, hashed, 5-min expiry, 5 attempts, single-use, 45-second resend cooldown, 5 sends/hour. Passwords: BCrypt with lockout |
+| Brute force — per account | Passwords: BCrypt, five failures lock the account for 15 minutes. Reset OTP: 6 digits, hashed, 5-min expiry, 5 attempts, single-use, 45-second resend cooldown, 5 sends/hour |
 | Brute force — per caller | 60 requests/minute per address to `/auth/**`, ahead of any password work |
 | Transport | TLS terminated at the reverse proxy; HSTS, CSP, Referrer-Policy and Permissions-Policy on every response |
 | Document access | Never public. Presigned URLs, 5 minutes, opaque keys |
 | Evidence | Every meaningful action writes an `audit_logs` row. The application has no way to edit or delete one |
 
-Two counters are written in **separate transactions** on purpose: failed OTP attempts and failed
-password attempts. The exception that rejects the request would otherwise roll back the increment,
-leaving OTP guessing effectively unlimited.
+Two counters are written in **separate transactions** on purpose: failed password attempts and
+failed OTP attempts. The exception that rejects the request would otherwise roll back the increment,
+leaving guessing effectively unlimited.
 
 **Production start-up refuses development defaults.** Under the `prod` profile the application will
 not start with the placeholder JWT secret, MinIO's default credentials, a localhost CORS origin, a

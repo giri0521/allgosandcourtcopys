@@ -32,25 +32,15 @@ public final class AuthRequests {
             @Email(message = "Enter a valid email address")
             String email,
 
-            /**
-             * Used from the second sign-in of each day onward; the first is always OTP. Required at
-             * registration so that a member is never left without a way back in after their daily
-             * OTP.
-             */
+            /** The sign-in credential, chosen here and usable as soon as an admin approves. */
             @NotBlank(message = "Password is required")
             @Size(min = 8, max = 72, message = "Password must be at least 8 characters")
             String password) {}
 
+    /** Asks for a password-reset code. */
     public record SendOtp(
             @Pattern(regexp = MOBILE_PATTERN, message = MOBILE_MESSAGE)
             String mobileNumber) {}
-
-    public record VerifyOtp(
-            @Pattern(regexp = MOBILE_PATTERN, message = MOBILE_MESSAGE)
-            String mobileNumber,
-
-            @NotBlank(message = "Enter the OTP")
-            String otp) {}
 
     public record PasswordLogin(
             @Pattern(regexp = MOBILE_PATTERN, message = MOBILE_MESSAGE)

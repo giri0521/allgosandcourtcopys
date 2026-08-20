@@ -84,6 +84,11 @@ app:
     # First admin is created by migration, never by self-registration.
     admin-mobile: ${SEED_ADMIN_MOBILE:9999999999}
     admin-name: ${SEED_ADMIN_NAME:System Administrator}
+    # Development convenience only. The migration seeds the admin with no password, so without
+    # this every fresh database costs a forgot-password round trip before anyone can sign in.
+    # DevAdminPasswordSeeder applies it, and refuses to run anywhere that looks like a real
+    # deployment — see that class for the conditions.
+    admin-password: ${SEED_ADMIN_PASSWORD:Admin@12345}
 
 logging:
   level:

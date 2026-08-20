@@ -28,9 +28,12 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Registration and sign-in.
  *
- * <p>Two rules run through every method here and are enforced server-side without exception:
- * a token is issued only to an approved, active account; and the first sign-in of each day must be
- * an OTP. See {@link LoginPolicyService}.
+ * <p>One rule runs through every method here and is enforced server-side without exception: a token
+ * is issued only to an approved, active account. See {@link LoginPolicyService}.
+ *
+ * <p>Sign-in is by password. Registration takes one step and sends nothing: an account is created
+ * PENDING and waits for an admin, which is the only gate that matters. The single remaining OTP is
+ * the forgotten-password reset.
  */
 @Service
 public class AuthService {
@@ -72,7 +75,7 @@ public class AuthService {
     // ------------------------------------------------------------------ registration
 
     /**
-     * Creates a PENDING account and its review request, then sends a confirmation OTP.
+     * Creates a PENDING account and its review request.
      *
      * <p>The account is unusable until an admin approves it, so this never returns a token. Note the
      * role is fixed to MEMBER: an admin account can only be created by seeding or by an existing
@@ -105,8 +108,6 @@ public class AuthService {
         registration.setRequestedRole(UserRole.MEMBER);
         registrationRequestRepository.save(registration);
 
-        otpService.sendOtp(user.getMobileNumber(), OtpPurpose.REGISTRATION);
-
         auditService.record(user, AuditAction.REGISTER, "user", user.getId(),
                 Map.of("department", department.getName()));
         notificationService.notifyAdminsOfNewRegistration(user);
@@ -117,70 +118,19 @@ public class AuthService {
                 "Registration received. An administrator will review your request.");
     }
 
-    // --------------------------------------------------------------------------- OTP
-
-    /**
-     * Sends a sign-in OTP.
-     *
-     * <p>Succeeds identically whether or not the number belongs to an account, so this endpoint
-     * cannot be used to discover who is registered. An unapproved account is still refused later, at
-     * verification.
-     */
-    @Transactional
-    public void sendLoginOtp(String mobileNumber) {
-        if (userRepository.existsByMobileNumber(mobileNumber)) {
-            otpService.sendOtp(mobileNumber, OtpPurpose.LOGIN);
-        }
-        auditService.recordAnonymous(AuditAction.OTP_SENT, Map.of("mobile", mask(mobileNumber)));
-    }
-
-    /** Confirms the mobile number given during registration. Issues no token: the account is pending. */
-    @Transactional
-    public void verifyRegistrationOtp(AuthRequests.VerifyOtp request) {
-        otpService.verifyOtp(request.mobileNumber(), OtpPurpose.REGISTRATION, request.otp());
-        userRepository
-                .findByMobileNumber(request.mobileNumber())
-                .ifPresent(user -> auditService.record(user, AuditAction.OTP_VERIFIED));
-    }
-
-    /**
-     * The OTP sign-in path, and the only way to start the first session of the day.
-     *
-     * <p>On success it stamps today's date on the user, which is what subsequently permits password
-     * sign-in until midnight.
-     */
-    @Transactional
-    public AuthResponses.IssuedSession loginWithOtp(AuthRequests.VerifyOtp request) {
-        User user = requireUser(request.mobileNumber());
-        loginPolicy.assertCanSignIn(user);
-
-        try {
-            otpService.verifyOtp(request.mobileNumber(), OtpPurpose.LOGIN, request.otp());
-        } catch (ApiException ex) {
-            // Durable: the rethrow rolls this transaction back, and a rejected OTP is precisely the
-            // event a security review needs to see.
-            auditService.recordDurable(user, AuditAction.OTP_FAILED, "user", user.getId(),
-                    Map.of("reason", ex.getCode()));
-            throw ex;
-        }
-
-        loginPolicy.recordOtpLogin(user);
-        return startSession(user, AuditAction.OTP_VERIFIED);
-    }
-
     // ---------------------------------------------------------------------- password
 
     /**
-     * The password sign-in path, available only after an OTP sign-in has already happened today.
+     * The sign-in path: mobile number and password.
      *
-     * <p>The status check runs before the daily-OTP check so that a pending or disabled account is
-     * told its real problem rather than being sent to fetch an OTP it can never use.
+     * <p>The status check runs first, so a pending or disabled account is told its real problem
+     * rather than being left to wonder about its password. Wrong passwords are counted and lock the
+     * account after a few, which is what bounds guessing.
      */
     @Transactional
     public AuthResponses.IssuedSession loginWithPassword(AuthRequests.PasswordLogin request) {
         User user = requireUser(request.mobileNumber());
         loginPolicy.assertCanSignIn(user);
-        loginPolicy.assertPasswordLoginAllowed(user);
 
         if (user.getPasswordHash() == null
                 || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {

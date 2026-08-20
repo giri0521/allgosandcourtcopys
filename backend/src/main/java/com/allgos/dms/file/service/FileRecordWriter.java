@@ -50,7 +50,11 @@ public class FileRecordWriter {
         Folder folder = folderRepository
                 .findById(folderId)
                 .orElseThrow(() -> ApiException.notFound("Folder"));
-        return new FolderRef(folder.getId(), folder.getDepartment().getId());
+        return new FolderRef(
+                folder.getId(),
+                folder.getDepartment().getId(),
+                folder.getName(),
+                folder.getDepartment().getName());
     }
 
     /**
@@ -165,8 +169,13 @@ public class FileRecordWriter {
         return FileView.from(file, file.canBeModifiedBy(actor));
     }
 
-    /** A folder and the department it belongs to, resolved eagerly. */
-    public record FolderRef(UUID folderId, UUID departmentId) {}
+    /**
+     * A folder and the department it belongs to, resolved eagerly.
+     *
+     * <p>The names come along because the upload notification names the destination, and the caller
+     * has no session in which to walk back to them.
+     */
+    public record FolderRef(UUID folderId, UUID departmentId, String folderName, String departmentName) {}
 
     /** An existing file the caller is allowed to replace, and where its current bytes are. */
     public record ReplacementTarget(

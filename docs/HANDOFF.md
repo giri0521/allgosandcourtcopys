@@ -28,9 +28,9 @@ product.
 2. **Once approved, everyone can do everything with documents.** Any active user can view, download
    and upload in *any* department. Uploads are deliberately **not** scoped to the user's own
    department — this replaced an earlier, stricter model.
-3. **OTP once a day, password thereafter.** The first sign-in of each calendar day must be an OTP;
-   afterwards password or OTP work until midnight (Asia/Kolkata). The date comes from the server
-   clock, so no request can skip the OTP.
+3. **Password is the credential.** Sign-in is mobile number + password; five failures lock the
+   account for fifteen minutes. OTP never starts a session and is never asked for at registration —
+   the one that remains authorises a forgotten-password reset.
 4. **Deleting your own file requires a reason**, which is sent to every admin as a notification.
    Admins can delete anything. Deletes are soft, so an admin can restore.
 
@@ -43,11 +43,11 @@ product.
 | Area | State | Notes |
 |---|---|---|
 | Database schema + seeds | Done | 3 Flyway migrations; 43 departments + first admin seeded |
-| OTP auth & daily-OTP rule | Done | Verified live and by tests |
+| Password auth & the approval gate | Done | Verified live and by tests |
 | JWT sessions, refresh, logout-all | Done | Access token 15 min; refresh in an httpOnly cookie |
-| Audit trail | Done | register, OTP, login, failures |
-| Login / register / pending screens | Done | Dual-tab login, 6-box OTP, 45s resend countdown |
-| Registration OTP, forgot password, Access Restricted | Done | Registration is now two steps; reset is OTP-only |
+| Audit trail | Done | register, mobile verified, login, failures |
+| Login / register / pending screens | Done | Mobile + password sign-in; one-step registration; 6-box OTP on the reset only |
+| Registration, forgot password, Access Restricted | Done | Registration is one step; reset is by OTP |
 | Session survives a page reload | Done | Start-up `/auth/refresh` exchanges the cookie for a token |
 | Admin approval queue | Done | Approve, reject-with-reason, members list, enable/disable |
 | Departments, folders, browsing | Done | All 43 browsable by anyone signed in; folders nest |
@@ -69,7 +69,7 @@ found four faults, all in the tests rather than in what they test; see the commi
 
 Verified live against the running stack on 15 August 2026:
 
-- **The four rules, end to end.** Pending account refused → approved → OTP sign-in → password for
+- **The four rules, end to end.** Pending account refused → approved → password sign-in → password for
   the rest of the day; upload into a department that is not the member's own; delete refused without
   a reason, then accepted with one, fanned out to every admin with the reason, and restored.
 - **Upload validation.** An executable renamed `.pdf` was refused with `FILE_CONTENT_MISMATCH` while
@@ -134,7 +134,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
 await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
 await page.getByLabel('Mobile number').fill('9123456780');
-await page.getByLabel('Password').fill('Str0ngPassword!');   // needs an OTP sign-in earlier today
+await page.getByLabel('Password').fill('Str0ngPassword!');
 await page.getByRole('button', { name: 'Sign in' }).click();
 await page.waitForURL('**/home');
 
@@ -148,16 +148,23 @@ await browser.close();
 
 | Account | Mobile | How |
 |---|---|---|
-| System Administrator (seeded) | 9999999999 | OTP only — no password by design |
-| Test member | 9123456780 | Password `Str0ngPassword!`, or OTP |
+| System Administrator (seeded) | 9999999999 | `Admin@12345`, applied on start-up by `DevAdminPasswordSeeder` — development machines only |
+| Test member | 9123456780 | Whatever password it was registered with |
 
-**The demo path**, now that the queue exists: register a member → confirm the OTP → Pending Approval
-→ sign in as the admin with an OTP → **Registration Requests** → Approve → the member signs in with
-an OTP, then with their password for the rest of the day.
+The seeded admin has **no** password in the database: V3 creates it without one, and in a real
+deployment the operator claims the account through **Forgot password**. `DevAdminPasswordSeeder`
+fills that gap locally, and refuses to act unless the `default` profile is active *and* both
+`SEED_ADMIN_MOBILE` and `JWT_SECRET` are still the placeholders from `application.yml`. It never
+overwrites a password that already exists, so once you change it, yours is the one that stands.
 
-**Where the OTP appears:** no SMS is sent in development. `OTP_PROVIDER=mock` prints the code to the
-backend log — look for `=== MOCK OTP ===`. Real SMS needs MSG91 or Twilio plus India DLT template
-registration, which has a lead time and has not been started.
+**The demo path**, now that the queue exists: register a member → Pending Approval → sign in as the
+admin → **Registration Requests** → Approve → the member signs in with the password they registered
+with.
+
+**Where the OTP appears:** only the password reset sends one, and no SMS goes out in development.
+`OTP_PROVIDER=mock` prints the code to the backend log — look for `=== MOCK OTP ===`. Real SMS needs
+MSG91 or Twilio plus India DLT template registration, which has a lead time and has not been
+started.
 
 ---
 
@@ -187,8 +194,8 @@ One package per feature area under `com.allgos.dms`, each with
 
 | File | Why it matters |
 |---|---|
-| `auth/service/LoginPolicyService` | The approval gate and the daily-OTP rule — the heart of the system |
-| `auth/service/AuthService` | Register, OTP login, password login, refresh, logout |
+| `auth/service/LoginPolicyService` | The approval gate — the heart of the system |
+| `auth/service/AuthService` | Register, password login, password reset, refresh, logout |
 | `auth/service/OtpService` | Code generation, hashing, expiry, attempt and send limits |
 | `auth/service/FailedAttemptRecorder` | Brute-force counters that must survive rollback (§6) |
 | `admin/service/AdminUserService` | The approval gate from the admin side: approve, reject, enable/disable |
@@ -328,7 +335,7 @@ a list re-reads from the server after every decision rather than patching itself
 ### Counters that bound brute force must be durable
 
 Incrementing an attempt counter and then throwing loses the increment to the rollback — which once
-left OTP guessing effectively unlimited and password lockout unreachable. That is why
+left password lockout unreachable and OTP guessing effectively unlimited. That is why
 `FailedAttemptRecorder` is a **separate bean** with `REQUIRES_NEW` methods: calling such a method on
 `this` bypasses the Spring proxy and silently loses the new transaction.
 
@@ -391,7 +398,7 @@ Three rules in that surface are worth knowing before changing it:
 - **Approval never changes a role.** Promotion to admin stays a separate, deliberate act.
 
 Also landed with it: session restore on reload, `RequireAuth`/`RequireAdmin` guards, the Access
-Restricted screen, forgot-password, and the registration OTP step.
+Restricted screen and forgot-password.
 
 ### Phase 3 — Departments, folders, upload, delete · done
 
@@ -481,9 +488,7 @@ Five decisions worth knowing before changing it:
   removed. Approval happens once; editing a profile never returns an account to PENDING.
 - **Changing a password bumps `token_version`**, ending every session including the one making the
   request. If the reason for the change was that someone else knew the old password, leaving their
-  session alive would defeat it. The daily-OTP stamp is deliberately *not* cleared: it records that
-  this person proved possession of their phone today, which a password change neither confirms nor
-  invalidates.
+  session alive would defeat it.
 - **The audit trail is read-only to the application.** There is no delete on the repository and no
   endpoint that edits an entry, by design.
 - **Report periods are half-open and resolved in Asia/Kolkata.** `to` is widened to the start of the
@@ -565,8 +570,8 @@ DLT-approved templates, admin training.
 - **Reports are computed on demand.** Every load runs half a dozen aggregates over `files` and
   `downloads`. Fine at this size, and the indexes are there; if a year of data makes the screen slow,
   a nightly rollup table is the answer rather than a cache.
-- **The registration OTP cannot be resent.** `/auth/otp/send` issues a *login* code, which
-  `/auth/otp/verify-registration` will not accept, so the screen offers "skip" instead of "resend".
+- **Registration sends nothing.** It creates the PENDING account and stops. Admin approval is the
+  only thing that grants access, so a confirmation code was proving something nobody acted on.
   A registration-purpose resend endpoint would close it.
 - **The bell polls on a timer.** Sixty seconds, rather than pushing. The events that produce a
   notification are minutes apart at most, so a standing websocket per user would buy nothing

@@ -62,7 +62,7 @@ export function ForgotPasswordPage() {
     try {
       await resetPassword(mobile, otp, password);
       navigate('/login', {
-        state: { notice: 'Password changed. Sign in with an OTP to start today’s session.' },
+        state: { notice: 'Password changed. Sign in with your new password.' },
       });
     } catch (caught) {
       const apiError = toApiError(caught);
@@ -153,8 +153,8 @@ export function ForgotPasswordPage() {
             </div>
 
             <p className="text-center text-xs text-slate-500">
-              Changing your password signs you out everywhere. The first sign-in of each day still
-              needs an OTP.
+              Changing your password signs you out everywhere, and you sign back in with the new
+              one.
             </p>
           </>
         )}

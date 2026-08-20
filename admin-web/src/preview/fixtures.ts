@@ -298,7 +298,7 @@ const ROUTES: [RegExp, (url: string) => unknown][] = [
           id: '77777777-7777-7777-7777-777777777773',
           type: 'registration_approved',
           title: 'Your account has been approved',
-          body: 'You can now sign in. The first sign-in of each day is verified with an OTP.',
+          body: 'You can now sign in with your mobile number and password.',
           entityRef: null,
           read: true,
           createdAt: '2026-08-12T06:00:00Z',
@@ -320,7 +320,7 @@ const ROUTES: [RegExp, (url: string) => unknown][] = [
   [/\/admin\/activity/, () => page(AUDIT_ENTRIES)],
   [/\/admin\/audit-logs\/actions$/, () => [
     'file_deleted', 'file_downloaded', 'file_uploaded', 'login_failed', 'login_password',
-    'otp_verified', 'registration_approved', 'registration_rejected', 'user_status_changed',
+    'registration_approved', 'registration_rejected', 'user_status_changed',
   ]],
   [/\/admin\/audit-logs/, () => page(AUDIT_ENTRIES, 412)],
   [/\/admin\/members\/[^/]+\/activity/, () => ({

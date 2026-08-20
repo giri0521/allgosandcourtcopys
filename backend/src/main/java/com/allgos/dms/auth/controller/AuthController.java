@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Public authentication endpoints.
  *
+ * <p>Sign-in is by password. The one OTP left authorises a password reset, and issues no session of
+ * its own.
+ *
  * <p>The access token is returned in the body for the web app to hold in memory; the refresh token
  * is set as an httpOnly, SameSite=Strict cookie so that script running in the page cannot read it.
  */
@@ -43,25 +46,7 @@ public class AuthController {
         return authService.register(request);
     }
 
-    @PostMapping("/otp/send")
-    public ResponseEntity<Void> sendOtp(@Valid @RequestBody AuthRequests.SendOtp request) {
-        authService.sendLoginOtp(request.mobileNumber());
-        return ResponseEntity.accepted().build();
-    }
-
-    @PostMapping("/otp/verify-registration")
-    public ResponseEntity<Void> verifyRegistration(@Valid @RequestBody AuthRequests.VerifyOtp request) {
-        authService.verifyRegistrationOtp(request);
-        return ResponseEntity.noContent().build();
-    }
-
-    /** OTP sign-in — the only path that works on the first attempt of each day. */
-    @PostMapping("/otp/verify")
-    public ResponseEntity<AuthResponses.Session> loginWithOtp(@Valid @RequestBody AuthRequests.VerifyOtp request) {
-        return sessionResponse(authService.loginWithOtp(request));
-    }
-
-    /** Password sign-in — refused with OTP_REQUIRED_TODAY until an OTP has succeeded today. */
+    /** Sign-in. Mobile number and password; approval and lockout are checked server-side. */
     @PostMapping("/login")
     public ResponseEntity<AuthResponses.Session> login(@Valid @RequestBody AuthRequests.PasswordLogin request) {
         return sessionResponse(authService.loginWithPassword(request));

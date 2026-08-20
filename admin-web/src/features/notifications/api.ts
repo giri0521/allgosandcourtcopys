@@ -40,14 +40,16 @@ export async function markAllNotificationsRead(): Promise<void> {
 /**
  * Turns the server's `entityRef` into a route.
  *
- * <p>The server writes `"file:{uuid}"` and `"user:{uuid}"` and deliberately stops there, so the
- * mapping from a subject to a URL lives here — where the routes are actually defined.
+ * <p>The server writes `"file:{uuid}"`, `"folder:{uuid}"` and `"user:{uuid}"` and deliberately stops
+ * there, so the mapping from a subject to a URL lives here — where the routes are actually defined.
+ * An unrecognised kind yields no link rather than a broken one.
  */
 export function notificationLink(entityRef: string | null): string | null {
   if (!entityRef) return null;
 
   const [kind, id] = entityRef.split(':');
   if (kind === 'file' && id) return `/files/${id}`;
+  if (kind === 'folder' && id) return `/folders/${id}`;
   if (kind === 'user' && id) return '/admin/members';
   return null;
 }

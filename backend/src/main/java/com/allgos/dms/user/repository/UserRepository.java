@@ -25,6 +25,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /** Recipients for the delete-with-reason fan-out and the pending-registration alert. */
     List<User> findByRoleAndStatus(UserRole role, UserStatus status);
 
+    /**
+     * Every account in one status, unpaged — the recipient list for an office-wide notification.
+     *
+     * <p>Deliberately not the paged overload above: a fan-out that silently stopped at page one
+     * would leave some of the office uninformed and look exactly like working.
+     */
+    List<User> findByStatus(UserStatus status);
+
     /** One count per tab on the admin members screen. */
     long countByStatus(UserStatus status);
 

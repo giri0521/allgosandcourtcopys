@@ -1,6 +1,6 @@
 /**
- * Dates are always shown in Asia/Kolkata, the same zone the server uses to decide the daily-OTP
- * rule. An admin in another timezone must not see a different day from the one the server enforced.
+ * Dates are always shown in Asia/Kolkata, the zone the office works in. An admin elsewhere must not
+ * see a different day from the one the record was written on.
  */
 export function formatDateTime(iso: string | null): string {
   if (!iso) return '—';

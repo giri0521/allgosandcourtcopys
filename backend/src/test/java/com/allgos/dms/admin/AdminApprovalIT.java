@@ -32,6 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -54,6 +55,7 @@ class AdminApprovalIT extends AbstractIntegrationTest {
 
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private DepartmentRepository departmentRepository;
     @Autowired private AuditLogRepository auditLogRepository;
     @Autowired private NotificationRepository notificationRepository;
@@ -78,13 +80,18 @@ class AdminApprovalIT extends AbstractIntegrationTest {
         otpVerificationRepository.deleteAll();
         userRepository.findByMobileNumber(MEMBER_MOBILE).ifPresent(userRepository::delete);
 
-        // The seeded admin starts each test as it was seeded: active, and owing an OTP today.
+        // The seeded admin has no password of its own — in production the operator sets one through
+        // the OTP reset before first use. Here it is given one directly, so these tests can sign in
+        // the same way every other account does.
         User admin = userRepository.findByMobileNumber(ADMIN_MOBILE).orElseThrow();
         admin.setStatus(UserStatus.ACTIVE);
+        admin.setPasswordHash(passwordEncoder.encode(PASSWORD));
+        admin.setFailedLoginCount(0);
+        admin.setLockedUntil(null);
         userRepository.saveAndFlush(admin);
 
         department = departmentRepository.findByActiveTrueOrderByNameAsc().getFirst();
-        adminToken = signInWithOtp(ADMIN_MOBILE);
+        adminToken = signIn(ADMIN_MOBILE);
     }
 
     // ----------------------------------------------------------------- authorization
@@ -94,7 +101,7 @@ class AdminApprovalIT extends AbstractIntegrationTest {
     void memberCannotReachAdminEndpoints() throws Exception {
         register();
         approveOnly();
-        String memberToken = signInWithOtp(MEMBER_MOBILE);
+        String memberToken = signIn(MEMBER_MOBILE);
         UUID memberId = memberId();
 
         mockMvc.perform(get("/api/v1/admin/registration-requests").header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
@@ -156,8 +163,7 @@ class AdminApprovalIT extends AbstractIntegrationTest {
                 .anyMatch(entry -> AuditAction.REGISTRATION_APPROVED.equals(entry.getAction()));
 
         // And the whole point: sign-in now works.
-        sendOtp(MEMBER_MOBILE);
-        verifyOtp(MEMBER_MOBILE, otpProvider.lastOtpFor(MEMBER_MOBILE))
+        passwordLogin(MEMBER_MOBILE)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.status").value("ACTIVE"));
     }
@@ -209,8 +215,7 @@ class AdminApprovalIT extends AbstractIntegrationTest {
                 .isEqualTo("Not a member of this office");
 
         // Rejected is refused at sign-in, by the server, whatever the client shows.
-        sendOtp(MEMBER_MOBILE);
-        verifyOtp(MEMBER_MOBILE, otpProvider.lastOtpFor(MEMBER_MOBILE))
+        passwordLogin(MEMBER_MOBILE)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ACCOUNT_REJECTED"));
     }
@@ -222,7 +227,7 @@ class AdminApprovalIT extends AbstractIntegrationTest {
     void disableThenEnable() throws Exception {
         register();
         approveOnly();
-        String memberToken = signInWithOtp(MEMBER_MOBILE);
+        String memberToken = signIn(MEMBER_MOBILE);
         UUID memberId = memberId();
 
         changeStatus(memberId, "INACTIVE")
@@ -368,28 +373,14 @@ class AdminApprovalIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    /** A full OTP sign-in, exactly as a user performs it, returning the access token. */
-    private String signInWithOtp(String mobile) throws Exception {
-        sendOtp(mobile);
-        String body = verifyOtp(mobile, otpProvider.lastOtpFor(mobile))
+    /** A password sign-in, exactly as a user performs it, returning the access token. */
+    private String signIn(String mobile) throws Exception {
+        String body = passwordLogin(mobile)
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         return objectMapper.readTree(body).get("accessToken").asText();
-    }
-
-    private void sendOtp(String mobile) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("mobileNumber", mobile))))
-                .andExpect(status().isAccepted());
-    }
-
-    private ResultActions verifyOtp(String mobile, String otp) throws Exception {
-        return mockMvc.perform(post("/api/v1/auth/otp/verify")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("mobileNumber", mobile, "otp", otp))));
     }
 
     private ResultActions passwordLogin(String mobile) throws Exception {

@@ -191,7 +191,7 @@ export function MembersPage() {
         description={
           confirming?.status === 'ACTIVE'
             ? `${confirming.fullName} will be signed out immediately and will not be able to sign in again until re-enabled.`
-            : `${confirming?.fullName} will be able to sign in again, starting with an OTP.`
+            : `${confirming?.fullName} will be able to sign in again.`
         }
         onClose={() => setConfirming(null)}
       >

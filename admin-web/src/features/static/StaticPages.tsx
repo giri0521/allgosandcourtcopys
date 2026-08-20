@@ -68,9 +68,8 @@ export function HelpPage() {
     <StaticPage title="Help & Support" subtitle="How the system works, and who to ask.">
       <Section heading="Signing in">
         <p>
-          Your mobile number is your identity. The first sign-in of each day is verified with a
-          one-time password sent by SMS; after that, your password works until midnight. This is not
-          a setting — it applies to everyone, every day.
+          Your mobile number is your identity, and your password is what signs you in. Too many
+          wrong attempts locks the account for a while — that limit applies to everyone.
         </p>
         <p>
           If you have forgotten your password, use <strong>Forgot password</strong> on the sign-in

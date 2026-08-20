@@ -27,14 +27,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * End-to-end proof of the two rules that gate the whole system:
- * approval is required before any token is issued, and the first sign-in of each day must be an OTP.
+ * End-to-end proof of the rules that gate the whole system: approval is required before any token is
+ * issued, a session is started with a password, and the one OTP path that leads back into an
+ * account — the forgotten-password reset — is bounded against guessing.
  */
 @Import(RecordingOtpProvider.Config.class)
 class AuthFlowIT extends AbstractIntegrationTest {
 
     private static final String MOBILE = "9876543210";
     private static final String PASSWORD = "Str0ngPassword!";
+    private static final String NEW_PASSWORD = "N3wPassword!";
 
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
@@ -79,108 +81,108 @@ class AuthFlowIT extends AbstractIntegrationTest {
 
         User created = userRepository.findByMobileNumber(MOBILE).orElseThrow();
         assertThat(created.getStatus()).isEqualTo(UserStatus.PENDING);
-        assertThat(created.getLastOtpLoginDate()).isNull();
 
-        // Even with a correct OTP, an unapproved account is refused — server-side.
-        sendLoginOtp();
-        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("ACCOUNT_PENDING"));
-
-        // And so is the password path.
+        // The password is correct; the account simply has not been approved — refused server-side.
         passwordLogin(PASSWORD)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ACCOUNT_PENDING"));
     }
 
     @Test
-    @DisplayName("after approval: OTP first, then password for the rest of the day")
-    void dailyOtpThenPassword() throws Exception {
+    @DisplayName("after approval the registered password signs in")
+    void passwordSignsInAfterApproval() throws Exception {
         register();
         approve();
 
-        // 1. Password alone is refused on the first attempt of the day.
         passwordLogin(PASSWORD)
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("OTP_REQUIRED_TODAY"));
-
-        // 2. OTP works and starts a session.
-        sendLoginOtp();
-        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.user.status").value("ACTIVE"));
 
-        assertThat(userRepository.findByMobileNumber(MOBILE).orElseThrow().getLastOtpLoginDate())
-                .isNotNull();
-
-        // 3. Password now works for the remainder of the day.
-        passwordLogin(PASSWORD)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty());
-    }
-
-    @Test
-    @DisplayName("the OTP requirement returns the next day")
-    void otpIsRequiredAgainTheNextDay() throws Exception {
-        register();
-        approve();
-        sendLoginOtp();
-        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE)).andExpect(status().isOk());
+        // And it keeps working: nothing about signing in is once-per-day.
         passwordLogin(PASSWORD).andExpect(status().isOk());
 
-        // Simulate the date rolling over by ageing the stamp, which is exactly what midnight does.
-        User user = userRepository.findByMobileNumber(MOBILE).orElseThrow();
-        user.setLastOtpLoginDate(user.getLastOtpLoginDate().minusDays(1));
-        userRepository.saveAndFlush(user);
-
-        passwordLogin(PASSWORD)
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("OTP_REQUIRED_TODAY"));
+        assertThat(userRepository.findByMobileNumber(MOBILE).orElseThrow().getLastLoginAt())
+                .isNotNull();
     }
 
     @Test
-    @DisplayName("a wrong OTP is rejected and cannot be replayed")
-    void wrongOtpIsRejected() throws Exception {
+    @DisplayName("wrong passwords are refused and lock the account")
+    void wrongPasswordsLockTheAccount() throws Exception {
         register();
         approve();
-        sendLoginOtp();
 
-        verifyLoginOtp("000000")
+        // Each rejection rolls the request transaction back. The failure counter is committed
+        // separately precisely so it is not lost with that rollback — without which password
+        // guessing would be unbounded.
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            passwordLogin("wrong-password")
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        }
+
+        // Even the genuine password is now refused: the account is locked.
+        passwordLogin(PASSWORD)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_LOCKED"));
+    }
+
+    @Test
+    @DisplayName("a forgotten password is reset over OTP, and the new one signs in")
+    void passwordResetOverOtp() throws Exception {
+        register();
+        approve();
+
+        sendPasswordResetOtp();
+        resetPassword(otpProvider.lastOtpFor(MOBILE), NEW_PASSWORD)
+                .andExpect(status().isNoContent());
+
+        passwordLogin(NEW_PASSWORD).andExpect(status().isOk());
+        passwordLogin(PASSWORD)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    @DisplayName("a reset OTP is single-use, and a wrong one only costs an attempt")
+    void resetOtpIsSingleUse() throws Exception {
+        register();
+        approve();
+        sendPasswordResetOtp();
+
+        resetPassword("000000", NEW_PASSWORD)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("OTP_INVALID"));
 
         // The real code still works afterwards; only the attempt was consumed.
-        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE)).andExpect(status().isOk());
+        resetPassword(otpProvider.lastOtpFor(MOBILE), NEW_PASSWORD)
+                .andExpect(status().isNoContent());
 
         // Re-submitting the same code is refused: OTPs are single-use.
-        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE))
+        resetPassword(otpProvider.lastOtpFor(MOBILE), "Another1Password!")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("OTP_ALREADY_USED"));
     }
 
     @Test
-    @DisplayName("OTP guesses are bounded, and the limit survives the rejection")
-    void otpAttemptsAreBounded() throws Exception {
+    @DisplayName("reset OTP guesses are bounded, and the limit survives the rejection")
+    void resetOtpAttemptsAreBounded() throws Exception {
         register();
         approve();
-        sendLoginOtp();
+        sendPasswordResetOtp();
 
-        // Each rejection throws, rolling back the request transaction. The attempt counter is
-        // committed separately precisely so it is not lost with that rollback — without which
-        // guessing a 6-digit code would be unlimited.
         for (int attempt = 1; attempt <= 5; attempt++) {
-            verifyLoginOtp("000000")
+            resetPassword("000000", NEW_PASSWORD)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("OTP_INVALID"));
         }
 
-        verifyLoginOtp("000000")
+        resetPassword("000000", NEW_PASSWORD)
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("OTP_ATTEMPTS_EXCEEDED"));
 
         // Even the genuine code is now refused: the issued OTP is spent.
-        verifyLoginOtp(otpProvider.lastOtpFor(MOBILE))
+        resetPassword(otpProvider.lastOtpFor(MOBILE), NEW_PASSWORD)
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("OTP_ATTEMPTS_EXCEEDED"));
     }
@@ -217,17 +219,18 @@ class AuthFlowIT extends AbstractIntegrationTest {
         userRepository.saveAndFlush(user);
     }
 
-    private void sendLoginOtp() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/otp/send")
+    private void sendPasswordResetOtp() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/password/forgot")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("mobileNumber", MOBILE))))
                 .andExpect(status().isAccepted());
     }
 
-    private ResultActions verifyLoginOtp(String otp) throws Exception {
-        return mockMvc.perform(post("/api/v1/auth/otp/verify")
+    private ResultActions resetPassword(String otp, String newPassword) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/password/reset")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("mobileNumber", MOBILE, "otp", otp))));
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "mobileNumber", MOBILE, "otp", otp, "newPassword", newPassword))));
     }
 
     private ResultActions passwordLogin(String password) throws Exception {
