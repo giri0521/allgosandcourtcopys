@@ -1,3 +1,4 @@
+import type { AxiosError } from 'axios';
 import { api } from '@/lib/api';
 import type {
   ActivityReport,
@@ -136,12 +137,23 @@ export type ReportType = 'departments' | 'uploaders' | 'monthly';
  * <p>Fetched rather than linked: the endpoint needs the Authorization header, which a plain anchor
  * cannot send. The response is turned into an object URL and clicked, then revoked — leaving it
  * alive would pin the whole file in memory for the life of the tab.
+ *
+ * <p>`responseType: 'blob'` applies to the failures too, which is the trap: a 500 arrives as a Blob
+ * containing the JSON error rather than as an object, so every reader of it — `toApiError`, and the
+ * interceptor that checks `data.code` — sees nothing and reports a network problem instead of what
+ * the server actually said. The one path where a failure is invisible should not be the one you are
+ * standing on when a download silently does nothing, so the body is unwrapped here.
  */
 export async function downloadReportCsv(type: ReportType, range: ReportRange): Promise<void> {
-  const response = await api.get(`/admin/reports/export`, {
-    params: { type, from: range.from || undefined, to: range.to || undefined },
-    responseType: 'blob',
-  });
+  let response;
+  try {
+    response = await api.get(`/admin/reports/export`, {
+      params: { type, from: range.from || undefined, to: range.to || undefined },
+      responseType: 'blob',
+    });
+  } catch (caught) {
+    throw await withReadableErrorBody(caught);
+  }
 
   const filename =
     filenameFromDisposition(response.headers['content-disposition']) ?? `${type}.csv`;
@@ -157,6 +169,28 @@ export async function downloadReportCsv(type: ReportType, range: ReportRange): P
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/**
+ * Reads a blob error body back into the shape the rest of the client expects.
+ *
+ * <p>Returns the error untouched if there is nothing to unwrap — a network failure with no
+ * response, or a body that is not the JSON envelope — so the caller's own handling still applies.
+ */
+export async function withReadableErrorBody(caught: unknown): Promise<unknown> {
+  const response = (caught as AxiosError)?.response;
+  if (!(response?.data instanceof Blob)) return caught;
+
+  try {
+    const parsed: unknown = JSON.parse(await response.data.text());
+    if (parsed && typeof parsed === 'object' && 'code' in parsed) {
+      response.data = parsed;
+    }
+  } catch {
+    // Not JSON — an HTML error page from a proxy, or an empty body. Leave it as it was; the
+    // caller falls back to its own wording, which is better than throwing from an error handler.
+  }
+  return caught;
 }
 
 /** The server names the file; this only reads that name back off the header. */

@@ -27,7 +27,7 @@ public abstract class AbstractIntegrationTest {
      * One container shared by every test class in the run. Testcontainers stops it when the JVM
      * exits, which is much faster than a container per class.
      */
-    static final PostgreSQLContainer<?> POSTGRES =
+    public static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
                     .withDatabaseName("allgos_dms")
                     .withUsername("allgos")

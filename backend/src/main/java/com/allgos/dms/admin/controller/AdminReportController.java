@@ -9,6 +9,7 @@ import com.allgos.dms.admin.service.CsvWriter;
 import com.allgos.dms.audit.entity.AuditAction;
 import com.allgos.dms.common.dto.PageResponse;
 import com.allgos.dms.common.exception.ApiException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,7 +28,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 /**
  * Admin monitoring: the dashboard, a member's activity, the audit viewer and the reports.
@@ -109,12 +109,22 @@ public class AdminReportController {
     /**
      * The same report as a spreadsheet.
      *
-     * <p>Streamed rather than assembled into a String: the response is written straight to the
-     * socket, so a long report never sits in memory twice. See {@link CsvWriter} for why the file
+     * <p><b>Written whole, not streamed, and that is the point.</b> A {@code StreamingResponseBody}
+     * returns before its body exists, so Spring finishes the response on a second, asynchronous
+     * dispatch back through the security filter chain — where the {@code SecurityContext} is empty,
+     * because {@code JwtAuthenticationFilter} is a {@code OncePerRequestFilter} and those skip async
+     * dispatches by default. The authorization filter then denied a response whose headers had
+     * already gone out, Tomcat could not turn that into an error page, and the browser was left
+     * holding a download that never finished: "Unable to handle the Spring Security Exception
+     * because the response is already committed."
+     *
+     * <p>Assembling the bytes here keeps the whole response inside the one authorised request. It
+     * costs nothing: every report is bounded — 43 departments, ten uploaders, twelve months — which
+     * is the same reason {@link CsvWriter} takes its rows as a list. See it also for why the file
      * starts with a byte-order mark.
      */
     @GetMapping("/reports/export")
-    public ResponseEntity<StreamingResponseBody> export(
+    public ResponseEntity<byte[]> export(
             @RequestParam(defaultValue = "departments") String type,
             @RequestParam(required = false) LocalDate from,
             @RequestParam(required = false) LocalDate to) {
@@ -150,18 +160,19 @@ public class AdminReportController {
                     "REPORT_UNKNOWN", "Unknown report: " + type);
         }
 
-        StreamingResponseBody body = out -> {
-            try {
-                CsvWriter.write(out, headers, rows);
-            } catch (IOException ex) {
-                // The client hung up mid-download; nothing useful can be sent to them now.
-                throw new IllegalStateException("Could not write the report", ex);
-            }
-        };
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try {
+            CsvWriter.write(buffer, headers, rows);
+        } catch (IOException ex) {
+            // Writing to memory, so this cannot be the client hanging up — it is a genuine fault.
+            throw new IllegalStateException("Could not write the report", ex);
+        }
 
+        byte[] body = buffer.toByteArray();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"%s\"".formatted(filename))
                 .contentType(new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8))
+                .contentLength(body.length)
                 .body(body);
     }
 

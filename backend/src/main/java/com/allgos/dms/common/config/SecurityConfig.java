@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -107,6 +108,15 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // the refresh token travels as an httpOnly cookie
+        /*
+         * Response headers script may read. `*` above covers what the browser may *send*; what it
+         * may expose back to JavaScript is a separate, opt-in list that defaults to a handful of
+         * safe ones. Without Content-Disposition here the CSV export still downloads but arrives
+         * named "departments.csv" rather than "departments-2026-08-21.csv" — the client reads the
+         * name off this header and cannot see it. Invisible behind the dev proxy, where everything
+         * is one origin; only a cross-origin deployment shows it.
+         */
+        configuration.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
