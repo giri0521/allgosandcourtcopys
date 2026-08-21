@@ -156,18 +156,18 @@ export function FileTable({
                   {formatDateTime(file.uploadedAt)}
                 </td>
                 <td className="px-3 py-3">
-                  {/* Actions fade up on row hover on a pointer device, but stay permanently visible
-                      on touch and for keyboard users — hover-only controls are unreachable there. */}
-                  <div className="flex justify-end gap-1 sm:opacity-60 sm:transition-opacity
-                    sm:duration-[--duration-base] sm:group-hover/row:opacity-100
-                    sm:focus-within:opacity-100 sm:hover:opacity-100">
+                  {/* These used to sit at 60% until the row was hovered. Against the lighter brand
+                      blue that lands around 2:1 on white — legible only if you already know what it
+                      says. The row's own hover tint is the affordance now, and the labels stay
+                      readable at rest, which they have to be on touch and for a keyboard anyway. */}
+                  <div className="flex justify-end gap-1">
                     {/* Only offered when the browser can actually render it — see `previewable`.
                         A Preview button that downloaded instead would be a lie. */}
                     {file.previewable && (
                       <Link
                         to={`/files/${file.id}`}
                         className="inline-flex items-center rounded-lg px-2.5 py-1.5 text-[0.8125rem]
-                          font-semibold text-navy-600 outline-none transition-all
+                          font-semibold text-navy-700 outline-none transition-all
                           duration-[--duration-quick] ease-[--ease-settle] hover:bg-navy-50
                           focus-visible:ring-2 focus-visible:ring-navy-300"
                       >

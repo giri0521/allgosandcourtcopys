@@ -31,7 +31,9 @@ const variants = {
   primary: 'fill-brand text-on-brand hover:-translate-y-px',
   secondary:
     'bg-surface text-navy-700 border border-navy-200 shadow-card hover:bg-navy-50 hover:border-navy-300 hover:shadow-lifted hover:-translate-y-px disabled:text-slate-400 disabled:border-slate-200 disabled:shadow-none',
-  ghost: 'text-navy-600 hover:bg-navy-50 hover:text-navy-800 disabled:text-slate-400',
+  /* 700 rather than 600: a ghost button's hover paints navy-50 behind its own label, and 600 on
+     that tint measures 4.03:1 — below AA for text this size. 700 clears it on both grounds. */
+  ghost: 'text-navy-700 hover:bg-navy-50 hover:text-navy-800 disabled:text-slate-400',
   /** For the one action that removes something; never the default on a screen. */
   danger: 'fill-danger text-on-danger hover:-translate-y-px',
 };

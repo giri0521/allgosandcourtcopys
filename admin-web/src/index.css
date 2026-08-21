@@ -14,17 +14,17 @@
 
 /* navy/blue government branding, from docs/Logo.png */
 @theme {
-  --color-navy-50: #eaf1fb;
-  --color-navy-100: #d2e0f4;
-  --color-navy-200: #adc1e1;
-  --color-navy-300: #7f9ccd;
-  --color-navy-400: #5077b6;
-  --color-navy-500: #2f5794;
-  --color-navy-600: #1f4076;
-  --color-navy-700: #163059;
-  --color-navy-800: #0f2340;
-  --color-navy-900: #0a1729;
-  --color-navy-950: #060d18;
+  --color-navy-50: #e3f2fd;
+  --color-navy-100: #bbdefb;
+  --color-navy-200: #90caf9;
+  --color-navy-300: #64b5f6;
+  --color-navy-400: #42a5f5;
+  --color-navy-500: #2196f3;
+  --color-navy-600: #1976d2;
+  --color-navy-700: #1565c0;
+  --color-navy-800: #0d47a1;
+  --color-navy-900: #0a3578;
+  --color-navy-950: #06214b;
 
   /*
    * Gold, taken from the seal on the logo. The secondary brand colour, used sparingly — a highlight,
@@ -52,11 +52,11 @@
    * stronger #dce6f4, which tinted every white card blue by contrast and made the whole application
    * look like it was printed on sugar paper. The ground should be quiet; the cards are the content.
    */
-  --color-canvas: #e7ecf6;
+  --color-canvas: #e8eff8;
   --color-surface: #ffffff;
-  --color-surface-sunken: #f4f7fd;
-  --color-line: #e0e7f2;
-  --color-line-strong: #c3cfe2;
+  --color-surface-sunken: #f3f8fe;
+  --color-line: #dde8f4;
+  --color-line-strong: #bed3e8;
 
   /*
    * Role colours, for the handful of places where a palette step cannot serve both themes.
@@ -70,9 +70,9 @@
    * instead, which are set per theme rather than derived from the ramp - the button stays a
    * saturated blue carrying white text in both, which is what it was always meant to be.
    */
-  --color-brand: #1f4076;
-  --color-brand-hover: #163059;
-  --color-brand-muted: #7f9ccd;
+  --color-brand: #0d47a1;
+  --color-brand-hover: #0a3578;
+  --color-brand-muted: #90caf9;
   --color-on-brand: #ffffff;
 
   --color-danger: #dc2626;
@@ -179,14 +179,14 @@
   /* What a filled button casts. Navy, and stronger than the neutral pair above: it is carrying a
      saturated block of colour, which needs more shadow to sit convincingly above the page. */
   --shadow-brand-contact: rgb(15 35 64 / 0.28);
-  --shadow-brand-ambient: rgb(31 64 118 / 0.34);
-  --shadow-brand-ambient-strong: rgb(31 64 118 / 0.42);
+  --shadow-brand-ambient: rgb(13 71 161 / 0.34);
+  --shadow-brand-ambient-strong: rgb(13 71 161 / 0.42);
   --shadow-contact-dialog: rgb(15 35 64 / 0.20);
   --shadow-ambient-dialog: rgb(15 35 64 / 0.28);
 
   /* The strength of the two washes on the body - see the note there. */
-  --wash-navy: 22%;
-  --wash-gold: 16%;
+  --wash-navy: 14%;
+  --wash-gold: 14%;
 
   /* The loading shimmer: a base, and the sweep that crosses it. */
   --color-skeleton-base: var(--color-slate-200);
@@ -195,7 +195,7 @@
   /* The chart paints into SVG attributes, which cannot take a utility class. */
   --color-chart-grid: var(--color-slate-200);
   --color-chart-axis: var(--color-line-strong);
-  --color-chart-hover: rgb(31 64 118 / 0.08);
+  --color-chart-hover: rgb(13 71 161 / 0.08);
   --color-tooltip: #0f2340;
   --color-tooltip-fg: #ffffff;
   --color-tooltip-fg-muted: #cbd5e1;
