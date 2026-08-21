@@ -106,7 +106,10 @@ export function AppShell({
             </span>
           </Link>
 
-          <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Main">
+          <nav
+            className="flex items-center gap-1 overflow-x-auto overflow-y-hidden"
+            aria-label="Main"
+          >
             {items.map((item) => (
               <NavLink
                 key={item.to}
@@ -129,7 +132,7 @@ export function AppShell({
                         travelling rather than two separate underlines. */}
                     <span
                       aria-hidden
-                      className={`absolute inset-x-2 -bottom-px h-0.5 origin-center rounded-full bg-navy-600
+                      className={`absolute inset-x-2 bottom-0 h-0.5 origin-center rounded-full bg-navy-600
                         transition-transform duration-[--duration-base] ease-[--ease-settle] ${
                           isActive ? 'scale-x-100' : 'scale-x-0'
                         }`}
