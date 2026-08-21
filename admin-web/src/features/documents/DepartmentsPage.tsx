@@ -65,18 +65,11 @@ export function DepartmentsPage() {
           <Link
             key={department.id}
             to={`/departments/${department.id}`}
-            className={`group relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface
-              p-5 pl-6 shadow-card outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
+            className={`group flex flex-col rounded-xl border border-line bg-surface p-5 shadow-card
+              outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
               hover:-translate-y-0.5 hover:shadow-lifted
               focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0 ${tone.wash}`}
           >
-            {/* The department's own colour, down the leading edge. It widens on hover, which is
-                what makes 43 near-identical cards feel individually chosen. */}
-            <span
-              aria-hidden
-              className={`absolute inset-y-0 left-0 w-1 transition-all duration-[--duration-base]
-                ease-[--ease-settle] group-hover:w-1.5 ${tone.edge}`}
-            />
             <div className="flex items-start gap-3">
               <DepartmentAvatar
                 name={department.name}
