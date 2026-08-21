@@ -11,6 +11,7 @@ import {
   markNotificationRead,
   notificationLink,
 } from '@/features/notifications/api';
+import { useAuth } from '@/lib/auth-context';
 import { toApiError } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
 import { tone } from '@/lib/tones';
@@ -26,6 +27,7 @@ import type { Notification } from '@/types/api';
 export function NotificationsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [unreadOnly, setUnreadOnly] = useState(false);
 
@@ -58,7 +60,7 @@ export function NotificationsPage() {
   const open = (notification: Notification) => {
     if (!notification.read) markRead.mutate(notification);
 
-    const destination = notificationLink(notification.entityRef);
+    const destination = notificationLink(notification.entityRef, user?.role === 'ADMIN');
     if (destination) navigate(destination);
   };
 

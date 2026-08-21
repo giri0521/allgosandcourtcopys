@@ -47,8 +47,9 @@ public class NotificationService {
     /**
      * Fans a notification out to every active admin.
      *
-     * <p>This is how a member's file deletion, with the reason they gave, reaches the administrators
-     * — and how a new registration reaches the review queue.
+     * <p>For the things only an administrator can act on — a registration waiting in the review
+     * queue. What everybody has an interest in, such as a document being filed or removed, goes to
+     * {@link #notifyEveryoneExcept} instead.
      */
     @Transactional
     public void notifyAllAdmins(String type, String title, String body, String entityRef) {
@@ -90,13 +91,20 @@ public class NotificationService {
                 "user:" + applicant.getId());
     }
 
-    /** Sent the moment an admin approves; this is the applicant's cue that sign-in will now work. */
+    /**
+     * Sent the moment an admin approves.
+     *
+     * <p>Says what the approval *granted*, not how to sign in: this is read on the notifications
+     * screen, by someone who has plainly signed in already, and telling them how to do the thing
+     * they have just done reads as a system that is not paying attention.
+     */
     public void notifyRegistrationApproved(User applicant) {
         notify(
                 applicant,
                 NotificationType.REGISTRATION_APPROVED,
                 "Your account has been approved",
-                "You can now sign in with your mobile number and password.",
+                "Your account is active. You can view, download and upload documents in every "
+                        + "department.",
                 "user:" + applicant.getId());
     }
 

@@ -12,9 +12,9 @@ import type { FileItem } from '@/types/api';
 /**
  * Deleting a document, with the reason the rules require.
  *
- * <p>The reason is not a formality and the dialog says so: it goes to every administrator as a
- * notification. The Delete button stays disabled until something is typed, but the server refuses a
- * blank reason regardless — this only saves the user a round trip.
+ * <p>The reason is not a formality and the dialog says so: it is sent to everyone else with an
+ * account, over the deleter's name. The Delete button stays disabled until something is typed, but
+ * the server refuses a blank reason regardless — this only saves the user a round trip.
  */
 export function DeleteFileDialog({
   file,
@@ -58,7 +58,7 @@ export function DeleteFileDialog({
       >
         <TextAreaField
           label="Reason for deleting"
-          hint="Every administrator is notified with this reason."
+          hint="Everyone else is notified with this reason, and with your name."
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           rows={3}

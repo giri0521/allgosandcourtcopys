@@ -43,13 +43,19 @@ export async function markAllNotificationsRead(): Promise<void> {
  * <p>The server writes `"file:{uuid}"`, `"folder:{uuid}"` and `"user:{uuid}"` and deliberately stops
  * there, so the mapping from a subject to a URL lives here — where the routes are actually defined.
  * An unrecognised kind yields no link rather than a broken one.
+ *
+ * <p>`user:` is the one that depends on who is reading. To an admin it means the account in the
+ * members list; to everyone else it means their own account. Sending every reader to
+ * `/admin/members` is what put a newly approved member on the Access Restricted screen the moment
+ * they opened the notification telling them they had been approved — the route guard did exactly
+ * its job, on a link that should never have pointed there.
  */
-export function notificationLink(entityRef: string | null): string | null {
+export function notificationLink(entityRef: string | null, isAdmin = false): string | null {
   if (!entityRef) return null;
 
   const [kind, id] = entityRef.split(':');
   if (kind === 'file' && id) return `/files/${id}`;
   if (kind === 'folder' && id) return `/folders/${id}`;
-  if (kind === 'user' && id) return '/admin/members';
+  if (kind === 'user' && id) return isAdmin ? '/admin/members' : '/profile';
   return null;
 }

@@ -31,7 +31,8 @@ product.
 3. **Password is the credential.** Sign-in is mobile number + password; five failures lock the
    account for fifteen minutes. OTP never starts a session and is never asked for at registration —
    the one that remains authorises a forgotten-password reset.
-4. **Deleting your own file requires a reason**, which is sent to every admin as a notification.
+4. **Deleting your own file requires a reason**, which is sent to every other active user as a
+   notification, naming who deleted it.
    Admins can delete anything. Deletes are soft, so an admin can restore.
 
 **All four are enforced server-side.** A hidden menu item never protects an endpoint.
@@ -71,7 +72,7 @@ Verified live against the running stack on 15 August 2026:
 
 - **The four rules, end to end.** Pending account refused → approved → password sign-in → password for
   the rest of the day; upload into a department that is not the member's own; delete refused without
-  a reason, then accepted with one, fanned out to every admin with the reason, and restored.
+  a reason, then accepted with one, fanned out to the whole office with the reason, and restored.
 - **Upload validation.** An executable renamed `.pdf` was refused with `FILE_CONTENT_MISMATCH` while
   the genuine PDF in the same request was kept.
 - **Presigned URLs.** The download link served the real bytes and they matched the original;

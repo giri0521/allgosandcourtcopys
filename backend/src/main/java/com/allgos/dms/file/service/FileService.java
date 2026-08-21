@@ -321,7 +321,11 @@ public class FileService {
     // ------------------------------------------------------------------------ delete
 
     /**
-     * Soft-deletes a file, recording why and telling every admin.
+     * Soft-deletes a file, recording why and telling the whole office.
+     *
+     * <p>Everyone is told, not only the admins: a document vanishing from a shared archive is news
+     * to whoever was using it, and the person who removed it and their reason are exactly what
+     * stops that being a mystery. The deleter is left out — they know.
      *
      * @throws ApiException 400 if the reason is missing or blank, 403 if the caller neither uploaded
      *     the file nor is an admin
@@ -330,7 +334,7 @@ public class FileService {
     public void delete(UUID fileId, String reason, User actor) {
         String trimmed = reason == null ? "" : reason.trim();
         if (trimmed.isEmpty()) {
-            // Rule 4. Without this the admin notification would carry nothing.
+            // Rule 4. Without this the notification would carry nothing.
             throw ApiException.badRequest("REASON_REQUIRED", "Please give a reason for deleting this file.");
         }
 
@@ -364,7 +368,8 @@ public class FileService {
                 file.getId(),
                 Map.of("fileName", file.getFileName(), "reason", trimmed));
 
-        notificationService.notifyAllAdmins(
+        notificationService.notifyEveryoneExcept(
+                actor,
                 NotificationType.FILE_DELETED,
                 "A document was deleted",
                 "%s deleted \"%s\" from %s. Reason: %s"

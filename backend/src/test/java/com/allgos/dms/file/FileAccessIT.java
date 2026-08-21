@@ -317,8 +317,12 @@ class FileAccessIT extends AbstractStorageIntegrationTest {
     }
 
     @Test
-    @DisplayName("the uploader deletes with a reason, every admin is notified with it, and an admin restores")
-    void deleteWithReasonNotifiesAdminsAndCanBeRestored() throws Exception {
+    @DisplayName("the uploader deletes with a reason, the whole office is told why, and an admin restores")
+    void deleteWithReasonNotifiesEveryoneAndCanBeRestored() throws Exception {
+        // A second member, who had nothing to do with the document: they hear about it too.
+        String otherToken = registerApproveAndSignIn(OTHER_MEMBER_MOBILE, "Arun Kumar");
+        assertThat(otherToken).isNotBlank();
+
         UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
         String reason = "Uploaded to the wrong department";
 
@@ -336,17 +340,30 @@ class FileAccessIT extends AbstractStorageIntegrationTest {
         mockMvc.perform(get("/api/v1/folders/{id}/files", folderId).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
                 .andExpect(jsonPath("$.totalItems").value(0));
 
-        // Every admin heard, and the reason travelled with it.
-        List<User> admins = userRepository.findAll().stream().filter(User::isAdmin).toList();
-        assertThat(admins).isNotEmpty();
-        for (User admin : admins) {
-            assertThat(notificationRepository.findAll().stream()
-                            .filter(entry -> entry.getUser().getId().equals(admin.getId()))
-                            .filter(entry -> NotificationType.FILE_DELETED.equals(entry.getType()))
-                            .map(Notification::getBody))
-                    .as("admin %s is told why", admin.getFullName())
-                    .anySatisfy(body -> assertThat(body).contains(reason).contains("Circular 42.pdf"));
-        }
+        // Everyone active heard — admins and the uninvolved member alike — and the reason and the
+        // name of whoever did it travelled with it.
+        UUID deleterId = userRepository.findByMobileNumber(MEMBER_MOBILE).orElseThrow().getId();
+        List<UUID> expected = userRepository.findAll().stream()
+                .filter(candidate -> candidate.getStatus() == UserStatus.ACTIVE)
+                .map(User::getId)
+                .filter(id -> !id.equals(deleterId))
+                .toList();
+
+        List<Notification> told = notificationRepository.findAll().stream()
+                .filter(entry -> NotificationType.FILE_DELETED.equals(entry.getType()))
+                .toList();
+
+        assertThat(expected).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(told).extracting(entry -> entry.getUser().getId())
+                .containsExactlyInAnyOrderElementsOf(expected);
+
+        // The person who deleted it is not told about their own deletion.
+        assertThat(told).noneMatch(entry -> entry.getUser().getId().equals(deleterId));
+
+        assertThat(told).allSatisfy(entry -> assertThat(entry.getBody())
+                .contains("Meena Rajan")
+                .contains("Circular 42.pdf")
+                .contains(reason));
 
         // The deletions log carries the same reason, and offers the restore.
         mockMvc.perform(get("/api/v1/admin/deletions").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))

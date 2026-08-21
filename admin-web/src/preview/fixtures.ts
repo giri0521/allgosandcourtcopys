@@ -298,7 +298,7 @@ const ROUTES: [RegExp, (url: string) => unknown][] = [
           id: '77777777-7777-7777-7777-777777777773',
           type: 'registration_approved',
           title: 'Your account has been approved',
-          body: 'You can now sign in with your mobile number and password.',
+          body: 'Your account is active. You can view, download and upload documents in every department.',
           entityRef: null,
           read: true,
           createdAt: '2026-08-12T06:00:00Z',

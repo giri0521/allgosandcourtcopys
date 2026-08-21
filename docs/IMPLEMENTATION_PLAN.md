@@ -28,7 +28,7 @@ as the source of the wireframe screen inventory.
 - **Permissions**: approval is the *only* gate. Once approved, everyone — member or admin — can view,
   download and **upload to any department**.
 - **Deletion**: a member may delete a file **they uploaded**, and must supply a reason. The reason is
-  pushed to all Admins as a notification. Admins may delete anything.
+  pushed to every other active user as a notification. Admins may delete anything.
 
 ### Permission model
 
@@ -96,7 +96,7 @@ DELETE /api/v1/files/{id}   { reason }     reason required, min 10 chars
         ├─ caller is the uploader, or an Admin   → soft delete (is_deleted = true)
         │       → write file_deletions row (file, actor, reason)
         │       → write audit_logs row
-        │       → notification fan-out to EVERY admin:
+        │       → notification fan-out to EVERY active user but the deleter:
         │         "<name> deleted <file> from <department> — <reason>"
         │
         └─ otherwise → 403
@@ -188,7 +188,7 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
 - `GET /files/{id}/preview` — short-lived presigned URL
 - `GET /files/{id}/download` — writes a `downloads` row
 - `POST /files` — multipart, multi-file, **any department**
-- `DELETE /files/{id}` — body `{ reason }`; uploader or Admin only; notifies all Admins
+- `DELETE /files/{id}` — body `{ reason }`; uploader or Admin only; notifies everyone but the deleter
 - `PUT /files/{id}/replace` — uploader or Admin only; version bump
 - `GET /search?q=` — global, with department/category/date facets
 - `GET /me/uploads`, `GET /me/downloads`
@@ -230,7 +230,7 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
    uploader and Admins.
 10. **Upload** — pick **any** department, then folder; drag-and-drop or Browse; multi-file with per-file
     progress (Uploaded / Uploading % / Pending) and "Cancel All".
-11. **Delete confirmation dialog** — names the file, warns that Admins are notified, and requires a
+11. **Delete confirmation dialog** — names the file, warns that everyone is notified, and requires a
     reason (min 10 chars) before the button enables.
 12. **My Uploads** — this user's contributions, with replace and delete.
 13. **Downloads** — history, All / In Progress tabs.
@@ -295,7 +295,7 @@ Department and folder CRUD with sub-folders; upload to any department with S3 mu
 progress, extension + magic-byte validation, size cap, virus-scan hook point; replace and versioning;
 **delete-with-reason plus admin notification fan-out**; My Uploads; admin Deletions log with restore.
 *Done when* a member uploads to a department that is not their own and it succeeds, then deletes their
-own file with a reason and every Admin sees the notification — while deleting someone else's file 403s.
+own file with a reason and everyone else sees the notification — while deleting someone else's file 403s.
 
 **Phase 4 — Browse, search, preview, download (weeks 6–8)**
 Home dashboard with stat tiles and quick access, browsing across all 43 departments, PDF and image

@@ -231,7 +231,7 @@ Deletes are **soft**, and the reason is not a formality:
    the request
 3. `is_deleted` is set; **the bytes stay**, which is what makes restore possible
 4. A `file_deletions` row records who and why
-5. **Every admin is notified, with that reason in the body**
+5. **Everyone is notified, with that reason and the deleter's name in the body** — the deleter aside
 
 A deleted document disappears from browsing, search and favourites, but its row stays in each user's
 download history marked unavailable — a history that dropped entries would not be a history.

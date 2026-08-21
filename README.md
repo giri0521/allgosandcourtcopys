@@ -13,9 +13,9 @@ API surface, phases, security and test strategy.
 
 Both Admins and Members self-register. **No account works until an Admin approves it** — that approval
 is the only access gate in the system. Once approved, a user can view, download and upload documents in
-**any** department. A member may delete a file they uploaded, but must give a reason, which is sent to
-every Admin as a notification. **Every upload is announced to everyone** — admins and members
-alike, except the person who uploaded it.
+**any** department. A member may delete a file they uploaded, but must give a reason. **Uploads and
+deletions are both announced to everyone** — admins and members alike, except the person who did it;
+a deletion carries the reason and the name of whoever gave it.
 
 | | Member | Admin |
 |---|---|---|
