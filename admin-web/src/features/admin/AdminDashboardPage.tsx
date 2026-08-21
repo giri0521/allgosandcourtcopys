@@ -6,8 +6,6 @@ import { SkeletonRows } from '@/components/ui/Skeleton';
 import { AuditEntryRow } from '@/features/admin/audit/AuditEntryRow';
 import { fetchRecentActivity, fetchSystemStats } from '@/features/admin/api';
 import { toApiError } from '@/lib/errors';
-import { tone } from '@/lib/tones';
-import type { ToneName } from '@/lib/tones';
 
 /**
  * What an administrator sees first: the size of the system, what needs them, and what has just
@@ -56,28 +54,24 @@ export function AdminDashboardPage() {
       <section className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Tile
           to="/departments"
-          tone="navy"
           label="Departments"
           value={stats.data?.departments}
           hint={`${stats.data?.folders ?? '—'} folders`}
         />
         <Tile
           to="/departments"
-          tone="teal"
           label="Documents"
           value={stats.data?.documents}
           hint={`${stats.data?.deletedDocuments ?? 0} deleted`}
         />
         <Tile
           to="/admin/members"
-          tone="indigo"
           label="Members"
           value={stats.data?.members}
           hint={`${stats.data?.activeMembers ?? '—'} active`}
         />
         <Tile
           to="/admin/reports"
-          tone="gold"
           label="This month"
           value={stats.data?.uploadsThisMonth}
           hint={`uploads · ${stats.data?.downloadsThisMonth ?? '—'} downloads`}
@@ -135,13 +129,11 @@ export function AdminDashboardPage() {
 
 function Tile({
   to,
-  tone: toneName,
   label,
   value,
   hint,
 }: {
   to: string;
-  tone: ToneName;
   label: string;
   value: number | undefined;
   hint: string;
@@ -149,16 +141,11 @@ function Tile({
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-card
-        outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-        hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
-        focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
+      className="group rounded-xl border border-line bg-surface p-5 shadow-card outline-none
+        transition-[border-color,box-shadow,background-color] duration-[--duration-quick]
+        ease-[--ease-settle] hover:border-navy-400 hover:bg-navy-50/40 hover:shadow-lifted
+        focus-visible:ring-2 focus-visible:ring-navy-300"
     >
-      <span
-        aria-hidden
-        className={`absolute inset-x-0 top-0 h-1 transition-all duration-[--duration-base]
-          ease-[--ease-settle] group-hover:h-1.5 ${tone(toneName).edge}`}
-      />
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p
         className="mt-1 text-[2rem] leading-none font-semibold text-navy-800 transition-colors

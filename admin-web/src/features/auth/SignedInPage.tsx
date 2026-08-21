@@ -11,8 +11,7 @@ import {
 import { fetchMemberCounts } from '@/features/admin/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime, formatFileSize, formatFileType } from '@/lib/format';
-import { fileTypeTone, tone } from '@/lib/tones';
-import type { ToneName } from '@/lib/tones';
+import { fileTypeTone } from '@/lib/tones';
 import type { FileItem } from '@/types/api';
 
 /**
@@ -61,28 +60,24 @@ export function SignedInPage() {
         <section className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Tile
             to="/departments"
-            tone="navy"
             label="Departments"
             value={departments.data ? String(departments.data.length) : '—'}
             hint="Browse and upload anywhere"
           />
           <Tile
             to="/departments"
-            tone="teal"
             label="Documents"
             value={departments.data ? String(documentCount) : '—'}
             hint="Across every department"
           />
           <Tile
             to="/my-uploads"
-            tone="gold"
             label="My uploads"
             value={myUploads.data ? String(myUploads.data.totalItems) : '—'}
             hint="Yours to replace or delete"
           />
           <Tile
             to="/favorites"
-            tone="violet"
             label="Favorites"
             value={favorites.data ? String(favorites.data.totalItems) : '—'}
             hint="Starred for quick access"
@@ -250,13 +245,11 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
 /** A count that is also the way in — the numbers on this screen are all navigation. */
 function Tile({
   to,
-  tone: toneName,
   label,
   value,
   hint,
 }: {
   to: string;
-  tone: ToneName;
   label: string;
   value: string;
   hint: string;
@@ -264,18 +257,11 @@ function Tile({
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-card
-        outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
-        hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-lifted
-        focus-visible:ring-2 focus-visible:ring-navy-300 active:translate-y-0"
+      className="group rounded-xl border border-line bg-surface p-5 shadow-card outline-none
+        transition-[border-color,box-shadow,background-color] duration-[--duration-quick]
+        ease-[--ease-settle] hover:border-navy-400 hover:bg-navy-50/40 hover:shadow-lifted
+        focus-visible:ring-2 focus-visible:ring-navy-300"
     >
-      {/* A colour bar across the top, growing on hover. Enough to tell the three tiles apart at a
-          glance without turning the page into a paintbox. */}
-      <span
-        aria-hidden
-        className={`absolute inset-x-0 top-0 h-1 transition-all duration-[--duration-base]
-          ease-[--ease-settle] group-hover:h-1.5 ${tone(toneName).edge}`}
-      />
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-[2rem] leading-none font-semibold text-navy-800 transition-colors
         duration-[--duration-base] group-hover:text-navy-600">
