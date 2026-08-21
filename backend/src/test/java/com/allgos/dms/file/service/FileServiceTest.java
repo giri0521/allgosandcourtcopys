@@ -130,13 +130,13 @@ class FileServiceTest {
 
         assertThat(file.isDeleted()).isFalse();
         verify(deletionRepository, never()).save(any());
-        verify(notificationService, never()).notifyAllAdmins(any(), any(), any(), any());
+        verify(notificationService, never()).notifyEveryoneExcept(any(), any(), any(), any(), any());
         // The refusal is on the record even though the request failed.
         verify(auditService).recordDurable(eq(otherMember), any(), any(), eq(file.getId()), any());
     }
 
     @Test
-    @DisplayName("the uploader deletes their own file, and every admin is told why")
+    @DisplayName("the uploader deletes their own file, and everyone else is told why")
     void uploaderDeletesWithReason() {
         when(fileRepository.findByIdAndDeletedFalse(file.getId())).thenReturn(Optional.of(file));
 
@@ -151,9 +151,10 @@ class FileServiceTest {
         assertThat(saved.getValue().getReason()).isEqualTo("Uploaded to the wrong department");
         assertThat(saved.getValue().getDeletedBy()).isEqualTo(uploader);
 
-        // And the fan-out carries it, which is the part the client cares about.
+        // And the fan-out carries it, to everyone but the person who did it.
         verify(notificationService)
-                .notifyAllAdmins(
+                .notifyEveryoneExcept(
+                        eq(uploader),
                         eq(NotificationType.FILE_DELETED),
                         any(),
                         contains("Uploaded to the wrong department"),

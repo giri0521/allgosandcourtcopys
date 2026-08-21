@@ -401,13 +401,13 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
     @Test
     @DisplayName("the bell counts a user's own unread notifications and marking one read sticks")
     void notificationsAreScopedToTheirOwner() throws Exception {
-        // setUp registers a member, and registering correctly notifies every admin. That is real
-        // behaviour, not noise — but it is not what this test is about, so the slate is cleared
-        // here and the counts below are exactly what the deletion produces.
+        // setUp registers a member and the upload below announces itself to everyone. Both are real
+        // behaviour, not noise — but neither is what this test is about, so the slate is cleared
+        // between them and the counts below are exactly what the deletion produces.
+        UUID fileId = uploadOne(folderId, memberToken, "Circular 42.pdf");
         notificationRepository.deleteAll();
 
-        // A deletion by the member notifies every admin — a real event rather than a fixture.
-        UUID fileId = uploadOne(folderId, memberToken, "Circular 42.pdf");
+        // A deletion by the member notifies everyone else — a real event rather than a fixture.
         deleteFile(fileId, "Filed in the wrong department", memberToken).andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/notifications/unread-count")
@@ -462,12 +462,14 @@ class DocumentDiscoveryIT extends AbstractStorageIntegrationTest {
     @Test
     @DisplayName("read-all clears the badge in one call")
     void readAllClearsEverythingUnread() throws Exception {
-        // As above: setUp's registration legitimately notifies the admin, and this test is about
-        // the two deletions below.
+        // As above: the registration in setUp and the two uploads all notify legitimately, and
+        // this test is about the two deletions.
+        UUID first = uploadOne(folderId, memberToken, "Circular 42.pdf");
+        UUID second = uploadOne(folderId, memberToken, "Circular 43.pdf");
         notificationRepository.deleteAll();
 
-        deleteFile(uploadOne(folderId, memberToken, "Circular 42.pdf"), "One", memberToken);
-        deleteFile(uploadOne(folderId, memberToken, "Circular 43.pdf"), "Two", memberToken);
+        deleteFile(first, "One", memberToken);
+        deleteFile(second, "Two", memberToken);
 
         mockMvc.perform(get("/api/v1/notifications/unread-count")
                         .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
