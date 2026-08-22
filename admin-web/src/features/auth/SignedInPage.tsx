@@ -11,8 +11,7 @@ import {
 import { fetchMemberCounts } from '@/features/admin/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime, formatFileSize, formatFileType } from '@/lib/format';
-import { fileTypeTone, tone } from '@/lib/tones';
-import type { ToneName } from '@/lib/tones';
+import { fileTypeTone } from '@/lib/tones';
 import type { FileItem } from '@/types/api';
 
 /**
@@ -64,28 +63,24 @@ export function SignedInPage() {
             label="Departments"
             value={departments.data ? String(departments.data.length) : '—'}
             hint="Browse and upload anywhere"
-            tone="navy"
           />
           <Tile
             to="/departments"
             label="Documents"
             value={departments.data ? String(documentCount) : '—'}
             hint="Across every department"
-            tone="sky"
           />
           <Tile
             to="/my-uploads"
             label="My uploads"
             value={myUploads.data ? String(myUploads.data.totalItems) : '—'}
             hint="Yours to replace or delete"
-            tone="emerald"
           />
           <Tile
             to="/favorites"
             label="Favorites"
             value={favorites.data ? String(favorites.data.totalItems) : '—'}
             hint="Starred for quick access"
-            tone="gold"
           />
         </section>
 
@@ -255,40 +250,38 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
 /**
  * A count that is also the way in — the numbers on this screen are all navigation.
  *
- * <p>Each tile carries its own hue from {@link tone}, so the four read as four things rather than
- * one repeated card. The tint is the tone's own chip fill and its edge is a full-width bar of the
- * matching 500 step; both re-tone in the dark theme along with the rest of the ramp, so nothing
- * here needs a second set of colours writing by hand.
+ * <p>No colour of its own. The four tiles report the same kind of thing — a count and a hint — so a
+ * hue apiece distinguished things that do not differ, and four tinted cards in a row read as a
+ * paint chart above a plain page. Identical to the tile on the admin dashboard, deliberately: the
+ * two screens are the same idea and should not drift apart.
  */
 function Tile({
   to,
   label,
   value,
   hint,
-  tone: toneName,
 }: {
   to: string;
   label: string;
   value: string;
   hint: string;
-  tone: ToneName;
 }) {
-  const t = tone(toneName);
-
   return (
     <Link
       to={to}
-      className={`group relative overflow-hidden rounded-xl border border-line p-5 shadow-card
-        outline-none transition-[border-color,box-shadow,transform] duration-[--duration-quick]
-        ease-[--ease-settle] hover:-translate-y-0.5 hover:shadow-lifted
-        focus-visible:ring-2 focus-visible:ring-navy-300 ${t.chip}`}
+      className="group rounded-xl border border-line bg-surface p-5 shadow-card outline-none
+        transition-[border-color,box-shadow,background-color] duration-[--duration-quick]
+        ease-[--ease-settle] hover:border-navy-400 hover:bg-navy-50/40 hover:shadow-lifted
+        focus-visible:ring-2 focus-visible:ring-navy-300"
     >
-      {/* The tone's own colour as a bar along the top, so the card is identifiable before a word
-          of it is read. */}
-      <span aria-hidden className={`absolute inset-x-0 top-0 h-1 ${t.edge}`} />
-      <p className="text-xs uppercase tracking-wide opacity-80">{label}</p>
-      <p className="mt-1 text-[2rem] leading-none font-semibold">{value}</p>
-      <p className="mt-1 text-sm opacity-75">{hint}</p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p
+        className="mt-1 text-[2rem] leading-none font-semibold text-navy-800 transition-colors
+          duration-[--duration-base] group-hover:text-navy-600"
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-sm text-slate-500">{hint}</p>
     </Link>
   );
 }
