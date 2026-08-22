@@ -205,9 +205,26 @@
   --shadow-contact-dialog: rgb(15 35 64 / 0.20);
   --shadow-ambient-dialog: rgb(15 35 64 / 0.28);
 
+  /*
+   * The header bar, which is deep navy in both themes.
+   *
+   * <p>Written here rather than as palette steps in the markup because the ramp inverts in dark: a
+   * navy-900 bar would be near-black in light and near-white in dark, which is the opposite of one
+   * consistent piece of chrome. These five hold still, so the header reads the same either way and
+   * everything sitting on it can be light-on-dark once rather than twice.
+   */
+  --header-bg: linear-gradient(100deg, #070d1c 0%, #0f1d3d 45%, #1a2f5c 100%);
+  --header-ink: #ffffff;
+  --header-ink-muted: rgb(255 255 255 / 0.72);
+  --header-hover: rgb(255 255 255 / 0.10);
+  --header-active: rgb(255 255 255 / 0.16);
+  --header-edge: rgb(255 255 255 / 0.12);
+  --header-ring: rgb(255 255 255 / 0.45);
+  --header-shadow: 0 10px 30px -20px rgb(0 0 0 / 0.80);
+
   /* The strength of the two washes on the body - see the note there. */
-  --wash-navy: 14%;
-  --wash-gold: 14%;
+  --wash-navy: 30%;
+  --wash-gold: 26%;
 
   /* The loading shimmer: a base, and the sweep that crosses it. */
   --color-skeleton-base: var(--color-slate-200);
@@ -520,8 +537,8 @@
   --shadow-brand-ambient-strong: rgb(0 0 0 / 0.50);
 
   /* The wash has to work harder here: at the light theme's strength it vanishes entirely. */
-  --wash-navy: 30%;
-  --wash-gold: 10%;
+  --wash-navy: 52%;
+  --wash-gold: 20%;
 
   --color-scrim: rgb(2 6 16 / 0.66);
 

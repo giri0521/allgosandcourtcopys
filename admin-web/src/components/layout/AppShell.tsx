@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { HeaderSearch } from '@/components/layout/HeaderSearch';
-import { NotificationBell } from '@/components/layout/NotificationBell';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useAuth } from '@/lib/auth-context';
+import type { ReactNode } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { HeaderSearch } from "@/components/layout/HeaderSearch";
+import { NotificationBell } from "@/components/layout/NotificationBell";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
   to: string;
@@ -29,15 +29,11 @@ interface NavItem {
  * so nothing here is a permission check.
  */
 const NAV: NavItem[] = [
-  { to: '/home', label: 'Home' },
-  { to: '/departments', label: 'Departments' },
-  { to: '/my-uploads', label: 'My Uploads' },
-  { to: '/favorites', label: 'Favorites' },
   // Three admin entries, not six. The dashboard is the hub for the rest — Reports, the deletions
   // log and the activity log all hang off it, and a header with ten links is a header nobody reads.
-  { to: '/admin', label: 'Dashboard', adminOnly: true, exact: true },
-  { to: '/admin/requests', label: 'Requests', adminOnly: true },
-  { to: '/admin/members', label: 'Members', adminOnly: true },
+  { to: "/admin", label: "Dashboard", adminOnly: true, exact: true },
+  { to: "/admin/requests", label: "Requests", adminOnly: true },
+  { to: "/admin/members", label: "Members", adminOnly: true },
 ];
 
 /**
@@ -65,21 +61,26 @@ export function AppShell({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === "ADMIN";
   const items = NAV.filter((item) => !item.adminOnly || isAdmin);
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     // No background of its own: the body's wash shows through, so every screen sits on the same
     // ground rather than a flat grey panel over it.
     <div className="min-h-screen">
+      {/*
+        Deep navy in both themes, written as fixed colours rather than palette steps: the ramp
+        inverts in dark, so a step here would turn the bar pale on exactly the theme it is meant to
+        anchor. Everything inside it is therefore light-on-dark in both themes too.
+      */}
       <header
-        className="sticky top-0 z-40 border-b border-line bg-surface/80 backdrop-blur-xl
-          shadow-[0_10px_30px_-24px_var(--shadow-ambient-strong)]"
+        className="sticky top-0 z-40 border-b border-[var(--header-edge)]
+          bg-[image:var(--header-bg)] shadow-[var(--header-shadow)]"
       >
         {/* A hairline of the brand colours across the very top — navy into gold, the seal's two
             colours. It is the one piece of pure decoration in the chrome. */}
@@ -94,57 +95,61 @@ export function AppShell({
           <Link
             to="/home"
             className="group flex items-center gap-2.5 rounded-lg outline-none
-              focus-visible:ring-2 focus-visible:ring-navy-300"
+              focus-visible:ring-2 focus-visible:ring-[var(--header-ring)]"
           >
             <img
               src="/logo.webp"
               alt=""
-              width={44}
-              height={44}
-              className="h-11 w-11 rounded-full object-cover transition-transform duration-[--duration-base]
+              width={88}
+              height={88}
+              className="h-22 w-22 rounded-full object-cover transition-transform duration-[--duration-base]
                 ease-[--ease-settle] group-hover:scale-105"
             />
-            <span className="text-sm font-bold tracking-tight text-navy-800">
-              ALLGOSANDCOURTCOPYS
+            <span className="text-[1.75rem] leading-none font-bold tracking-tight text-[var(--header-ink)]">
+              All GO’s AND COURT COPIES
             </span>
           </Link>
 
-          <nav
-            className="flex items-center gap-0.5 overflow-x-auto overflow-y-hidden lg:min-w-0 lg:flex-1"
-            aria-label="Main"
-          >
-            {items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.exact}
-                className={({ isActive }) =>
-                  `relative rounded-md px-2 py-1.5 text-sm font-medium whitespace-nowrap outline-none
+          {/* Members are left with no entries at all now that Home and Departments have gone from
+              the header, and an empty <nav> still eats a gap in the flex row. */}
+          {items.length > 0 && (
+            <nav
+              className="flex items-center gap-0.5 overflow-x-auto overflow-y-hidden lg:min-w-0 lg:flex-1"
+              aria-label="Main"
+            >
+              {items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.exact}
+                  className={({ isActive }) =>
+                    `relative rounded-md px-2 py-1.5 text-sm font-medium whitespace-nowrap outline-none
                    transition-colors duration-[--duration-base] ease-[--ease-settle]
-                   focus-visible:ring-2 focus-visible:ring-navy-300 ${
+                   focus-visible:ring-2 focus-visible:ring-[var(--header-ring)] ${
                      isActive
-                       ? 'bg-navy-50 text-navy-700'
-                       : 'text-slate-600 hover:bg-navy-50/70 hover:text-navy-700'
+                       ? "bg-[var(--header-active)] text-[var(--header-ink)]"
+                       : "text-[var(--header-ink-muted)] hover:bg-[var(--header-hover)] hover:text-[var(--header-ink)]"
                    }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {item.label}
-                    {/* Scales out from the centre, so moving between tabs reads as one indicator
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {item.label}
+                      {/* Scales out from the centre, so moving between tabs reads as one indicator
                         travelling rather than two separate underlines. */}
-                    <span
-                      aria-hidden
-                      className={`absolute inset-x-2 bottom-0 h-0.5 origin-center rounded-full bg-navy-600
+                      <span
+                        aria-hidden
+                        className={`absolute inset-x-2 bottom-0 h-0.5 origin-center rounded-full bg-gold-400
                         transition-transform duration-[--duration-base] ease-[--ease-settle] ${
-                          isActive ? 'scale-x-100' : 'scale-x-0'
+                          isActive ? "scale-x-100" : "scale-x-0"
                         }`}
-                    />
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </nav>
+                      />
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+          )}
 
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <HeaderSearch />
@@ -152,21 +157,21 @@ export function AppShell({
             {/* Beside the bell rather than buried in the profile screen: people who want a dark
                 interface want it now, not after two navigations. The three-way choice, including
                 following the operating system, is on My Profile. */}
-            <ThemeToggle />
+            <ThemeToggle className="text-[var(--header-ink-muted)]! hover:bg-[var(--header-hover)]! hover:text-[var(--header-ink)]!" />
             {/* The name is the way into My Profile — the place people look for it. */}
             <NavLink
               to="/profile"
               className={({ isActive }) =>
                 `hidden rounded-md px-2 py-1 text-sm outline-none transition-colors
-                 duration-[--duration-base] focus-visible:ring-2 focus-visible:ring-navy-300
+                 duration-[--duration-base] focus-visible:ring-2 focus-visible:ring-[var(--header-ring)]
                  lg:inline-flex lg:items-center ${
-                   isActive ? 'text-navy-700' : 'text-slate-600 hover:text-navy-700'
+                   isActive ? "text-[var(--header-ink)]" : "text-[var(--header-ink-muted)] hover:text-[var(--header-ink)]"
                  }`
               }
             >
               {user?.fullName}
               {isAdmin && (
-                <span className="ml-2 rounded-full bg-navy-50 px-2 py-0.5 text-xs font-semibold text-navy-700">
+                <span className="ml-2 rounded-full bg-gold-400/20 px-2 py-0.5 text-xs font-semibold text-gold-400">
                   Admin
                 </span>
               )}
@@ -174,9 +179,9 @@ export function AppShell({
             <button
               type="button"
               onClick={handleSignOut}
-              className="rounded-md px-3 py-1.5 text-sm font-semibold text-navy-600 outline-none
-                transition-all duration-[--duration-quick] ease-[--ease-settle] hover:bg-navy-50
-                focus-visible:ring-2 focus-visible:ring-navy-300 active:scale-[0.97]"
+              className="rounded-md px-3 py-1.5 text-sm font-semibold text-[var(--header-ink-muted)] outline-none
+                transition-all duration-[--duration-quick] ease-[--ease-settle] hover:bg-[var(--header-hover)]
+                hover:text-[var(--header-ink)] focus-visible:ring-2 focus-visible:ring-[var(--header-ring)] active:scale-[0.97]"
             >
               Sign out
             </button>
@@ -196,14 +201,18 @@ export function AppShell({
               aria-hidden
               className="mb-3 block h-[3px] w-12 rounded-full bg-gradient-to-r from-gold-400 to-navy-400"
             />
-            <h1 className="text-[1.75rem] leading-tight font-semibold text-navy-900">{title}</h1>
+            <h1 className="text-[1.75rem] leading-tight font-semibold text-navy-900">
+              {title}
+            </h1>
             {subtitle && (
               <p className="mt-1.5 max-w-2xl text-[0.9375rem] leading-relaxed text-slate-500">
                 {subtitle}
               </p>
             )}
           </div>
-          {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
+          {actions && (
+            <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
+          )}
         </div>
         {children}
       </main>
@@ -211,13 +220,21 @@ export function AppShell({
       {/* Small, quiet, and on every signed-in screen — the pages people only look for when
           something has gone wrong or an auditor has asked. */}
       <footer className="mx-auto max-w-[120rem] px-4 pb-8 pt-4 sm:px-6 lg:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4
-          text-xs text-slate-500">
-          <p>ALLGOSANDCOURTCOPYS · Document Management System</p>
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4
+          text-xs text-slate-500"
+        >
+          <p>All GO’s AND COURT COPIES · Document Management System</p>
           <nav className="flex gap-4" aria-label="Information">
-            <Link to="/help" className="hover:text-navy-700 hover:underline">Help</Link>
-            <Link to="/about" className="hover:text-navy-700 hover:underline">About</Link>
-            <Link to="/privacy" className="hover:text-navy-700 hover:underline">Privacy</Link>
+            <Link to="/help" className="hover:text-navy-700 hover:underline">
+              Help
+            </Link>
+            <Link to="/about" className="hover:text-navy-700 hover:underline">
+              About
+            </Link>
+            <Link to="/privacy" className="hover:text-navy-700 hover:underline">
+              Privacy
+            </Link>
           </nav>
         </div>
       </footer>

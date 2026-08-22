@@ -69,11 +69,11 @@ afterEach(() => {
 });
 
 describe('ThemeProvider', () => {
-  it('starts on system and wears whatever the machine is wearing', () => {
-    stubMatchMedia(true);
+  it('starts on dark, whatever the machine is wearing', () => {
+    stubMatchMedia(false);
     renderProbe();
 
-    expect(screen.getByTestId('mode')).toHaveTextContent('system');
+    expect(screen.getByTestId('mode')).toHaveTextContent('dark');
     expect(screen.getByTestId('resolved')).toHaveTextContent('dark');
     expect(attribute()).toBe('dark');
   });
@@ -89,6 +89,7 @@ describe('ThemeProvider', () => {
 
   it('toggles away from what is on screen, not from the stored mode', () => {
     // On `system` over a dark machine, one click must give light — the opposite of what is visible.
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'system');
     stubMatchMedia(true);
     renderProbe();
 
@@ -102,6 +103,7 @@ describe('ThemeProvider', () => {
   });
 
   it('persists the choice so it survives a reload', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light');
     stubMatchMedia(false);
     renderProbe();
 
@@ -110,6 +112,7 @@ describe('ThemeProvider', () => {
   });
 
   it('follows the machine while on system, and stops once a choice is made', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'system');
     const media = stubMatchMedia(false);
     renderProbe();
 
@@ -127,6 +130,7 @@ describe('ThemeProvider', () => {
   });
 
   it('follows a change made in another tab', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light');
     stubMatchMedia(false);
     renderProbe();
     expect(attribute()).toBe('light');
@@ -147,6 +151,7 @@ describe('ThemeProvider', () => {
   });
 
   it('ignores another tab writing an unrelated key', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light');
     stubMatchMedia(false);
     renderProbe();
 

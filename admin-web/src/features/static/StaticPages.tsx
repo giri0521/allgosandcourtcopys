@@ -109,7 +109,7 @@ export function HelpPage() {
 
 export function AboutPage() {
   return (
-    <StaticPage title="About" subtitle="ALLGOSANDCOURTCOPYS — Document Management System">
+    <StaticPage title="About" subtitle="All GO’s AND COURT COPIES — Document Management System">
       <Section heading="What this is">
         <p>
           A central store for the orders and instructions this office works from: Government Orders,

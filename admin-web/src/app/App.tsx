@@ -117,7 +117,7 @@ function Placeholder({ name }: { name: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
       <div className="rounded-lg border border-line bg-surface px-8 py-6 text-center shadow-card">
-        <p className="text-sm uppercase tracking-wide text-navy-500">ALLGOSANDCOURTCOPYS</p>
+        <p className="text-sm uppercase tracking-wide text-navy-500">All GO’s AND COURT COPIES</p>
         <h1 className="mt-2 text-2xl font-semibold text-navy-800">{name}</h1>
         <p className="mt-2 text-sm text-slate-500">Not implemented yet.</p>
       </div>

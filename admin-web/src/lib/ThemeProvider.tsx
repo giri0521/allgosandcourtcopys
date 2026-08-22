@@ -23,7 +23,7 @@ import {
  */
 const subscribeToSystem = (onChange: () => void) => watchSystemTheme(() => onChange());
 const readSystem = (): ResolvedTheme => systemTheme();
-const readSystemOnServer = (): ResolvedTheme => 'light';
+const readSystemOnServer = (): ResolvedTheme => 'dark';
 
 /**
  * Holds the appearance preference for the running tab.
@@ -40,7 +40,7 @@ const readSystemOnServer = (): ResolvedTheme => 'light';
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(() =>
-    typeof window === 'undefined' ? 'system' : readStoredMode(),
+    typeof window === 'undefined' ? 'dark' : readStoredMode(),
   );
 
   const system = useSyncExternalStore(subscribeToSystem, readSystem, readSystemOnServer);

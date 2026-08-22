@@ -71,8 +71,8 @@ describe('mode parsing', () => {
 });
 
 describe('readStoredMode', () => {
-  it('defaults to system, so a machine already in dark is not handed a white page', () => {
-    expect(readStoredMode()).toBe('system');
+  it('defaults to dark, the house style, for anyone who has never chosen', () => {
+    expect(readStoredMode()).toBe('dark');
   });
 
   it('returns what was stored', () => {
@@ -81,9 +81,9 @@ describe('readStoredMode', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
   });
 
-  it('falls back to system rather than trusting a corrupted value', () => {
+  it('falls back to dark rather than trusting a corrupted value', () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, 'chartreuse');
-    expect(readStoredMode()).toBe('system');
+    expect(readStoredMode()).toBe('dark');
   });
 
   it('survives storage being unavailable, as it is in private browsing', () => {
@@ -94,7 +94,7 @@ describe('readStoredMode', () => {
       throw new Error('SecurityError');
     });
 
-    expect(readStoredMode()).toBe('system');
+    expect(readStoredMode()).toBe('dark');
     expect(() => writeStoredMode('dark')).not.toThrow();
   });
 });

@@ -32,8 +32,8 @@ export function AuthLayout({
 
       <div className="w-full max-w-md">
         <div className="animate-rise mb-6 text-center">
-          {/* The source artwork sits on a square canvas with a thin frame; clipping to a circle
-              trims those corners so only the seal itself shows. */}
+          {/* The seal ships already round and transparent — see scripts/build-logo.mjs — so the
+              rounded-full here is only what shapes the shadow. */}
           <img
             src="/logo.webp"
             alt="All GOs and Court Copies"
@@ -41,7 +41,7 @@ export function AuthLayout({
             height={96}
             className="mx-auto mb-3 h-20 w-20 rounded-full object-cover shadow-card sm:h-24 sm:w-24"
           />
-          <h1 className="text-lg font-bold tracking-tight text-navy-800">ALLGOSANDCOURTCOPYS</h1>
+          <h1 className="text-lg font-bold tracking-tight text-navy-800">All GO’s AND COURT COPIES</h1>
           {/* A short gold rule under the name, the way a seal is underlined on a letterhead. */}
           <span
             aria-hidden

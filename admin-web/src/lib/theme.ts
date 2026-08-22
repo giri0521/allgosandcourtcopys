@@ -45,10 +45,11 @@ export function resolveTheme(mode: ThemeMode): ResolvedTheme {
 }
 
 /**
- * The stored preference, or `system` for anyone who has never expressed one.
+ * The stored preference, or `dark` for anyone who has never expressed one.
  *
- * <p>Defaulting to `system` rather than `light` is the whole point: someone whose laptop is in dark
- * mode at 11pm should not be handed a white page and left to go find a setting.
+ * <p>Dark is the house style: the application is meant to be seen on the dark canvas, and anyone
+ * who wants the light one — or wants to follow their machine — can say so from the toggle or My
+ * Profile, and that choice is what gets stored.
  *
  * <p>A read can throw outright — Safari in private browsing, or a locked-down group policy — so the
  * failure is swallowed. A theme is not worth breaking the application over.
@@ -56,9 +57,9 @@ export function resolveTheme(mode: ThemeMode): ResolvedTheme {
 export function readStoredMode(): ThemeMode {
   try {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemeMode(stored) ? stored : 'system';
+    return isThemeMode(stored) ? stored : 'dark';
   } catch {
-    return 'system';
+    return 'dark';
   }
 }
 
