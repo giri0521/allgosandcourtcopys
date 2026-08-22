@@ -27,6 +27,7 @@ const ROUTES = [
   ['preview', '/files/33333333-3333-3333-3333-333333333331'],
   ['my-uploads', '/my-uploads'], ['favorites', '/favorites'], ['downloads', '/downloads'],
   ['search', '/search?q=circular'], ['notifications', '/notifications'], ['profile', '/profile'],
+  ['phonebook', '/phonebook'],
   ['admin-dash', '/admin'], ['admin-requests', '/admin/requests'], ['admin-members', '/admin/members'],
   ['admin-activity', '/admin/members/44444444-4444-4444-4444-444444444441'],
   ['admin-deletions', '/admin/deletions'], ['admin-reports', '/admin/reports'],

@@ -18,6 +18,7 @@ import { FilePreviewPage } from '@/features/documents/FilePreviewPage';
 import { FolderPage } from '@/features/documents/FolderPage';
 import { MyUploadsPage } from '@/features/documents/MyUploadsPage';
 import { NotificationsPage } from '@/features/notifications/NotificationsPage';
+import { PhonebookPage } from '@/features/phonebook/PhonebookPage';
 import { SearchPage } from '@/features/search/SearchPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -79,6 +80,7 @@ export function App() {
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/phonebook" element={<PhonebookPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 

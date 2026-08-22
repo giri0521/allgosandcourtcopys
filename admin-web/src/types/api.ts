@@ -167,6 +167,42 @@ export interface Notification {
   createdAt: string;
 }
 
+/**
+ * One number in the office phonebook.
+ *
+ * <p>The same shape in both books: a department contact fills `departmentId`/`departmentName` and a
+ * taluk contact fills `taluk`/`role`, with the other pair null. A screen that draws a contact does
+ * not need to know which listing it came from.
+ */
+export interface PhonebookContact {
+  id: string;
+  fullName: string;
+  designation: string | null;
+  phoneNumber: string;
+  alternatePhone: string | null;
+  email: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
+  taluk: string | null;
+  role: PhonebookRole | null;
+}
+
+export type PhonebookKind = 'DEPARTMENT' | 'TALUK';
+export type PhonebookRole = 'TAHSILDAR' | 'GROUP_MEMBER';
+
+export interface DepartmentContacts {
+  departmentId: string;
+  departmentName: string;
+  contacts: PhonebookContact[];
+}
+
+/** Tahsildars kept apart from group members, because that is the order a taluk is read in. */
+export interface TalukContacts {
+  taluk: string;
+  tahsildars: PhonebookContact[];
+  groupMembers: PhonebookContact[];
+}
+
 /** A row in the admin approval queue. */
 export interface RegistrationRequest {
   id: string;

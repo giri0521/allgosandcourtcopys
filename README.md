@@ -18,6 +18,10 @@ deletions are both announced to everyone** — admins and members alike, except 
 a deletion carries the reason and the name of whoever gave it. **Anyone can also send a message to
 the whole office** from the notifications screen; it is signed with their name and recorded.
 
+**Phonebook:** numbers by department, and each taluk's tahsildars and group members. Everyone reads
+it; administrators maintain it. Nobody in it needs an account — the numbers worth having are the
+office down the road.
+
 | | Member | Admin |
 |---|---|---|
 | View & download any department | ✅ | ✅ |

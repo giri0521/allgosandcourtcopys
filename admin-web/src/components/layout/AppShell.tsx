@@ -29,6 +29,9 @@ interface NavItem {
  * so nothing here is a permission check.
  */
 const NAV: NavItem[] = [
+  // Everyone's, and for a member the only entry in the header. The phonebook is a thing people
+  // come to the application for rather than something they arrive at from a document.
+  { to: "/phonebook", label: "Phonebook" },
   // Three admin entries, not six. The dashboard is the hub for the rest — Reports, the deletions
   // log and the activity log all hang off it, and a header with ten links is a header nobody reads.
   { to: "/admin", label: "Dashboard", adminOnly: true, exact: true },

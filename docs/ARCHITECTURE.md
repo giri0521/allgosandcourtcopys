@@ -52,6 +52,7 @@ even when the archive is large.
 | `notifications` | Approvals, rejections, uploads and deletions (fanned out to the whole office), restores, and announcements one user sends to everyone |
 | `audit_logs` | Append-only record of every action, with JSONB metadata |
 | `otp_verifications` | Hashed password-reset codes, expiry, attempt and send counts |
+| `phonebook_contacts` | Two books in one table — department numbers, and taluk tahsildars and group members. A CHECK constraint keeps each row to the shape of the book it belongs to |
 
 Flyway owns the schema; Hibernate is `validate` only and never writes DDL. Three migrations, and
 none has changed since Phase 1 — later phases only started using tables that were already there.

@@ -271,6 +271,121 @@ const ROUTES: [RegExp, (url: string) => unknown][] = [
 
   [/\/me$/, () => ADMIN_USER],
 
+  [/\/phonebook\/departments$/, () => [
+    {
+      departmentId: DEPARTMENT_ID,
+      departmentName: DEPARTMENTS[0].name,
+      contacts: [
+        {
+          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+          fullName: 'Dr. S. Kumar',
+          designation: 'Joint Director',
+          phoneNumber: '044-2345 6789',
+          alternatePhone: '98765 43210',
+          email: 'jd.it@example.gov.in',
+          departmentId: DEPARTMENT_ID,
+          departmentName: DEPARTMENTS[0].name,
+          taluk: null,
+          role: null,
+        },
+        {
+          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+          fullName: 'R. Meena',
+          designation: 'Section Officer',
+          phoneNumber: '044-2345 6790',
+          alternatePhone: null,
+          email: null,
+          departmentId: DEPARTMENT_ID,
+          departmentName: DEPARTMENTS[0].name,
+          taluk: null,
+          role: null,
+        },
+      ],
+    },
+    {
+      departmentId: DEPARTMENTS[2].id,
+      departmentName: DEPARTMENTS[2].name,
+      contacts: [
+        {
+          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
+          fullName: 'K. Anbarasan',
+          designation: 'Deputy Director',
+          phoneNumber: '0422-244 1122',
+          alternatePhone: null,
+          email: null,
+          departmentId: DEPARTMENTS[2].id,
+          departmentName: DEPARTMENTS[2].name,
+          taluk: null,
+          role: null,
+        },
+      ],
+    },
+  ]],
+
+  [/\/phonebook\/taluks$/, () => [
+    {
+      taluk: 'Avinashi',
+      tahsildars: [
+        {
+          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+          fullName: 'M. Devi',
+          designation: null,
+          phoneNumber: '94430 44444',
+          alternatePhone: null,
+          email: null,
+          departmentId: null,
+          departmentName: null,
+          taluk: 'Avinashi',
+          role: 'TAHSILDAR',
+        },
+      ],
+      groupMembers: [],
+    },
+    {
+      taluk: 'Coimbatore North',
+      tahsildars: [
+        {
+          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+          fullName: 'K. Ravi',
+          designation: null,
+          phoneNumber: '94430 11111',
+          alternatePhone: '0422-239 0011',
+          email: null,
+          departmentId: null,
+          departmentName: null,
+          taluk: 'Coimbatore North',
+          role: 'TAHSILDAR',
+        },
+      ],
+      groupMembers: [
+        {
+          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
+          fullName: 'A. Suresh',
+          designation: 'Junior Assistant',
+          phoneNumber: '94430 33333',
+          alternatePhone: null,
+          email: null,
+          departmentId: null,
+          departmentName: null,
+          taluk: 'Coimbatore North',
+          role: 'GROUP_MEMBER',
+        },
+        {
+          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4',
+          fullName: 'P. Latha',
+          designation: 'Revenue Inspector',
+          phoneNumber: '94430 22222',
+          alternatePhone: null,
+          email: null,
+          departmentId: null,
+          departmentName: null,
+          taluk: 'Coimbatore North',
+          role: 'GROUP_MEMBER',
+        },
+      ],
+    },
+  ]],
+
   [/\/notifications\/unread-count$/, () => ({ unread: 3 })],
   // Ahead of the general /notifications matcher, which would otherwise answer a send with a page
   // of rows and leave the confirmation reading "sent to undefined people".

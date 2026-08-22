@@ -194,6 +194,8 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
 - `GET /me/uploads`, `GET /me/downloads`
 - `GET|POST|DELETE /favorites`, `GET /notifications`, `PATCH /notifications/{id}/read`,
   `POST /notifications/announcements` — a message to everyone, from any approved user
+- `GET /phonebook/departments`, `GET /phonebook/taluks` — the office phonebook, read by anyone
+  signed in; `POST|PUT|DELETE /admin/phonebook` to maintain it
 - `GET /me`, `PATCH /me` (name, email, designation), `POST /me/password`
 
 **Admin only** (`@PreAuthorize("hasRole('ADMIN')")`)

@@ -23,6 +23,11 @@ public final class AuditAction {
     public static final String USER_STATUS_CHANGED = "user_status_changed";
     public static final String USER_UPDATED = "user_updated";
 
+    // phonebook
+    public static final String PHONEBOOK_CONTACT_ADDED = "phonebook_contact_added";
+    public static final String PHONEBOOK_CONTACT_UPDATED = "phonebook_contact_updated";
+    public static final String PHONEBOOK_CONTACT_REMOVED = "phonebook_contact_removed";
+
     // content
     public static final String DEPARTMENT_CREATED = "department_created";
     public static final String DEPARTMENT_UPDATED = "department_updated";
