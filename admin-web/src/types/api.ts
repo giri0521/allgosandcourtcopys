@@ -181,6 +181,7 @@ export interface PhonebookContact {
   phoneNumber: string;
   alternatePhone: string | null;
   email: string | null;
+  district: string | null;
   departmentId: string | null;
   departmentName: string | null;
   taluk: string | null;

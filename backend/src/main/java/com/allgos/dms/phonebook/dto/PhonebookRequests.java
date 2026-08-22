@@ -63,6 +63,10 @@ public final class PhonebookRequests {
             @Size(max = 255)
             String email,
 
+            /** Optional in both books; the district the contact sits in. */
+            @Size(max = 120)
+            String district,
+
             /** Department book only. */
             UUID departmentId,
 

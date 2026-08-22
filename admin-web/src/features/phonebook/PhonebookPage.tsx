@@ -44,10 +44,25 @@ export function PhonebookPage() {
 
   const term = query.trim().toLowerCase();
 
-  /** Matches a person by anything printed beside them — a name, a role, or the number itself. */
+  /**
+   * Matches a person by anything printed beside them — a name, a role, or the number itself — and
+   * by the heading they sit under.
+   *
+   * <p>Including the department and taluk means searching "revenue" gives you the whole department
+   * rather than nothing, which is what somebody typing the name of an office is asking for.
+   */
   const matches = (contact: PhonebookContact) =>
     !term ||
-    [contact.fullName, contact.designation, contact.phoneNumber, contact.alternatePhone, contact.email]
+    [
+      contact.fullName,
+      contact.designation,
+      contact.phoneNumber,
+      contact.alternatePhone,
+      contact.email,
+      contact.district,
+      contact.departmentName,
+      contact.taluk,
+    ]
       .some((field) => field?.toLowerCase().includes(term));
 
   const departmentGroups = useMemo(
@@ -126,7 +141,7 @@ export function PhonebookPage() {
             label="Search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, designation or number"
+            placeholder="Name, department, designation or number"
           />
         </div>
       </div>
@@ -247,9 +262,9 @@ function ContactRow({
             </span>
           )}
         </p>
-        {(contact.designation || contact.email) && (
+        {(contact.designation || contact.district || contact.email) && (
           <p className="truncate text-xs text-slate-500">
-            {[contact.designation, contact.email].filter(Boolean).join(' · ')}
+            {[contact.designation, contact.district, contact.email].filter(Boolean).join(' · ')}
           </p>
         )}
       </div>

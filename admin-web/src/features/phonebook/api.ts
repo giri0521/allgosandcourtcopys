@@ -30,6 +30,7 @@ export interface SaveContactPayload {
   phoneNumber: string;
   alternatePhone?: string;
   email?: string;
+  district?: string;
   departmentId?: string;
   taluk?: string;
   role?: PhonebookRole;

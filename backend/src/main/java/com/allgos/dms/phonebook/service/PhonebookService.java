@@ -150,6 +150,7 @@ public class PhonebookService {
         contact.setPhoneNumber(request.phoneNumber().trim());
         contact.setAlternatePhone(blankToNull(request.alternatePhone()));
         contact.setEmail(blankToNull(request.email()));
+        contact.setDistrict(blankToNull(request.district()));
 
         if (request.kind() == PhonebookKind.DEPARTMENT) {
             if (request.departmentId() == null) {

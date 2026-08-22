@@ -64,6 +64,7 @@ function ContactForm({
     phoneNumber: editing?.phoneNumber ?? '',
     alternatePhone: editing?.alternatePhone ?? '',
     email: editing?.email ?? '',
+    district: editing?.district ?? '',
     departmentId: editing?.departmentId ?? '',
     taluk: editing?.taluk ?? '',
     role: (editing?.role ?? 'TAHSILDAR') as PhonebookRole,
@@ -85,6 +86,7 @@ function ContactForm({
         phoneNumber: form.phoneNumber.trim(),
         alternatePhone: form.alternatePhone.trim() || undefined,
         email: form.email.trim() || undefined,
+        district: form.district.trim() || undefined,
         ...(book === 'DEPARTMENT'
           ? { departmentId: form.departmentId }
           : { taluk: form.taluk.trim(), role: form.role }),
@@ -181,6 +183,14 @@ function ContactForm({
         value={form.alternatePhone}
         onChange={(event) => update('alternatePhone')(event.target.value)}
         error={error?.fieldErrors?.alternatePhone}
+      />
+
+      <TextField
+        label="District (optional)"
+        value={form.district}
+        onChange={(event) => update('district')(event.target.value)}
+        hint="Where they sit — the same post in two districts is two people"
+        error={error?.fieldErrors?.district}
       />
 
       <TextField

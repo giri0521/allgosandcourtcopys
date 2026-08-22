@@ -58,6 +58,13 @@ public class PhonebookContact extends BaseEntity {
     @Column
     private String email;
 
+    /**
+     * Where they sit. Free text and optional: a state department is rung across the state, and the
+     * same post in two districts is two different people to ask for.
+     */
+    @Column
+    private String district;
+
     /** Department contacts only. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
