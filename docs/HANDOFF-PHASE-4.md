@@ -94,7 +94,7 @@ today.
 
 **Storage keys are opaque.** `{departmentId}/{folderId}/{uuid}{ext}`, with nothing from the
 filename, so no one can guess another department's objects. The bucket is never public — every read
-is a presigned URL valid for five minutes.
+is a presigned URL valid for thirty minutes.
 
 ---
 

@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <ul>
  *   <li>the code is stored only as a hash, so a database read cannot be replayed
- *   <li>codes expire (default 5 minutes) and are single-use
+ *   <li>codes expire (default 30 minutes) and are single-use
  *   <li>a fixed number of wrong guesses burns the code rather than allowing an exhaustive search
  *   <li>sends are throttled per mobile number, both by cooldown and by hourly volume
  * </ul>

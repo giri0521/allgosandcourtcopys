@@ -40,13 +40,13 @@ app:
 
   jwt:
     secret: ${JWT_SECRET:change-me-in-every-environment-this-must-be-at-least-32-bytes}
-    access-token-ttl: ${JWT_ACCESS_TTL:PT15M}
+    access-token-ttl: ${JWT_ACCESS_TTL:PT30M}
     refresh-token-ttl: ${JWT_REFRESH_TTL:P7D}
 
   otp:
     provider: ${OTP_PROVIDER:mock}      # mock | msg91 | twilio
     length: 6
-    ttl: PT5M
+    ttl: PT30M
     max-attempts: 5
     resend-cooldown: PT45S              # matches the 45s countdown in the wireframes
     msg91:
@@ -61,7 +61,7 @@ app:
     access-key: ${S3_ACCESS_KEY:minioadmin}
     secret-key: ${S3_SECRET_KEY:minioadmin}
     path-style-access: ${S3_PATH_STYLE:true}         # required by MinIO
-    presigned-url-ttl: PT5M
+    presigned-url-ttl: PT30M
 
   upload:
     allowed-content-types: application/pdf,image/jpeg,image/png,image/tiff,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet

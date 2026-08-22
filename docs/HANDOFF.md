@@ -415,7 +415,7 @@ Documents can be filed, read, removed and put back.
 | `POST /files?folderId=` | Multipart, multiple files, **any department** |
 | `POST /files/{id}/replace` | Single part named `file`; keeps the id, bumps `version` |
 | `GET /files/{id}`, `/files/my-uploads` | |
-| `GET /files/{id}/download-link` | A presigned URL valid for 5 minutes |
+| `GET /files/{id}/download-link` | A presigned URL valid for 30 minutes |
 | `DELETE /files/{id}` | Body `{ reason }`; blank → 400, not yours → 403 `NOT_FILE_OWNER` |
 | `GET /admin/deletions?status=deleted\|all` | The deletions log, with the reason |
 | `POST /admin/files/{id}/restore` | 409 `FILE_NOT_DELETED` if it was never deleted |

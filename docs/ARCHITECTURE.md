@@ -68,7 +68,7 @@ Nothing from the uploaded filename appears in the key, so no one can guess anoth
 objects from knowing what a document is called. The extension is kept only so a downloaded file
 opens in the right application.
 
-**The bucket is never publicly readable.** Every read is a presigned URL valid for five minutes.
+**The bucket is never publicly readable.** Every read is a presigned URL valid for thirty minutes.
 
 ### The browser — colour, and both themes
 
@@ -146,7 +146,7 @@ sequenceDiagram
     U->>W: mobile number + password
     W->>A: POST /auth/login
     A->>A: status check, then BCrypt verify
-    A-->>W: access token (15 min, in memory)
+    A-->>W: access token (30 min, in memory)
     A-->>W: refresh token (7 days, httpOnly cookie)
 ```
 
@@ -209,7 +209,7 @@ sequenceDiagram
     B->>A: GET /files/{id}/download-link
     A->>A: exists? not deleted?
     A->>A: write downloads row + audit entry
-    A-->>B: presigned URL, valid 5 minutes
+    A-->>B: presigned URL, valid 30 minutes
     B->>S: GET that URL
     S-->>B: the bytes
 ```
@@ -251,10 +251,10 @@ earlier, stricter model.
 | Session revocation | `token_version` on the user row; "sign out everywhere" and password changes increment it, invalidating every issued token at once |
 | Authorization | `@PreAuthorize("hasRole('ADMIN')")` on the **class** of each admin controller, so a new endpoint cannot be left unguarded |
 | Ownership | Delete and replace re-check against the stored row; a member cannot touch another's document by guessing an id |
-| Brute force — per account | Passwords: BCrypt, five failures lock the account for 15 minutes. Reset OTP: 6 digits, hashed, 5-min expiry, 5 attempts, single-use, 45-second resend cooldown, 5 sends/hour |
+| Brute force — per account | Passwords: BCrypt, five failures lock the account for 15 minutes. Reset OTP: 6 digits, hashed, 30-min expiry, 5 attempts, single-use, 45-second resend cooldown, 5 sends/hour |
 | Brute force — per caller | 60 requests/minute per address to `/auth/**`, ahead of any password work |
 | Transport | TLS terminated at the reverse proxy; HSTS, CSP, Referrer-Policy and Permissions-Policy on every response |
-| Document access | Never public. Presigned URLs, 5 minutes, opaque keys |
+| Document access | Never public. Presigned URLs, 30 minutes, opaque keys |
 | Evidence | Every meaningful action writes an `audit_logs` row. The application has no way to edit or delete one |
 
 Two counters are written in **separate transactions** on purpose: failed password attempts and
@@ -329,7 +329,7 @@ Nothing in the system currently deletes anything. That is safe for now and must 
 | Soft-deleted documents | Bytes kept forever so restore works | **No** |
 | Superseded versions | Every "Replace" keeps the old object, unreachable | **No** |
 | `audit_logs` | ~750k rows/year at 150 users | **No** |
-| `otp_verifications` | ~50k rows/year — useless after 5 minutes | **No** |
+| `otp_verifications` | ~50k rows/year — useless after 30 minutes | **No** |
 
 Three of those need a **client decision** before anything can be written: how long the activity log
 must be kept, how long deleted documents stay restorable, and whether superseded versions should be
@@ -353,7 +353,7 @@ alert at 70% and 85%, and prefer the storage provider's own lifecycle rules over
 - **Can anyone tamper with the audit trail?** Not through the application — there is no endpoint
   that edits or deletes an entry, and no repository method either. Database-level access is a
   separate control.
-- **What happens if someone leaks a document link?** It stops working within five minutes.
+- **What happens if someone leaks a document link?** It stops working within thirty minutes.
 - **Is anything encrypted at rest?** The object store should be configured for it; the database
   should use encrypted volumes. Both are deployment settings rather than application code.
 - **What happens when someone leaves?** An admin sets them INACTIVE, which takes effect on their
