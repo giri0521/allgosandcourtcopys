@@ -31,6 +31,13 @@ export function NotificationsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  /**
+   * Only an admin composes. A circular goes to every account at once, which is the office speaking
+   * rather than any one clerk; the server refuses a member's send regardless, and this keeps a
+   * member from being shown a box that would only fail.
+   */
+  const isAdmin = user?.role === 'ADMIN';
+
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState<number | null>(null);
@@ -89,7 +96,11 @@ export function NotificationsPage() {
   return (
     <AppShell
       title="Notifications"
-      subtitle="What the office has told you, and anything you need to tell the office"
+      subtitle={
+        isAdmin
+          ? 'What the office has told you, and anything you need to tell the office'
+          : 'What the office has told you'
+      }
       actions={
         unreadShowing > 0 ? (
           <Button variant="secondary" loading={markAll.isPending} onClick={() => markAll.mutate()}>
@@ -100,54 +111,56 @@ export function NotificationsPage() {
     >
       {/*
         Sending sits above the list rather than behind a button: telling the office something is a
-        thing people come to this screen to do, and a composer they have to go looking for is a
-        feature nobody uses.
+        thing an admin comes to this screen to do, and a composer they have to go looking for is a
+        feature nobody uses. A member sees the list alone.
       */}
-      <section className="mb-6 rounded-xl border border-line bg-surface shadow-card">
-        <div className="border-b border-line bg-surface-sunken px-5 py-3">
-          <h2 className="font-semibold text-slate-900">Tell everyone</h2>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Everyone with an account is notified, and your name is on it.
-          </p>
-        </div>
-
-        <div className="space-y-3 p-5">
-          <label htmlFor="announcement" className="sr-only">
-            Message to everyone
-          </label>
-          <textarea
-            id="announcement"
-            value={message}
-            onChange={(event) => {
-              setMessage(event.target.value);
-              // The previous confirmation belongs to the previous message.
-              if (sent !== null) setSent(null);
-            }}
-            rows={3}
-            maxLength={MAX_MESSAGE}
-            placeholder="The office will be closed on Friday for the audit."
-            className={`${controlClass} resize-y`}
-          />
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Only worth saying as the limit gets close; a counter at 500 remaining is noise. */}
-            <span className={`text-xs ${remaining <= 50 ? 'text-amber-700' : 'text-slate-500'}`}>
-              {remaining <= 50 ? `${remaining} characters left` : 'Up to 500 characters'}
-            </span>
-            <Button loading={announce.isPending} disabled={!canSend} onClick={() => announce.mutate()}>
-              Send to everyone
-            </Button>
+      {isAdmin && (
+        <section className="mb-6 rounded-xl border border-line bg-surface shadow-card">
+          <div className="border-b border-line bg-surface-sunken px-5 py-3">
+            <h2 className="font-semibold text-slate-900">Tell everyone</h2>
+            <p className="mt-0.5 text-sm text-slate-500">
+              Everyone with an account is notified, and your name is on it.
+            </p>
           </div>
 
-          {sent !== null && (
-            <Alert tone="success">
-              {sent === 0
-                ? 'Sent — though nobody else has an active account yet.'
-                : `Sent to ${sent} ${sent === 1 ? 'person' : 'people'}.`}
-            </Alert>
-          )}
-        </div>
-      </section>
+          <div className="space-y-3 p-5">
+            <label htmlFor="announcement" className="sr-only">
+              Message to everyone
+            </label>
+            <textarea
+              id="announcement"
+              value={message}
+              onChange={(event) => {
+                setMessage(event.target.value);
+                // The previous confirmation belongs to the previous message.
+                if (sent !== null) setSent(null);
+              }}
+              rows={3}
+              maxLength={MAX_MESSAGE}
+              placeholder="The office will be closed on Friday for the audit."
+              className={`${controlClass} resize-y`}
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Only worth saying as the limit gets close; a counter at 500 remaining is noise. */}
+              <span className={`text-xs ${remaining <= 50 ? 'text-amber-700' : 'text-slate-500'}`}>
+                {remaining <= 50 ? `${remaining} characters left` : 'Up to 500 characters'}
+              </span>
+              <Button loading={announce.isPending} disabled={!canSend} onClick={() => announce.mutate()}>
+                Send to everyone
+              </Button>
+            </div>
+
+            {sent !== null && (
+              <Alert tone="success">
+                {sent === 0
+                  ? 'Sent — though nobody else has an active account yet.'
+                  : `Sent to ${sent} ${sent === 1 ? 'person' : 'people'}.`}
+              </Alert>
+            )}
+          </div>
+        </section>
+      )}
 
       <div className="mb-5 inline-flex flex-wrap gap-1 rounded-lg bg-surface-sunken p-1 ring-1 ring-line">
         {[

@@ -16,6 +16,7 @@ import com.allgos.dms.notification.entity.Notification;
 import com.allgos.dms.notification.entity.NotificationType;
 import com.allgos.dms.notification.repository.NotificationRepository;
 import com.allgos.dms.support.AbstractIntegrationTest;
+import com.allgos.dms.user.entity.UserRole;
 import com.allgos.dms.user.entity.User;
 import com.allgos.dms.user.entity.UserStatus;
 import com.allgos.dms.user.repository.UserRepository;
@@ -35,10 +36,11 @@ import org.springframework.test.web.servlet.ResultActions;
 /**
  * Announcements: one person telling everybody else something.
  *
- * <p>The rule being proved is that it reaches <em>everyone</em> and is signed. A message that
- * quietly went to the admins only, or that arrived without a name on it, would be worse than no
- * feature at all — an unattributable message to 150 people is how a system gets used to say things
- * nobody will own.
+ * <p>Two rules are being proved. Only an administrator may send one — a circular is the office
+ * speaking to every account at once, not any one clerk. And what is sent reaches <em>everyone</em>
+ * and is signed: a message that quietly went to the admins only, or that arrived without a name on
+ * it, would be worse than no feature at all — an unattributable message to 150 people is how a
+ * system gets used to say things nobody will own.
  */
 class AnnouncementIT extends AbstractIntegrationTest {
 
@@ -58,7 +60,7 @@ class AnnouncementIT extends AbstractIntegrationTest {
 
     private String adminToken;
     private String memberToken;
-    private UUID memberId;
+    private UUID adminId;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -79,9 +81,9 @@ class AnnouncementIT extends AbstractIntegrationTest {
         userRepository.saveAndFlush(admin);
 
         adminToken = signIn(ADMIN_MOBILE);
+        adminId = admin.getId();
         memberToken = registerApproveAndSignIn(MEMBER_MOBILE, "Meena Rajan", department.getId());
         registerApproveAndSignIn(OTHER_MEMBER_MOBILE, "Arun Kumar", department.getId());
-        memberId = userRepository.findByMobileNumber(MEMBER_MOBILE).orElseThrow().getId();
 
         // The registrations above legitimately notify the admins; this test is about what the
         // announcement produces, so the slate is cleared between the two.
@@ -89,24 +91,36 @@ class AnnouncementIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("a member's message reaches every other active account, signed with their name")
-    void aMemberCanTellTheWholeOffice() throws Exception {
+    @DisplayName("a member cannot send one — the whole office is not theirs to address")
+    void aMemberCannotTellTheWholeOffice() throws Exception {
+        announce(memberToken, "The office will be closed on Friday for the audit.")
+                .andExpect(status().isForbidden());
+
+        // Refused outright, not quietly sent to a smaller audience.
+        assertThat(notificationRepository.count()).isZero();
+        assertThat(auditLogRepository.findAll())
+                .noneMatch(entry -> AuditAction.ANNOUNCEMENT_SENT.equals(entry.getAction()));
+    }
+
+    @Test
+    @DisplayName("an admin's message reaches every other active account, signed with their name")
+    void anAdminCanTellTheWholeOffice() throws Exception {
         String message = "The office will be closed on Friday for the audit.";
 
-        announce(memberToken, message)
+        announce(adminToken, message)
                 .andExpect(status().isOk())
-                // Every active account except the sender — at least the admin and the other member.
-                .andExpect(jsonPath("$.recipients").value(activeAccountsExcept(memberId)));
+                // Every active account except the sender — at least the two members.
+                .andExpect(jsonPath("$.recipients").value(activeAccountsExcept(adminId)));
 
         List<Notification> sent = notificationRepository.findAll().stream()
                 .filter(entry -> NotificationType.ANNOUNCEMENT.equals(entry.getType()))
                 .toList();
 
         assertThat(sent).extracting(entry -> entry.getUser().getId())
-                .containsExactlyInAnyOrderElementsOf(everyoneExcept(memberId));
+                .containsExactlyInAnyOrderElementsOf(everyoneExcept(adminId));
 
         assertThat(sent).allSatisfy(entry -> {
-            assertThat(entry.getTitle()).isEqualTo("Message from Meena Rajan");
+            assertThat(entry.getTitle()).isEqualTo("Message from System Administrator");
             assertThat(entry.getBody()).isEqualTo(message);
             // Nothing to open: the message is the subject.
             assertThat(entry.getEntityRef()).isNull();
@@ -114,44 +128,35 @@ class AnnouncementIT extends AbstractIntegrationTest {
         });
 
         // The sender is not told what they just said.
-        assertThat(sent).noneMatch(entry -> entry.getUser().getId().equals(memberId));
+        assertThat(sent).noneMatch(entry -> entry.getUser().getId().equals(adminId));
 
         // And it is on the record, with the message, so it can be traced back to whoever sent it.
         assertThat(auditLogRepository.findAll())
                 .anyMatch(entry -> AuditAction.ANNOUNCEMENT_SENT.equals(entry.getAction())
-                        && memberId.equals(entry.getActor().getId()));
+                        && adminId.equals(entry.getActor().getId()));
     }
 
     @Test
-    @DisplayName("the admin reads it in their own list, unread, like any other notification")
+    @DisplayName("a member reads it in their own list, unread, like any other notification")
     void itArrivesInTheOrdinaryList() throws Exception {
-        announce(memberToken, "Please file the July circulars by Friday.").andExpect(status().isOk());
+        announce(adminToken, "Please file the July circulars by Friday.").andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/v1/notifications").header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+        mockMvc.perform(get("/api/v1/notifications").header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].type").value("announcement"))
-                .andExpect(jsonPath("$.items[0].title").value("Message from Meena Rajan"))
+                .andExpect(jsonPath("$.items[0].title").value("Message from System Administrator"))
                 .andExpect(jsonPath("$.items[0].body").value("Please file the July circulars by Friday."))
                 .andExpect(jsonPath("$.items[0].read").value(false));
 
         mockMvc.perform(get("/api/v1/notifications/unread-count")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
                 .andExpect(jsonPath("$.unread").value(1));
-    }
-
-    @Test
-    @DisplayName("an admin may send one too — it is the same endpoint for everybody")
-    void anAdminCanSendOne() throws Exception {
-        announce(adminToken, "Server maintenance tonight from 8pm.").andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/v1/notifications").header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
-                .andExpect(jsonPath("$.items[0].title").value("Message from System Administrator"));
     }
 
     @Test
     @DisplayName("a blank message is refused, and nobody is told anything")
     void blankIsRefused() throws Exception {
-        announce(memberToken, "   ")
+        announce(adminToken, "   ")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
@@ -161,7 +166,7 @@ class AnnouncementIT extends AbstractIntegrationTest {
     @Test
     @DisplayName("a message longer than a notification is refused rather than truncated")
     void tooLongIsRefused() throws Exception {
-        announce(memberToken, "x".repeat(501))
+        announce(adminToken, "x".repeat(501))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
@@ -171,14 +176,20 @@ class AnnouncementIT extends AbstractIntegrationTest {
     @Test
     @DisplayName("a second message straight after the first is refused — one click writes 150 rows")
     void theCooldownHolds() throws Exception {
-        announce(memberToken, "First message").andExpect(status().isOk());
+        announce(adminToken, "First message").andExpect(status().isOk());
 
-        announce(memberToken, "Second message, immediately")
+        announce(adminToken, "Second message, immediately")
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("ANNOUNCEMENT_COOLDOWN"));
 
-        // Somebody else is not held back by another person's cooldown.
-        announce(adminToken, "Unrelated message from the admin").andExpect(status().isOk());
+        // Another admin is not held back by this one's cooldown. Promoted here rather than seeded
+        // as a second admin, because the cooldown is per person and proving that needs two.
+        User secondAdmin = userRepository.findByMobileNumber(OTHER_MEMBER_MOBILE).orElseThrow();
+        secondAdmin.setRole(UserRole.ADMIN);
+        userRepository.saveAndFlush(secondAdmin);
+
+        announce(signIn(OTHER_MEMBER_MOBILE), "Unrelated message from the other admin")
+                .andExpect(status().isOk());
     }
 
     @Test

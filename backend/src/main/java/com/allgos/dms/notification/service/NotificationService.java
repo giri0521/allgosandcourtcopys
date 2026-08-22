@@ -99,12 +99,12 @@ public class NotificationService {
     /**
      * One person telling the whole office something.
      *
-     * <p><b>Anyone approved may send one</b>, not only administrators. The thing being announced —
-     * an office closure, a circular everyone has been waiting for — is as likely to be known by the
-     * clerk who filed it as by an admin, and every account here has already been approved by an
-     * administrator before it can do anything at all. What keeps it honest is that it is signed:
-     * the sender's name is the notification's heading, and the send is written to the audit log
-     * with the message in it, so an announcement can always be traced back to whoever made it.
+     * <p><b>Administrators only</b>, enforced on the controller. A circular is the office speaking
+     * to all 150 accounts at once, and that is an administrative act however useful the news is; a
+     * member who knows something everybody needs tells an admin, who sends it under their own name.
+     * It is signed either way: the sender's name is the notification's heading, and the send is
+     * written to the audit log with the message in it, so an announcement can always be traced back
+     * to whoever made it.
      *
      * <p>The cooldown is the one guard. A single click writes a row for every active account, so
      * without it one person could fill 150 inboxes as fast as they can type. A minute is long

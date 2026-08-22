@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,10 +65,15 @@ public class NotificationController {
     /**
      * Sends a message to everyone else with an account.
      *
-     * <p>Open to any approved user rather than administrators only — see
-     * {@link NotificationService#announce} for why, and for the cooldown that keeps it from being
-     * a way to fill 150 inboxes.
+     * <p>Administrators only. Circulars are the office speaking, not any one clerk, and a member
+     * with something everybody needs to know tells an admin, who sends it under their own name.
+     * The rest of this controller stays open to every approved user — reading your own
+     * notifications is not an administrative act.
+     *
+     * <p>The guard is here as well as on the screen: the composer is hidden from a member, and a
+     * hidden button is a courtesy, not a rule.
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/announcements")
     public AnnouncementSent announce(
             @Valid @RequestBody NotificationRequests.Announce request,
