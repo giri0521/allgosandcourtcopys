@@ -45,6 +45,27 @@
   --color-gold-950: #24180a;
 
   /*
+   * The three neutral steps that carry words, darkened from Tailwind's own.
+   *
+   * Everything secondary in this application is written in slate — a tile's label, the line under a
+   * document, a timestamp, an inactive tab — and as shipped those steps are drawn for a white page
+   * rather than the tinted one here. 400 measured 2.56:1 on white, which is not a colour text can
+   * be set in at any size; 500 scraped 4.76:1 and looked pale beside the new brand blue.
+   *
+   * Retuned to hit 5.8 / 7.2 / 9.1 against the surface, well past the 4.5 that AA asks for at
+   * ordinary sizes: secondary text here is a department name or a timestamp somebody has to read
+   * across a room's worth of screens, not decoration. Each step keeps its own hue and saturation,
+   * so the ramp still reads as one family and only its lightness moves — and they stay clear of
+   * slate-700, which is body text.
+   *
+   * Light only: the dark theme restates slate for itself further down, where these steps are
+   * bright rather than dark.
+   */
+  --color-slate-400: #556780;
+  --color-slate-500: #4c586a;
+  --color-slate-600: #3d495a;
+
+  /*
    * Semantic surfaces. Screens reference these rather than picking a slate number each time, so the
    * whole application re-tones from six lines — and a future dark mode has somewhere to land.
    *

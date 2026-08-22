@@ -138,7 +138,10 @@ export function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {report.data.departments.map((row) => (
-                    <tr key={row.departmentId} className="hover:bg-navy-50/70">
+                    <tr
+                      key={row.departmentId}
+                      className="group/row transition-colors duration-[--duration-base] hover:bg-navy-50/70"
+                    >
                       <td className="px-5 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <DepartmentAvatar name={row.departmentName} size="sm" />

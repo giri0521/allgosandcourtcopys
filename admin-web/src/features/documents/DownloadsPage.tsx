@@ -89,7 +89,7 @@ export function DownloadsPage() {
 
 function Row({ record }: { record: DownloadRecord }) {
   return (
-    <tr className="transition-colors duration-[--duration-base] hover:bg-navy-50/70">
+    <tr className="group/row transition-colors duration-[--duration-base] hover:bg-navy-50/70">
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
           <span
@@ -111,10 +111,15 @@ function Row({ record }: { record: DownloadRecord }) {
             </svg>
           </span>
           <div className="min-w-0">
-            <p className={`truncate font-medium ${record.available ? 'text-slate-900' : 'text-slate-500'}`}>
+            <p
+              className={`truncate font-medium transition-colors duration-[--duration-base]
+                group-hover/row:text-navy-800
+                ${record.available ? 'text-slate-900' : 'text-slate-500'}`}
+            >
               {record.fileName}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 transition-colors duration-[--duration-base]
+              group-hover/row:text-navy-600">
               {formatFileType(record.fileType)} · {formatFileSize(record.sizeBytes)}
               {!record.available && (
                 <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
@@ -125,11 +130,18 @@ function Row({ record }: { record: DownloadRecord }) {
           </div>
         </div>
       </td>
-      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
+      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 transition-colors
+        duration-[--duration-base] group-hover/row:text-navy-700">
         <p>{record.departmentName}</p>
-        <p className="text-xs text-slate-400">{record.folderName}</p>
+        <p className="text-xs text-slate-400 transition-colors duration-[--duration-base]
+          group-hover/row:text-navy-600">
+          {record.folderName}
+        </p>
       </td>
-      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">{formatDateTime(record.downloadedAt)}</td>
+      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 transition-colors
+        duration-[--duration-base] group-hover/row:text-navy-700">
+        {formatDateTime(record.downloadedAt)}
+      </td>
       <td className="px-5 py-3 text-right">
         {record.available ? (
           <Link

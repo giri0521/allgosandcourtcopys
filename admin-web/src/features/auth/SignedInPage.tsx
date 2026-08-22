@@ -203,7 +203,7 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
           <li key={file.id}>
             <Link
               to={`/files/${file.id}`}
-              className="flex items-center gap-3 px-5 py-3 outline-none transition-colors
+              className="group/row flex items-center gap-3 px-5 py-3 outline-none transition-colors
                 duration-[--duration-base] hover:bg-navy-50/70 focus-visible:bg-navy-50/70"
             >
               <span
@@ -225,13 +225,18 @@ function RecentlyFiled({ files, loading }: { files: FileItem[]; loading: boolean
                 </svg>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-slate-900">{file.fileName}</span>
-                <span className="block text-xs text-slate-500">
+                <span className="block truncate font-medium text-slate-900 transition-colors
+                  duration-[--duration-base] group-hover/row:text-navy-800">
+                  {file.fileName}
+                </span>
+                <span className="block text-xs text-slate-500 transition-colors
+                  duration-[--duration-base] group-hover/row:text-navy-600">
                   {file.departmentName} · {formatFileType(file.fileType)} ·{' '}
                   {formatFileSize(file.sizeBytes)}
                 </span>
               </span>
-              <span className="hidden text-xs text-slate-400 sm:block">
+              <span className="hidden text-xs text-slate-400 transition-colors
+                duration-[--duration-base] group-hover/row:text-navy-600 sm:block">
                 {formatDateTime(file.uploadedAt)}
               </span>
             </Link>

@@ -128,8 +128,12 @@ export function FileTable({
                     />
                     <FileGlyph contentType={file.fileType} />
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900">{file.fileName}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="truncate font-medium text-slate-900 transition-colors
+                        duration-[--duration-base] group-hover/row:text-navy-800">
+                        {file.fileName}
+                      </p>
+                      <p className="text-xs text-slate-500 transition-colors
+                        duration-[--duration-base] group-hover/row:text-navy-600">
                         {formatFileType(file.fileType)} · {formatFileSize(file.sizeBytes)}
                         {/* Only worth saying once a document has actually been replaced. */}
                         {file.version > 1 && (
@@ -151,8 +155,12 @@ export function FileTable({
                     </p>
                   </td>
                 )}
-                <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">{file.uploadedByName}</td>
-                <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 transition-colors
+                  duration-[--duration-base] group-hover/row:text-navy-700">
+                  {file.uploadedByName}
+                </td>
+                <td className="px-5 py-3.5 whitespace-nowrap text-slate-600 transition-colors
+                  duration-[--duration-base] group-hover/row:text-navy-700">
                   {formatDateTime(file.uploadedAt)}
                 </td>
                 <td className="px-3 py-3">
