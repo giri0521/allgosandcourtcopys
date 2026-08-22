@@ -87,7 +87,10 @@ export function AppShell({
           aria-hidden
           className="h-0.5 w-full bg-gradient-to-r from-navy-600 via-navy-400 to-gold-400"
         />
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
+        <div
+          className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3
+            sm:px-6 lg:gap-x-3 lg:flex-nowrap lg:px-10"
+        >
           <Link
             to="/home"
             className="group flex items-center gap-2.5 rounded-lg outline-none
@@ -96,9 +99,9 @@ export function AppShell({
             <img
               src="/logo.webp"
               alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 rounded-full object-cover transition-transform duration-[--duration-base]
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-full object-cover transition-transform duration-[--duration-base]
                 ease-[--ease-settle] group-hover:scale-105"
             />
             <span className="text-sm font-bold tracking-tight text-navy-800">
@@ -107,7 +110,7 @@ export function AppShell({
           </Link>
 
           <nav
-            className="flex items-center gap-1 overflow-x-auto overflow-y-hidden"
+            className="flex items-center gap-0.5 overflow-x-auto overflow-y-hidden lg:min-w-0 lg:flex-1"
             aria-label="Main"
           >
             {items.map((item) => (
@@ -116,7 +119,7 @@ export function AppShell({
                 to={item.to}
                 end={item.exact}
                 className={({ isActive }) =>
-                  `relative rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap outline-none
+                  `relative rounded-md px-2 py-1.5 text-sm font-medium whitespace-nowrap outline-none
                    transition-colors duration-[--duration-base] ease-[--ease-settle]
                    focus-visible:ring-2 focus-visible:ring-navy-300 ${
                      isActive
@@ -143,7 +146,7 @@ export function AppShell({
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <HeaderSearch />
             <NotificationBell />
             {/* Beside the bell rather than buried in the profile screen: people who want a dark
@@ -181,7 +184,7 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto max-w-[120rem] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         {/*
           The page title carries a short gold rule above it — the seal's second colour, used the way
           a letterhead uses one. It is the only ornament on the page, which is what lets it read as
@@ -207,7 +210,7 @@ export function AppShell({
 
       {/* Small, quiet, and on every signed-in screen — the pages people only look for when
           something has gone wrong or an auditor has asked. */}
-      <footer className="mx-auto max-w-6xl px-4 pb-8 pt-4">
+      <footer className="mx-auto max-w-[120rem] px-4 pb-8 pt-4 sm:px-6 lg:px-10">
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4
           text-xs text-slate-500">
           <p>ALLGOSANDCOURTCOPYS · Document Management System</p>

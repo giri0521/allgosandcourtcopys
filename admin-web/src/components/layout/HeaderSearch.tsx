@@ -79,7 +79,7 @@ export function HeaderSearch() {
         value={term}
         onChange={(event) => setTerm(event.target.value)}
         placeholder="Search documents…"
-        className="w-56 rounded-lg border border-line bg-surface-sunken py-1.5 pl-8 pr-3 text-sm
+        className="w-40 rounded-lg border border-line bg-surface-sunken py-1.5 pl-8 pr-3 text-sm
           outline-none transition-all duration-[--duration-base] ease-[--ease-settle]
           placeholder:text-slate-400 focus:w-72 focus:border-navy-400 focus:bg-surface
           focus:ring-2 focus:ring-navy-200"
