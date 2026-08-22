@@ -8,6 +8,7 @@ import { TextField } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import {
+  changeMemberRole,
   changeMemberStatus,
   fetchMemberCounts,
   fetchMembers,
@@ -39,6 +40,7 @@ export function MembersPage() {
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [confirming, setConfirming] = useState<Member | null>(null);
+  const [roleTarget, setRoleTarget] = useState<Member | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Debounced, so typing in the search box does not fire a request per keystroke.
@@ -71,7 +73,24 @@ export function MembersPage() {
     },
   });
 
-  const error = members.error ?? counts.error ?? toggle.error;
+  const changeRole = useMutation({
+    mutationFn: (member: Member) =>
+      changeMemberRole(member.id, member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN'),
+    onSuccess: async (_result, member) => {
+      setNotice(
+        member.role === 'ADMIN'
+          ? `${member.fullName} is no longer an administrator, and has been signed out.`
+          : `${member.fullName} is now an administrator. The change applies when they sign in again.`,
+      );
+      setRoleTarget(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['members'] }),
+        queryClient.invalidateQueries({ queryKey: ['member-counts'] }),
+      ]);
+    },
+  });
+
+  const error = members.error ?? counts.error ?? toggle.error ?? changeRole.error;
   const items = members.data?.items ?? [];
   const summary = counts.data;
 
@@ -175,7 +194,9 @@ export function MembersPage() {
                       member={member}
                       isSelf={member.id === user?.id}
                       busy={toggle.isPending && toggle.variables?.id === member.id}
+                      roleBusy={changeRole.isPending && changeRole.variables?.id === member.id}
                       onToggle={() => setConfirming(member)}
+                      onChangeRole={() => setRoleTarget(member)}
                     />
                   </td>
                 </tr>
@@ -207,6 +228,29 @@ export function MembersPage() {
           </Button>
         </div>
       </Modal>
+
+      <Modal
+        open={roleTarget !== null}
+        title={roleTarget?.role === 'ADMIN' ? 'Remove administrator access?' : 'Make this member an administrator?'}
+        description={
+          roleTarget?.role === 'ADMIN'
+            ? `${roleTarget.fullName} will go back to member access and be signed out immediately.`
+            : `${roleTarget?.fullName} will be able to review registrations, manage members and departments, delete anyone's document, and give administrator access to others. They will be signed out, and the change applies when they sign in again.`
+        }
+        onClose={() => setRoleTarget(null)}
+      >
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setRoleTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            loading={changeRole.isPending}
+            onClick={() => roleTarget && changeRole.mutate(roleTarget)}
+          >
+            {roleTarget?.role === 'ADMIN' ? 'Remove access' : 'Make administrator'}
+          </Button>
+        </div>
+      </Modal>
     </AppShell>
   );
 }
@@ -219,12 +263,16 @@ function MemberAction({
   member,
   isSelf,
   busy,
+  roleBusy,
   onToggle,
+  onChangeRole,
 }: {
   member: Member;
   isSelf: boolean;
   busy: boolean;
+  roleBusy: boolean;
   onToggle: () => void;
+  onChangeRole: () => void;
 }) {
   if (isSelf) {
     return <span className="text-xs text-slate-400">This is you</span>;
@@ -243,8 +291,17 @@ function MemberAction({
   }
 
   return (
-    <Button variant="secondary" loading={busy} onClick={onToggle}>
-      {member.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-    </Button>
+    <div className="flex justify-end gap-2">
+      {/* Only an active account can be promoted — the server refuses a disabled one, so the
+          button would only produce an error. */}
+      {member.status === 'ACTIVE' && (
+        <Button variant="secondary" loading={roleBusy} onClick={onChangeRole}>
+          {member.role === 'ADMIN' ? 'Remove admin' : 'Make admin'}
+        </Button>
+      )}
+      <Button variant="secondary" loading={busy} onClick={onToggle}>
+        {member.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+      </Button>
+    </div>
   );
 }

@@ -12,6 +12,7 @@ import com.allgos.dms.common.dto.PageResponse;
 import com.allgos.dms.common.exception.ApiException;
 import com.allgos.dms.notification.service.NotificationService;
 import com.allgos.dms.user.entity.User;
+import com.allgos.dms.user.entity.UserRole;
 import com.allgos.dms.user.entity.UserStatus;
 import com.allgos.dms.user.repository.UserRepository;
 import java.time.Instant;
@@ -185,6 +186,57 @@ public class AdminUserService {
         if (target == UserStatus.INACTIVE) {
             notificationService.notifyAccountDisabled(user);
         }
+
+        return MemberView.from(user);
+    }
+
+    /**
+     * Grants or withdraws administrative access.
+     *
+     * <p>This is the only way a second admin is ever made. Registration hardcodes MEMBER and
+     * approval leaves the role alone, precisely so that nobody can arrive at the role by signing up
+     * — it has to be handed over deliberately, by somebody who already holds it, and the audit row
+     * says who did it.
+     *
+     * <p>An admin cannot change their own role. That blocks the only self-inflicted lockout
+     * available here — demoting yourself when you are the last admin, leaving an installation with
+     * no way back in short of editing the database by hand. It also means the caller is always an
+     * admin other than the target, so a demotion can never remove the last one.
+     *
+     * <p>The role travels inside the JWT, so a change that only touched the column would leave the
+     * old role live in the target's current token for as long as it lasts. Incrementing
+     * {@code tokenVersion} retires every token they hold: withdrawn access stops now rather than up
+     * to thirty minutes from now, and a promotion is picked up on their next sign-in rather than
+     * appearing to do nothing.
+     */
+    @Transactional
+    public MemberView changeRole(UUID userId, UserRole target, User admin) {
+        if (userId.equals(admin.getId())) {
+            throw ApiException.forbidden(
+                    "CANNOT_MODIFY_SELF", "You cannot change your own role");
+        }
+
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> ApiException.notFound("Member"));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw ApiException.conflict(
+                    "MEMBER_NOT_ACTIVE",
+                    "Only an active member can be made an administrator");
+        }
+
+        UserRole previous = user.getRole();
+        if (previous == target) {
+            return MemberView.from(user);
+        }
+
+        user.setRole(target);
+        user.setTokenVersion(user.getTokenVersion() + 1);
+
+        auditService.record(managed(admin), AuditAction.USER_ROLE_CHANGED, "user", user.getId(),
+                Map.of("from", previous.name(), "to", target.name()));
+        notificationService.notifyRoleChanged(user, target);
 
         return MemberView.from(user);
     }

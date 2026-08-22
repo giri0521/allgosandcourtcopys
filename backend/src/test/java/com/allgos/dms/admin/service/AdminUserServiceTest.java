@@ -232,6 +232,93 @@ class AdminUserServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("changeRole")
+    class ChangeRole {
+
+        @Test
+        @DisplayName("promoting retires the member's tokens so the new role cannot wait behind an old one")
+        void promotingIsAuditedAnnouncedAndForcesReauthentication() {
+            applicant.setStatus(UserStatus.ACTIVE);
+            applicant.setTokenVersion(4);
+            when(userRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
+            when(userRepository.findById(applicant.getId())).thenReturn(Optional.of(applicant));
+
+            var view = service.changeRole(applicant.getId(), UserRole.ADMIN, admin);
+
+            assertThat(view.role()).isEqualTo(UserRole.ADMIN);
+            assertThat(applicant.getRole()).isEqualTo(UserRole.ADMIN);
+            assertThat(applicant.getTokenVersion()).isEqualTo(5);
+            verify(notificationService).notifyRoleChanged(applicant, UserRole.ADMIN);
+            verify(auditService).record(
+                    eq(admin),
+                    eq(AuditAction.USER_ROLE_CHANGED),
+                    eq("user"),
+                    eq(applicant.getId()),
+                    eq(Map.of("from", "MEMBER", "to", "ADMIN")));
+        }
+
+        @Test
+        @DisplayName("withdrawing access signs the former admin out immediately")
+        void demotingIsAuditedAndForcesReauthentication() {
+            applicant.setStatus(UserStatus.ACTIVE);
+            applicant.setRole(UserRole.ADMIN);
+            when(userRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
+            when(userRepository.findById(applicant.getId())).thenReturn(Optional.of(applicant));
+
+            service.changeRole(applicant.getId(), UserRole.MEMBER, admin);
+
+            assertThat(applicant.getRole()).isEqualTo(UserRole.MEMBER);
+            assertThat(applicant.getTokenVersion()).isEqualTo(1);
+            verify(notificationService).notifyRoleChanged(applicant, UserRole.MEMBER);
+            verify(auditService).record(
+                    eq(admin),
+                    eq(AuditAction.USER_ROLE_CHANGED),
+                    eq("user"),
+                    eq(applicant.getId()),
+                    eq(Map.of("from", "ADMIN", "to", "MEMBER")));
+        }
+
+        @Test
+        @DisplayName("setting the role it already has changes nothing, and does not sign anyone out")
+        void isANoOpWhenNothingChanges() {
+            applicant.setStatus(UserStatus.ACTIVE);
+            when(userRepository.findById(applicant.getId())).thenReturn(Optional.of(applicant));
+
+            service.changeRole(applicant.getId(), UserRole.MEMBER, admin);
+
+            assertThat(applicant.getTokenVersion()).isZero();
+            verifyNoInteractions(auditService, notificationService);
+        }
+
+        @Test
+        @DisplayName("an admin cannot demote themselves, which is the only way to strand an installation")
+        void refusesToChangeTheCallersOwnRole() {
+            assertThatThrownBy(() -> service.changeRole(admin.getId(), UserRole.MEMBER, admin))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(ex -> ((ApiException) ex).getCode())
+                    .isEqualTo("CANNOT_MODIFY_SELF");
+
+            verify(userRepository, never()).findById(any());
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = UserStatus.class, names = {"PENDING", "REJECTED", "INACTIVE"})
+        @DisplayName("only an active account can be promoted")
+        void refusesAnAccountThatIsNotActive(UserStatus current) {
+            applicant.setStatus(current);
+            when(userRepository.findById(applicant.getId())).thenReturn(Optional.of(applicant));
+
+            assertThatThrownBy(() -> service.changeRole(applicant.getId(), UserRole.ADMIN, admin))
+                    .isInstanceOf(ApiException.class)
+                    .extracting(ex -> ((ApiException) ex).getCode())
+                    .isEqualTo("MEMBER_NOT_ACTIVE");
+
+            assertThat(applicant.getRole()).isEqualTo(UserRole.MEMBER);
+            assertThat(applicant.getTokenVersion()).isZero();
+        }
+    }
+
     // ------------------------------------------------------------------------ helpers
 
     private void givenTheRequestExists() {

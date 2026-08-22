@@ -21,6 +21,7 @@ public final class AuditAction {
     public static final String REGISTRATION_APPROVED = "registration_approved";
     public static final String REGISTRATION_REJECTED = "registration_rejected";
     public static final String USER_STATUS_CHANGED = "user_status_changed";
+    public static final String USER_ROLE_CHANGED = "user_role_changed";
     public static final String USER_UPDATED = "user_updated";
 
     // phonebook

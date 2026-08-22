@@ -7,6 +7,8 @@ public final class NotificationType {
     public static final String REGISTRATION_REJECTED = "registration_rejected";
     public static final String REGISTRATION_SUBMITTED = "registration_submitted";
     public static final String ACCOUNT_DISABLED = "account_disabled";
+    /** Promoted to admin, or put back to member. Either way the person is signed out. */
+    public static final String ROLE_CHANGED = "role_changed";
     public static final String FILE_UPLOADED = "file_uploaded";
     /** Somebody telling the office something. Carries no subject — the message is the point. */
     public static final String ANNOUNCEMENT = "announcement";

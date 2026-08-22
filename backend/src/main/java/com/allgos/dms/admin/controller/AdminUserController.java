@@ -103,6 +103,18 @@ public class AdminUserController {
         return adminUserService.changeStatus(id, request.status(), principal.user());
     }
 
+    /**
+     * Grant or withdraw administrative access. Admin-only like everything on this class, so only an
+     * admin can make one.
+     */
+    @PatchMapping("/members/{id}/role")
+    public MemberView changeRole(
+            @PathVariable UUID id,
+            @Valid @RequestBody AdminRequests.ChangeRole request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        return adminUserService.changeRole(id, request.role(), principal.user());
+    }
+
     // ------------------------------------------------------------------------ helpers
 
     /** Newest first, and the page size is capped so one request cannot ask for the whole table. */

@@ -390,6 +390,7 @@ An admin can now review registrations in the UI, which was the last thing blocki
 | `GET /admin/members?status=&q=&page=` | Search matches name and mobile |
 | `GET /admin/members/summary` | Counts for the tabs and the pending-requests tile |
 | `PATCH /admin/members/{id}/status` | `ACTIVE` or `INACTIVE` only |
+| `PATCH /admin/members/{id}/role` | `ADMIN` or `MEMBER`. The only way a second admin is made |
 
 Three rules in that surface are worth knowing before changing it:
 

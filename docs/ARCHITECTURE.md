@@ -251,6 +251,7 @@ earlier, stricter model.
 | Authentication | JWT, HMAC-SHA384. Access 15 min, refresh 7 days in an httpOnly `SameSite=Strict` cookie |
 | Session revocation | `token_version` on the user row; "sign out everywhere" and password changes increment it, invalidating every issued token at once |
 | Authorization | `@PreAuthorize("hasRole('ADMIN')")` on the **class** of each admin controller, so a new endpoint cannot be left unguarded |
+| Becoming an admin | Never by registering: sign-up hardcodes MEMBER and approval leaves the role alone. Only an existing admin can grant it, and never to themselves |
 | Ownership | Delete and replace re-check against the stored row; a member cannot touch another's document by guessing an id |
 | Brute force — per account | Passwords: BCrypt, five failures lock the account for 15 minutes. Reset OTP: 6 digits, hashed, 30-min expiry, 5 attempts, single-use, 45-second resend cooldown, 5 sends/hour |
 | Brute force — per caller | 60 requests/minute per address to `/auth/**`, ahead of any password work |

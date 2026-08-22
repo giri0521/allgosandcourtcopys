@@ -9,6 +9,7 @@ import type {
   PageResponse,
   RegistrationRequest,
   RegistrationStatus,
+  Role,
   SystemStats,
   UserStatus,
 } from '@/types/api';
@@ -62,6 +63,17 @@ export async function changeMemberStatus(
   status: 'ACTIVE' | 'INACTIVE',
 ): Promise<Member> {
   const { data } = await api.patch<Member>(`/admin/members/${id}/status`, { status });
+  return data;
+}
+
+/**
+ * Grant or withdraw administrative access.
+ *
+ * <p>The server signs the member out as part of this, so a promotion shows up for them on their
+ * next sign-in rather than immediately.
+ */
+export async function changeMemberRole(id: string, role: Role): Promise<Member> {
+  const { data } = await api.patch<Member>(`/admin/members/${id}/role`, { role });
   return data;
 }
 

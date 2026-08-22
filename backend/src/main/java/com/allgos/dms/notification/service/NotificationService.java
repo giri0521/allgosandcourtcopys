@@ -190,6 +190,19 @@ public class NotificationService {
                 "user:" + user.getId());
     }
 
+    /** Both directions, because being quietly signed out with no explanation invites a phone call. */
+    public void notifyRoleChanged(User user, UserRole role) {
+        boolean promoted = role == UserRole.ADMIN;
+        notify(
+                user,
+                NotificationType.ROLE_CHANGED,
+                promoted ? "You are now an administrator" : "Your administrator access has ended",
+                promoted
+                        ? "An administrator has given you administrative access. Sign in again to use it."
+                        : "An administrator has returned your account to member access.",
+                "user:" + user.getId());
+    }
+
     // -------------------------------------------------------------------- read side
 
     /**

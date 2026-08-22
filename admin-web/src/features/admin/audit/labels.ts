@@ -23,6 +23,7 @@ const LABELS: Record<string, string> = {
   registration_approved: 'Approved a registration',
   registration_rejected: 'Rejected a registration',
   user_status_changed: 'Changed an account status',
+  user_role_changed: 'Changed an account role',
   user_updated: 'Updated a profile',
   department_created: 'Created a department',
   department_updated: 'Updated a department',

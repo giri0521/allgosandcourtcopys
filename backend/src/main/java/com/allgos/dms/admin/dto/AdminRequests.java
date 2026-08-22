@@ -1,5 +1,6 @@
 package com.allgos.dms.admin.dto;
 
+import com.allgos.dms.user.entity.UserRole;
 import com.allgos.dms.user.entity.UserStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +22,14 @@ public final class AdminRequests {
     public record ChangeStatus(
             @NotNull(message = "Choose a status")
             UserStatus status) {}
+
+    /**
+     * Grant or withdraw administrative access. Both directions come through here, so a promotion
+     * and a demotion are recorded the same way rather than one being a special case.
+     */
+    public record ChangeRole(
+            @NotNull(message = "Choose a role")
+            UserRole role) {}
 
     private AdminRequests() {}
 }
