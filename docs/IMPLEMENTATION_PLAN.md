@@ -192,7 +192,8 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
 - `PUT /files/{id}/replace` — uploader or Admin only; version bump
 - `GET /search?q=` — global, with department/category/date facets
 - `GET /me/uploads`, `GET /me/downloads`
-- `GET|POST|DELETE /favorites`, `GET /notifications`, `PATCH /notifications/{id}/read`
+- `GET|POST|DELETE /favorites`, `GET /notifications`, `PATCH /notifications/{id}/read`,
+  `POST /notifications/announcements` — a message to everyone, from any approved user
 - `GET /me`, `PATCH /me` (name, email, designation), `POST /me/password`
 
 **Admin only** (`@PreAuthorize("hasRole('ADMIN')")`)
@@ -235,7 +236,8 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
 12. **My Uploads** — this user's contributions, with replace and delete.
 13. **Downloads** — history, All / In Progress tabs.
 14. **Search results** — global, with department and category facets.
-15. **Notifications** — new file added, folder updated, and (for Admins) file-deleted-with-reason.
+15. **Notifications** — new file added, folder updated, file-deleted-with-reason, and a message any
+    user can send to the whole office.
 16. **My Profile** — name, role badge, mobile, email, department, designation, joined date, last login,
     account status. Editable: name, email, designation. Change password. Logout, Logout From All Devices.
 17. **Side menu / nav** — profile header (initials), Home, Departments, Upload, My Uploads, Favorites,

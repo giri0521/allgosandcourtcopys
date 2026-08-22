@@ -15,7 +15,8 @@ Both Admins and Members self-register. **No account works until an Admin approve
 is the only access gate in the system. Once approved, a user can view, download and upload documents in
 **any** department. A member may delete a file they uploaded, but must give a reason. **Uploads and
 deletions are both announced to everyone** — admins and members alike, except the person who did it;
-a deletion carries the reason and the name of whoever gave it.
+a deletion carries the reason and the name of whoever gave it. **Anyone can also send a message to
+the whole office** from the notifications screen; it is signed with their name and recorded.
 
 | | Member | Admin |
 |---|---|---|

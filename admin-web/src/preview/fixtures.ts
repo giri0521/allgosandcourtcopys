@@ -272,10 +272,22 @@ const ROUTES: [RegExp, (url: string) => unknown][] = [
   [/\/me$/, () => ADMIN_USER],
 
   [/\/notifications\/unread-count$/, () => ({ unread: 3 })],
+  // Ahead of the general /notifications matcher, which would otherwise answer a send with a page
+  // of rows and leave the confirmation reading "sent to undefined people".
+  [/\/notifications\/announcements$/, () => ({ recipients: 42 })],
   [
     /\/notifications/,
     () =>
       page([
+        {
+          id: '77777777-7777-7777-7777-777777777770',
+          type: 'announcement',
+          title: 'Message from Meena Rajan',
+          body: 'The office will be closed on Friday for the audit. Please file anything urgent before Thursday evening.',
+          entityRef: null,
+          read: false,
+          createdAt: '2026-08-14T06:10:00Z',
+        },
         {
           id: '77777777-7777-7777-7777-777777777771',
           type: 'file_deleted',

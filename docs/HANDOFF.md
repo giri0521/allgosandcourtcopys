@@ -55,6 +55,7 @@ product.
 | Upload, download, delete-with-reason, restore | Done | Magic-byte validation; presigned URLs; deletions log |
 | File replacement | Done | Uploader or admin; keeps the id, bumps the version |
 | Search, preview, favorites, notifications | Done | Trigram search; inline preview; the bell finally reads the rows |
+| Announcements | Done | Any approved user can message the whole office, signed and audited, one a minute |
 | Download history | Done | Written when a presigned link is issued; a preview is not a download |
 | My Profile, admin dashboard, audit viewer, reports | Done | CSV export; per-member activity; Help/About/Privacy |
 | Hardening | Done | Auth rate limiting, security headers, production-readiness check, focus trap |

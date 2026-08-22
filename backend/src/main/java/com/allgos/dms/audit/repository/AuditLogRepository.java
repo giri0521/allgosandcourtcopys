@@ -29,4 +29,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID>, JpaSp
     long countByActorIdAndAction(UUID actorId, String action);
 
     long countByActionAndCreatedAtAfter(String action, Instant after);
+
+    /** Backs the announcement cooldown: how many one person has sent in the last minute. */
+    long countByActorIdAndActionAndCreatedAtAfter(UUID actorId, String action, Instant after);
 }

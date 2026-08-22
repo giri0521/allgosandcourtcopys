@@ -19,6 +19,7 @@ const LABELS: Record<string, string> = {
   logout: 'Signed out',
   logout_all: 'Signed out everywhere',
   password_changed: 'Password changed',
+  announcement_sent: 'Sent a message to everyone',
   registration_approved: 'Approved a registration',
   registration_rejected: 'Rejected a registration',
   user_status_changed: 'Changed an account status',

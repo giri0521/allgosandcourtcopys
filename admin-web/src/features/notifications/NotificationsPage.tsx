@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
+import { controlClass } from '@/components/ui/Field';
 import { SkeletonRows } from '@/components/ui/Skeleton';
 import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   notificationLink,
+  sendAnnouncement,
 } from '@/features/notifications/api';
 import { useAuth } from '@/lib/auth-context';
 import { toApiError } from '@/lib/errors';
@@ -30,6 +32,8 @@ export function NotificationsPage() {
   const { user } = useAuth();
 
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [message, setMessage] = useState('');
+  const [sent, setSent] = useState<number | null>(null);
 
   const notifications = useQuery({
     queryKey: ['notifications', 'list', unreadOnly],
@@ -49,9 +53,27 @@ export function NotificationsPage() {
     onSuccess: () => void refresh(),
   });
 
+  /**
+   * The sender gets no notification of their own message — they wrote it — so the count coming back
+   * is the only confirmation that it went anywhere. It is kept on screen until they type again.
+   */
+  const announce = useMutation({
+    mutationFn: () => sendAnnouncement(message.trim()),
+    onSuccess: (recipients) => {
+      setSent(recipients);
+      setMessage('');
+      void refresh();
+    },
+  });
+
   const items = notifications.data?.items ?? [];
   const unreadShowing = items.filter((item) => !item.read).length;
-  const error = notifications.error ?? markRead.error ?? markAll.error;
+  const error = notifications.error ?? markRead.error ?? markAll.error ?? announce.error;
+
+  const MAX_MESSAGE = 500;
+  const trimmed = message.trim();
+  const remaining = MAX_MESSAGE - message.length;
+  const canSend = trimmed.length > 0 && message.length <= MAX_MESSAGE && !announce.isPending;
 
   /**
    * Opening a notification marks it read and follows it to its subject, if it has one. Doing both
@@ -67,7 +89,7 @@ export function NotificationsPage() {
   return (
     <AppShell
       title="Notifications"
-      subtitle="Approvals, deletions and restores — everything the system has told you"
+      subtitle="What the office has told you, and anything you need to tell the office"
       actions={
         unreadShowing > 0 ? (
           <Button variant="secondary" loading={markAll.isPending} onClick={() => markAll.mutate()}>
@@ -76,6 +98,57 @@ export function NotificationsPage() {
         ) : undefined
       }
     >
+      {/*
+        Sending sits above the list rather than behind a button: telling the office something is a
+        thing people come to this screen to do, and a composer they have to go looking for is a
+        feature nobody uses.
+      */}
+      <section className="mb-6 rounded-xl border border-line bg-surface shadow-card">
+        <div className="border-b border-line bg-surface-sunken px-5 py-3">
+          <h2 className="font-semibold text-slate-900">Tell everyone</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Everyone with an account is notified, and your name is on it.
+          </p>
+        </div>
+
+        <div className="space-y-3 p-5">
+          <label htmlFor="announcement" className="sr-only">
+            Message to everyone
+          </label>
+          <textarea
+            id="announcement"
+            value={message}
+            onChange={(event) => {
+              setMessage(event.target.value);
+              // The previous confirmation belongs to the previous message.
+              if (sent !== null) setSent(null);
+            }}
+            rows={3}
+            maxLength={MAX_MESSAGE}
+            placeholder="The office will be closed on Friday for the audit."
+            className={`${controlClass} resize-y`}
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Only worth saying as the limit gets close; a counter at 500 remaining is noise. */}
+            <span className={`text-xs ${remaining <= 50 ? 'text-amber-700' : 'text-slate-500'}`}>
+              {remaining <= 50 ? `${remaining} characters left` : 'Up to 500 characters'}
+            </span>
+            <Button loading={announce.isPending} disabled={!canSend} onClick={() => announce.mutate()}>
+              Send to everyone
+            </Button>
+          </div>
+
+          {sent !== null && (
+            <Alert tone="success">
+              {sent === 0
+                ? 'Sent — though nobody else has an active account yet.'
+                : `Sent to ${sent} ${sent === 1 ? 'person' : 'people'}.`}
+            </Alert>
+          )}
+        </div>
+      </section>
+
       <div className="mb-5 inline-flex flex-wrap gap-1 rounded-lg bg-surface-sunken p-1 ring-1 ring-line">
         {[
           { value: false, label: 'All' },
@@ -204,14 +277,19 @@ function toneFor(type: string): ToneName {
   if (type.includes('rejected') || type.includes('deleted') || type.includes('disabled')) return 'rose';
   if (type.includes('approved') || type.includes('restored')) return 'emerald';
   if (type.includes('submitted')) return 'gold';
+  // A person speaking, rather than the system reporting — worth its own colour among the rest.
+  if (type === 'announcement') return 'sky';
   return 'navy';
 }
 
 function Glyph({ type }: { type: string }) {
   const paths =
-    type.includes('file') || type.includes('deleted') || type.includes('restored')
-      ? ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z', 'M14 2v6h6']
-      : ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'];
+    type === 'announcement'
+      ? // A speech bubble: somebody said this, as against the system reporting it.
+        ['M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.3-.6L3 21l1.9-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z']
+      : type.includes('file') || type.includes('deleted') || type.includes('restored')
+        ? ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z', 'M14 2v6h6']
+        : ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'];
 
   return (
     <svg

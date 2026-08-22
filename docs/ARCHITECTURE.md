@@ -49,7 +49,7 @@ even when the archive is large.
 | `file_deletions` | Who deleted what, **and the reason they gave** |
 | `downloads` | One row each time a user is handed a download link |
 | `favorites` | Private per user; unique on `(user_id, file_id)` |
-| `notifications` | Approvals, rejections, uploads (fanned out to the whole office), deletions, restores |
+| `notifications` | Approvals, rejections, uploads and deletions (fanned out to the whole office), restores, and announcements one user sends to everyone |
 | `audit_logs` | Append-only record of every action, with JSONB metadata |
 | `otp_verifications` | Hashed password-reset codes, expiry, attempt and send counts |
 

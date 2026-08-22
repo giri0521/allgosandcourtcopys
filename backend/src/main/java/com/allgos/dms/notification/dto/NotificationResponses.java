@@ -38,5 +38,13 @@ public final class NotificationResponses {
     /** What the bell badge needs, and nothing else — it is polled far more often than the list. */
     public record UnreadCount(long unread) {}
 
+    /**
+     * The answer to sending an announcement: how many people it reached.
+     *
+     * <p>Returned rather than assumed by the client, which has no way of knowing how many accounts
+     * are active — and "sent to 42 people" is what tells the sender it actually went somewhere.
+     */
+    public record AnnouncementSent(int recipients) {}
+
     private NotificationResponses() {}
 }

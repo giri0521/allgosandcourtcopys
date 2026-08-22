@@ -38,6 +38,17 @@ export async function markAllNotificationsRead(): Promise<void> {
 }
 
 /**
+ * Sends a message to everyone else with an account.
+ *
+ * @returns how many people were told — the client has no way of knowing how many accounts are
+ *   active, and "sent to 42 people" is what tells the sender it actually went somewhere
+ */
+export async function sendAnnouncement(message: string): Promise<number> {
+  const { data } = await api.post<{ recipients: number }>('/notifications/announcements', { message });
+  return data.recipients;
+}
+
+/**
  * Turns the server's `entityRef` into a route.
  *
  * <p>The server writes `"file:{uuid}"`, `"folder:{uuid}"` and `"user:{uuid}"` and deliberately stops

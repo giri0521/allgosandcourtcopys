@@ -15,6 +15,7 @@ public final class AuditAction {
     public static final String LOGOUT = "logout";
     public static final String LOGOUT_ALL = "logout_all";
     public static final String PASSWORD_CHANGED = "password_changed";
+    public static final String ANNOUNCEMENT_SENT = "announcement_sent";
 
     // approval workflow
     public static final String REGISTRATION_APPROVED = "registration_approved";

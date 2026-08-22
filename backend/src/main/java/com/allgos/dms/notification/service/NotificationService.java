@@ -1,5 +1,8 @@
 package com.allgos.dms.notification.service;
 
+import com.allgos.dms.audit.entity.AuditAction;
+import com.allgos.dms.audit.repository.AuditLogRepository;
+import com.allgos.dms.audit.service.AuditService;
 import com.allgos.dms.common.dto.PageResponse;
 import com.allgos.dms.common.exception.ApiException;
 import com.allgos.dms.notification.dto.NotificationResponses.NotificationView;
@@ -10,7 +13,10 @@ import com.allgos.dms.user.entity.User;
 import com.allgos.dms.user.entity.UserRole;
 import com.allgos.dms.user.entity.UserStatus;
 import com.allgos.dms.user.repository.UserRepository;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,12 +26,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class NotificationService {
 
+    /** How long one person must wait between announcements. */
+    private static final Duration COOLDOWN = Duration.ofMinutes(1);
+
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final AuditService auditService;
 
-    public NotificationService(NotificationRepository notificationRepository, UserRepository userRepository) {
+    public NotificationService(
+            NotificationRepository notificationRepository,
+            UserRepository userRepository,
+            AuditLogRepository auditLogRepository,
+            AuditService auditService) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -67,7 +84,7 @@ public class NotificationService {
      * user is waiting on.
      */
     @Transactional
-    public void notifyEveryoneExcept(User actor, String type, String title, String body, String entityRef) {
+    public int notifyEveryoneExcept(User actor, String type, String title, String body, String entityRef) {
         List<Notification> notifications = userRepository.findByStatus(UserStatus.ACTIVE).stream()
                 .filter(recipient -> !recipient.getId().equals(actor.getId()))
                 .map(recipient -> build(recipient, type, title, body, entityRef))
@@ -76,6 +93,52 @@ public class NotificationService {
         if (!notifications.isEmpty()) {
             notificationRepository.saveAll(notifications);
         }
+        return notifications.size();
+    }
+
+    /**
+     * One person telling the whole office something.
+     *
+     * <p><b>Anyone approved may send one</b>, not only administrators. The thing being announced —
+     * an office closure, a circular everyone has been waiting for — is as likely to be known by the
+     * clerk who filed it as by an admin, and every account here has already been approved by an
+     * administrator before it can do anything at all. What keeps it honest is that it is signed:
+     * the sender's name is the notification's heading, and the send is written to the audit log
+     * with the message in it, so an announcement can always be traced back to whoever made it.
+     *
+     * <p>The cooldown is the one guard. A single click writes a row for every active account, so
+     * without it one person could fill 150 inboxes as fast as they can type. A minute is long
+     * enough to make that pointless and short enough that nobody sending a real message notices.
+     *
+     * @return how many people were told, so the sender sees the reach of what they sent
+     */
+    @Transactional
+    public int announce(User sender, String message) {
+        String trimmed = message == null ? "" : message.trim();
+        if (trimmed.isEmpty()) {
+            throw ApiException.badRequest("MESSAGE_REQUIRED", "Write the message you want to send.");
+        }
+
+        long recentlySent = auditLogRepository.countByActorIdAndActionAndCreatedAtAfter(
+                sender.getId(), AuditAction.ANNOUNCEMENT_SENT, Instant.now().minus(COOLDOWN));
+        if (recentlySent > 0) {
+            throw ApiException.tooManyRequests(
+                    "ANNOUNCEMENT_COOLDOWN", "You have just sent a message. Please wait a minute before sending another.");
+        }
+
+        int told = notifyEveryoneExcept(
+                sender,
+                NotificationType.ANNOUNCEMENT,
+                "Message from %s".formatted(sender.getFullName()),
+                trimmed,
+                // Nothing to open: the message *is* the subject, and a link to nowhere is worse
+                // than no link.
+                null);
+
+        auditService.record(sender, AuditAction.ANNOUNCEMENT_SENT, "user", sender.getId(),
+                Map.of("message", trimmed, "recipients", told));
+
+        return told;
     }
 
     public void notifyAdminsOfNewRegistration(User applicant) {

@@ -2,9 +2,12 @@ package com.allgos.dms.notification.controller;
 
 import com.allgos.dms.common.dto.PageResponse;
 import com.allgos.dms.common.security.AuthenticatedUser;
+import com.allgos.dms.notification.dto.NotificationRequests;
+import com.allgos.dms.notification.dto.NotificationResponses.AnnouncementSent;
 import com.allgos.dms.notification.dto.NotificationResponses.NotificationView;
 import com.allgos.dms.notification.dto.NotificationResponses.UnreadCount;
 import com.allgos.dms.notification.service.NotificationService;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,6 +59,21 @@ public class NotificationController {
     @GetMapping("/unread-count")
     public UnreadCount unreadCount(@AuthenticationPrincipal AuthenticatedUser principal) {
         return new UnreadCount(notificationService.unreadCount(principal.user()));
+    }
+
+    /**
+     * Sends a message to everyone else with an account.
+     *
+     * <p>Open to any approved user rather than administrators only — see
+     * {@link NotificationService#announce} for why, and for the cooldown that keeps it from being
+     * a way to fill 150 inboxes.
+     */
+    @PostMapping("/announcements")
+    public AnnouncementSent announce(
+            @Valid @RequestBody NotificationRequests.Announce request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        return new AnnouncementSent(notificationService.announce(principal.user(), request.message()));
     }
 
     @PostMapping("/{notificationId}/read")
