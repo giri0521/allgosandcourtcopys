@@ -24,7 +24,11 @@ public final class ProfileRequests {
             String email,
 
             @Size(max = 255)
-            String designation) {}
+            String designation,
+
+            /** Fills the From block on every letter, and is editable there per letter. */
+            @Size(max = 500, message = "Keep the address under 500 characters")
+            String officeAddress) {}
 
     /**
      * Changing a password while signed in.

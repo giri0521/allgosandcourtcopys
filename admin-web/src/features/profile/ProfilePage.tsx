@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { TextField } from '@/components/ui/Field';
+import { TextAreaField, TextField } from '@/components/ui/Field';
 import { SkeletonRows } from '@/components/ui/Skeleton';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ThemeModeChoice } from '@/components/ui/ThemeToggle';
@@ -39,6 +39,7 @@ export function ProfilePage() {
               fullName={me.data.fullName}
               email={me.data.email ?? ''}
               designation={me.data.designation ?? ''}
+              officeAddress={me.data.officeAddress ?? ''}
               onSaved={() => {
                 void queryClient.invalidateQueries({ queryKey: ['me'] });
               }}
@@ -96,16 +97,19 @@ function DetailsCard({
   fullName: initialName,
   email: initialEmail,
   designation: initialDesignation,
+  officeAddress: initialAddress,
   onSaved,
 }: {
   fullName: string;
   email: string;
   designation: string;
+  officeAddress: string;
   onSaved: () => void;
 }) {
   const [fullName, setFullName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [designation, setDesignation] = useState(initialDesignation);
+  const [officeAddress, setOfficeAddress] = useState(initialAddress);
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
@@ -114,6 +118,7 @@ function DetailsCard({
         fullName: fullName.trim(),
         email: email.trim() || undefined,
         designation: designation.trim() || undefined,
+        officeAddress: officeAddress.trim() || undefined,
       }),
     onSuccess: () => {
       setSaved(true);
@@ -130,14 +135,17 @@ function DetailsCard({
   }, [saved]);
 
   const dirty =
-    fullName !== initialName || email !== initialEmail || designation !== initialDesignation;
+    fullName !== initialName ||
+    email !== initialEmail ||
+    designation !== initialDesignation ||
+    officeAddress !== initialAddress;
   const fieldErrors = save.isError ? (toApiError(save.error).fieldErrors ?? {}) : {};
 
   return (
     <section className="rounded-xl border border-line bg-surface p-6 shadow-card">
       <h2 className="font-semibold text-slate-900">Your details</h2>
       <p className="mt-1 text-sm text-slate-500">
-        These appear beside the documents you upload.
+        These appear beside the documents you upload, and fill the From block on your letters.
       </p>
 
       <form
@@ -169,6 +177,16 @@ function DetailsCard({
           onChange={(event) => setDesignation(event.target.value)}
           error={fieldErrors.designation}
           placeholder="e.g. Section Officer"
+        />
+
+        <TextAreaField
+          label="Office address"
+          rows={3}
+          value={officeAddress}
+          onChange={(event) => setOfficeAddress(event.target.value)}
+          error={fieldErrors.officeAddress}
+          placeholder={'Ezhilagam Extension Building II Floor,\nChepauk, Chennai - 600 005.'}
+          hint="Printed under your name on a letter. One line per line."
         />
 
         {save.isError && <Alert tone="error">{toApiError(save.error).message}</Alert>}

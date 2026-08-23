@@ -44,6 +44,13 @@ public class User extends BaseEntity {
     @Column
     private String designation;
 
+    /**
+     * The office address, as it should appear under the name on a letter. Free text with its line
+     * breaks kept: an address is written the way the office writes it, not parsed into fields.
+     */
+    @Column(name = "office_address")
+    private String officeAddress;
+
     @Column(nullable = false)
     private UserRole role = UserRole.MEMBER;
 

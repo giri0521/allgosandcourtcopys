@@ -1,0 +1,75 @@
+package com.allgos.dms.letter.entity;
+
+import com.allgos.dms.common.entity.BaseEntity;
+import com.allgos.dms.user.entity.User;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * One letter, saved so it can be reopened, corrected and reprinted.
+ *
+ * <p><b>Everything is stored as written.</b> The From block is a copy of the author's details at the
+ * time rather than a join to their account, and the wording is a copy of the template's rather than
+ * a reference to it. A letter reprinted next year has to come out as it was issued — not restyled
+ * because somebody has since changed their designation or edited the template it started from.
+ */
+@Entity
+@Table(name = "letters")
+@Getter
+@Setter
+@NoArgsConstructor
+public class Letter extends BaseEntity {
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
+
+    /** Which template it began as, for reference only; null once that template is deleted. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id")
+    private LetterTemplate template;
+
+    /** The office's own file number — "Lr.No.DBC/52/2026-D3". Free text; every office numbers differently. */
+    @Column(name = "reference_no")
+    private String referenceNo;
+
+    @Column(name = "letter_date")
+    private LocalDate letterDate;
+
+    @Column(name = "from_block", nullable = false, columnDefinition = "text")
+    private String fromBlock;
+
+    @Column(name = "to_block", nullable = false, columnDefinition = "text")
+    private String toBlock;
+
+    @Column
+    private String salutation;
+
+    @Column(nullable = false, columnDefinition = "text")
+    private String subject;
+
+    /** The "Ref:" line — the order or letter this one answers. */
+    @Column(columnDefinition = "text")
+    private String reference;
+
+    @Column(nullable = false, columnDefinition = "text")
+    private String body;
+
+    @Column
+    private String enclosure;
+
+    @Column(name = "copy_to", columnDefinition = "text")
+    private String copyTo;
+
+    /** What sits above the signature: the name, the post, and who it is signed for. */
+    @Column(name = "sign_off", columnDefinition = "text")
+    private String signOff;
+}

@@ -31,6 +31,7 @@ const ADMIN: CurrentUser = {
   departmentId: null,
   departmentName: 'Department of Information Technology and Digital Services',
   designation: 'Administrator',
+  officeAddress: 'Ezhilagam Extension Building II Floor,\nChepauk, Chennai - 600 005.',
   lastLoginAt: null,
   createdAt: '2026-01-01T00:00:00Z',
 };

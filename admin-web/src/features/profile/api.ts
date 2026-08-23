@@ -17,6 +17,8 @@ export interface ProfileUpdate {
   fullName: string;
   email?: string;
   designation?: string;
+  /** Fills the From block on every letter; editable there per letter. */
+  officeAddress?: string;
 }
 
 /**

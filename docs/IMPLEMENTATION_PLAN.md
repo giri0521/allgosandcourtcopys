@@ -196,6 +196,9 @@ Base path `/api/v1`, common response envelope, `GlobalExceptionHandler`.
   `POST /notifications/announcements` — a message to everyone, from any approved user
 - `GET /phonebook/departments`, `GET /phonebook/taluks` — the office phonebook, read by anyone
   signed in; `POST|PUT|DELETE /admin/phonebook` to maintain it
+- `GET /letters/templates` — what a letter can start from; `GET|POST|PUT|DELETE /letters[/{id}]` —
+  the caller's own letters, scoped by author in the query. `GET|POST|PUT|DELETE
+  /admin/letter-templates` maintains the templates; deleting one that has letters retires it instead
 - `GET /me`, `PATCH /me` (name, email, designation), `POST /me/password`
 
 **Admin only** (`@PreAuthorize("hasRole('ADMIN')")`)

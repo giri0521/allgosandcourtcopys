@@ -18,6 +18,9 @@ import { FilePreviewPage } from '@/features/documents/FilePreviewPage';
 import { FolderPage } from '@/features/documents/FolderPage';
 import { MyUploadsPage } from '@/features/documents/MyUploadsPage';
 import { NotificationsPage } from '@/features/notifications/NotificationsPage';
+import { LetterTemplatesPage } from '@/features/admin/letters/LetterTemplatesPage';
+import { LetterEditorPage } from '@/features/letters/LetterEditorPage';
+import { LettersPage } from '@/features/letters/LettersPage';
 import { PhonebookPage } from '@/features/phonebook/PhonebookPage';
 import { SearchPage } from '@/features/search/SearchPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
@@ -81,6 +84,11 @@ export function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/phonebook" element={<PhonebookPage />} />
+          <Route path="/letters" element={<LettersPage />} />
+          {/* `/new` before `/:letterId`, or "new" is read as an id and the editor asks the server
+              for a letter by that name. */}
+          <Route path="/letters/new" element={<LetterEditorPage />} />
+          <Route path="/letters/:letterId" element={<LetterEditorPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
@@ -91,6 +99,7 @@ export function App() {
           <Route path="/admin/members" element={<MembersPage />} />
           <Route path="/admin/members/:memberId" element={<MemberActivityPage />} />
           <Route path="/admin/deletions" element={<DeletionsPage />} />
+          <Route path="/admin/letter-templates" element={<LetterTemplatesPage />} />
           <Route path="/admin/reports" element={<ReportsPage />} />
           <Route path="/admin/logs" element={<AuditLogPage />} />
           {/* Departments and folders are managed where they are browsed, so these older routes

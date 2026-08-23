@@ -75,7 +75,7 @@ class ProfileServiceTest {
         @Test
         void appliesTheChangesAndAuditsOnlyWhatMoved() {
             var view = service.update(
-                    user, new ProfileRequests.UpdateProfile("  Meena R  ", "meena@example.gov.in", "Superintendent"));
+                    user, new ProfileRequests.UpdateProfile("  Meena R  ", "meena@example.gov.in", "Superintendent", null));
 
             assertThat(user.getFullName()).isEqualTo("Meena R");
             assertThat(user.getDesignation()).isEqualTo("Superintendent");
@@ -89,7 +89,7 @@ class ProfileServiceTest {
         @Test
         @DisplayName("a blank email clears it rather than storing an empty string")
         void treatsBlankAsCleared() {
-            service.update(user, new ProfileRequests.UpdateProfile("Meena Rajan", "   ", "Section Officer"));
+            service.update(user, new ProfileRequests.UpdateProfile("Meena Rajan", "   ", "Section Officer", null));
 
             assertThat(user.getEmail()).isNull();
         }
@@ -99,7 +99,7 @@ class ProfileServiceTest {
         void doesNotAuditANoOp() {
             service.update(
                     user,
-                    new ProfileRequests.UpdateProfile("Meena Rajan", "meena@example.gov.in", "Section Officer"));
+                    new ProfileRequests.UpdateProfile("Meena Rajan", "meena@example.gov.in", "Section Officer", null));
 
             verifyNoInteractions(auditService);
         }
@@ -107,7 +107,7 @@ class ProfileServiceTest {
         @Test
         @DisplayName("nothing here can change a role, a status or a department")
         void cannotEscalate() {
-            service.update(user, new ProfileRequests.UpdateProfile("Meena R", null, null));
+            service.update(user, new ProfileRequests.UpdateProfile("Meena R", null, null, null));
 
             assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
             assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);

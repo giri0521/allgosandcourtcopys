@@ -58,6 +58,7 @@ public class ProfileService {
         String fullName = request.fullName().trim();
         String email = blankToNull(request.email());
         String designation = blankToNull(request.designation());
+        String officeAddress = blankToNull(request.officeAddress());
 
         if (!fullName.equals(managed.getFullName())) {
             changes.put("fullName", fullName);
@@ -70,6 +71,12 @@ public class ProfileService {
         if (!java.util.Objects.equals(designation, managed.getDesignation())) {
             changes.put("designation", designation == null ? "" : designation);
             managed.setDesignation(designation);
+        }
+        if (!java.util.Objects.equals(officeAddress, managed.getOfficeAddress())) {
+            // The address itself is not written to the audit row — it is on every letter this
+            // person sends, and the entry only needs to say that it moved.
+            changes.put("officeAddress", officeAddress == null ? "cleared" : "changed");
+            managed.setOfficeAddress(officeAddress);
         }
 
         // Nothing changed is not an error, but it is not worth an audit row either.

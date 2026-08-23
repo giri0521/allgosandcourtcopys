@@ -844,3 +844,63 @@ table th,
     scroll-behavior: auto !important;
   }
 }
+
+/**
+ * Printing a letter.
+ *
+ * A letter is the one thing in this application that leaves the building on paper, and what comes
+ * out of the printer has to be the letter alone — not the header, the navigation, the form beside
+ * it or the page's tinted ground. `print:hidden` on the chrome does part of that; this block does
+ * the rest, because a few of them are structural rather than a class on one element.
+ *
+ * The sheet is deliberately *not* re-laid-out here. It prints the same component the writer
+ * approved on screen, so there is no second rendering to drift from the first.
+ */
+@media print {
+  /* The ground and the shadows exist to lift a card off a screen. On paper they are ink. */
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+  }
+
+  header,
+  footer,
+  nav,
+  [role='dialog'] {
+    display: none !important;
+  }
+
+  /* The shell centres content in a column and pads it; a page already has margins of its own. */
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Colour prints as grey on most office machines, and grey type on white is harder to read than
+     black. Everything on the sheet goes black, whichever theme the writer happened to be using. */
+  .letter-sheet,
+  .letter-sheet * {
+    color: #000000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .letter-sheet {
+    /* A letter is set in a serif face on paper. Inter is drawn for screens, and reads thin at
+       11pt in print. */
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+  }
+
+  /* Never break a signature away from the paragraph it signs, or a heading from its list. */
+  .letter-sheet h2 {
+    break-after: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 18mm;
+  }
+}

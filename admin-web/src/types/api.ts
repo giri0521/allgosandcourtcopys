@@ -25,6 +25,8 @@ export interface CurrentUser {
   departmentId: string | null;
   departmentName: string | null;
   designation: string | null;
+  /** The office address a letter's From block is built from. */
+  officeAddress: string | null;
   lastLoginAt: string | null;
   createdAt: string;
 }
@@ -344,4 +346,52 @@ export interface ApiError {
   code: string;
   message: string;
   fieldErrors?: Record<string, string>;
+}
+
+/** A kind of letter, with the wording it starts from. Maintained by administrators. */
+export interface LetterTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  defaultSubject: string | null;
+  body: string | null;
+  salutation: string | null;
+  active: boolean;
+  updatedAt: string;
+}
+
+/**
+ * A whole letter, which is also what the print view renders.
+ *
+ * <p>Every block is stored as it was written rather than derived on read: a letter reprinted next
+ * year has to come out as it was issued, not restyled because a designation or a template has
+ * changed since.
+ */
+export interface Letter {
+  id: string;
+  templateId: string | null;
+  templateName: string | null;
+  referenceNo: string | null;
+  letterDate: string | null;
+  fromBlock: string;
+  toBlock: string;
+  salutation: string | null;
+  subject: string;
+  reference: string | null;
+  body: string;
+  enclosure: string | null;
+  copyTo: string | null;
+  signOff: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A row in "My letters" — deliberately without the body, which a list never shows. */
+export interface LetterSummary {
+  id: string;
+  referenceNo: string | null;
+  letterDate: string | null;
+  subject: string;
+  templateName: string | null;
+  updatedAt: string;
 }

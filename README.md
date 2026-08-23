@@ -22,6 +22,12 @@ the whole office** from the notifications screen; it is signed with their name a
 it; administrators maintain it. Nobody in it needs an account — the numbers worth having are the
 office down the road.
 
+**Letters:** write from a template — the standing wording is filled in, your own details go into the
+From block — then save it and print, or save as PDF from the browser's own dialogue. Administrators
+maintain the templates; a letter belongs to whoever wrote it and nobody else can open it. The
+subject and body can be **dictated** in Tamil or Indian English on Chrome and Edge; note that those
+browsers recognise speech by sending the audio to the browser vendor, not on the machine.
+
 | | Member | Admin |
 |---|---|---|
 | View & download any department | ✅ | ✅ |

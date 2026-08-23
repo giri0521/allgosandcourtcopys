@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
   // Everyone's, and for a member the only entry in the header. The phonebook is a thing people
   // come to the application for rather than something they arrive at from a document.
   { to: "/phonebook", label: "Phonebook" },
+  { to: "/letters", label: "Letters" },
   // Three admin entries, not six. The dashboard is the hub for the rest — Reports, the deletions
   // log and the activity log all hang off it, and a header with ten links is a header nobody reads.
   { to: "/admin", label: "Dashboard", adminOnly: true, exact: true },
@@ -198,7 +199,7 @@ export function AppShell({
           a letterhead uses one. It is the only ornament on the page, which is what lets it read as
           deliberate rather than decorative.
         */}
-        <div className="animate-fade mb-7 flex flex-wrap items-start justify-between gap-4">
+        <div className="animate-fade mb-7 flex flex-wrap items-start justify-between gap-4 print:hidden">
           <div className="min-w-0">
             <span
               aria-hidden

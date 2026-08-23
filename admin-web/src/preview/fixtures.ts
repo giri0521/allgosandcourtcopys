@@ -29,6 +29,7 @@ const ADMIN_USER = {
   departmentId: DEPARTMENT_ID,
   departmentName: 'Department of Information Technology and Digital Services',
   designation: 'Administrator',
+  officeAddress: 'Ezhilagam Extension Building II Floor,\nChepauk, Chennai - 600 005.',
   lastLoginAt: '2026-08-14T04:30:00Z',
   createdAt: '2026-01-04T06:00:00Z',
 };
@@ -261,6 +262,57 @@ const MONTHS = [
   '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08',
 ];
 
+const LETTER_TEMPLATES = [
+  {
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    name: 'Meeting invitation',
+    description: 'For convening a committee',
+    defaultSubject: 'Convening of Purchase Committee Meeting - Request to attend the meeting - Reg.',
+    body: 'Kind attention is invited to the references cited.',
+    salutation: 'Sir/Madam,',
+    active: true,
+    updatedAt: '2026-08-20T05:00:00Z',
+  },
+  {
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+    name: 'Covering letter',
+    description: 'Sent with an enclosure',
+    defaultSubject: null,
+    body: null,
+    salutation: 'Sir/Madam,',
+    active: true,
+    updatedAt: '2026-08-19T05:00:00Z',
+  },
+];
+
+/**
+ * A letter shaped like the office's own correspondence — the sample in docs is a meeting
+ * invitation, and the composer and the print view are only worth looking at against a real one.
+ */
+const LETTER = {
+  id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+  templateId: LETTER_TEMPLATES[0].id,
+  templateName: 'Meeting invitation',
+  referenceNo: 'DBC/52/2026-D3',
+  letterDate: '2026-08-22',
+  fromBlock:
+    'Thiru. M. Pradeep Kumar, I.A.S.,\nDirector,\nBackward Classes Welfare & Chairman of Bicycle Purchase Committee,\nEzhilagam Extension Building II Floor,\nChepauk, Chennai - 600 005.',
+  toBlock:
+    '1. The Commissioner of MBC & DNC, Ch-5.\n2. The Commissioner of MW, Ch-05.\n3. The Director of AD Welfare, Ch-5.\n4. The Director, DSE, Che-6.\n5. The Director, Tribal Welfare Dept, Ch-5.\n6. The Special Secretary, Finance, Sect, Chennai -09.',
+  salutation: 'Sir/Madam,',
+  subject:
+    'O/o Director of Backward Classes Welfare - Chennai -05 - Procurement of Modern Bicycles to be supplied to BC, MBC&DNC, SC/ST and OC 11th Std Girls and Boys students studying in Govt., Govt. Aided, and Partly Govt. Aided Schools for the year 2026-27 - convening of Purchase Committee Meeting - Request to attend the meeting - Reg.',
+  reference: 'G.O. (Ms) No.43, BC, MBC & MW (MW2) Dept., dated: 21.08.2026.',
+  body:
+    'Kind attention is invited to the references cited.\n\n2) As you are aware that the Government is implementing Modern Bicycle Scheme to BC, MBC&DNC, SC/ST and OC 11th standard Girls & Boys Students studying in Government, Government Aided and Partly Government Aided Schools across the state of Tamil Nadu for the year 2026-27.\n\n3) In this connection, it is proposed to convene the Purchase Committee meeting on 24.08.2026 at 03.00 PM in the Conference Hall of the Directorate of Backward Classes Welfare, IInd Floor, Ezhilagam Annex building, Chepauk, Chennai - 600 005.\n\n4) As you are a member of the Purchase Committee, it is requested to attend the meeting to discuss the plan of action, technical specifications of Modern Bicycles, eligibility norms for the bidder in the Tender document for procurement. The agenda for the meeting will be given in the meeting venue.\n\nPlease make it convenient to attend the above meeting.',
+  enclosure: 'G.O Copy.',
+  copyTo: 'Secretary to Government,\nBC, MBC and MW Department,\nSecretariat, Chennai - 09.',
+  signOff:
+    'Sd/- M. Pradeep Kumar\nDirector\nBackward Classes Welfare\n\nFor Director of Backward Classes Welfare.',
+  createdAt: '2026-08-22T05:00:00Z',
+  updatedAt: '2026-08-22T05:30:00Z',
+};
+
 /**
  * URL → response. Matched in order, first hit wins, so put the specific patterns above the general
  * ones — `/files/search` before `/files/{id}`.
@@ -270,6 +322,42 @@ const ROUTES: [RegExp, (url: string) => unknown][] = [
   [/\/auth\/departments$/, () => DEPARTMENTS.map(({ id, name }) => ({ id, name }))],
 
   [/\/me$/, () => ADMIN_USER],
+
+  // Letters. The specific paths first: /letters/templates would otherwise be read as a letter id.
+  [/\/letters\/templates$/, () => LETTER_TEMPLATES],
+  [/\/admin\/letter-templates$/, () => [
+    ...LETTER_TEMPLATES,
+    {
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
+      name: 'Bicycle scheme circular',
+      description: 'Superseded by the 2026 wording',
+      defaultSubject: null,
+      body: null,
+      salutation: null,
+      // Retired, so the admin list has one to show and the chooser above does not.
+      active: false,
+      updatedAt: '2026-06-01T05:00:00Z',
+    },
+  ]],
+  [/\/letters\/[0-9a-f-]+$/, () => LETTER],
+  [/\/letters$/, () => page([
+    {
+      id: LETTER.id,
+      referenceNo: LETTER.referenceNo,
+      letterDate: LETTER.letterDate,
+      subject: LETTER.subject,
+      templateName: LETTER.templateName,
+      updatedAt: LETTER.updatedAt,
+    },
+    {
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+      referenceNo: 'DBC/48/2026-D3',
+      letterDate: '2026-08-11',
+      subject: 'Supply of Modern Bicycles - Inspection of stock - Reg.',
+      templateName: 'Covering letter',
+      updatedAt: '2026-08-11T09:15:00Z',
+    },
+  ])],
 
   [/\/phonebook\/departments$/, () => [
     {

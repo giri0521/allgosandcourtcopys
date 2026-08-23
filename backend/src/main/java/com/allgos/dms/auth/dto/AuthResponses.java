@@ -28,6 +28,7 @@ public final class AuthResponses {
             UUID departmentId,
             String departmentName,
             String designation,
+            String officeAddress,
             Instant lastLoginAt,
             Instant createdAt) {
 
@@ -42,6 +43,7 @@ public final class AuthResponses {
                     user.getDepartment() == null ? null : user.getDepartment().getId(),
                     user.getDepartment() == null ? null : user.getDepartment().getName(),
                     user.getDesignation(),
+                    user.getOfficeAddress(),
                     user.getLastLoginAt(),
                     user.getCreatedAt());
         }
