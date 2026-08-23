@@ -85,6 +85,26 @@ public class StorageService {
     }
 
     /**
+     * Reads an object back into memory, for server-side re-processing.
+     *
+     * <p>Everything a browser reads goes through {@link #presignedGet} instead — this is for the
+     * application itself needing the bytes, not for handing them to a client.
+     */
+    public byte[] get(String key) {
+        try {
+            return s3Client
+                    .getObjectAsBytes(GetObjectRequest.builder().bucket(storage.bucket()).key(key).build())
+                    .asByteArray();
+        } catch (S3Exception ex) {
+            log.error("Read from object storage failed for key {}", key, ex);
+            throw new ApiException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "STORAGE_UNAVAILABLE",
+                    "The document store is not reachable. Please try again.");
+        }
+    }
+
+    /**
      * A short-lived URL the browser can fetch directly, so document bytes never pass through the
      * application server.
      *

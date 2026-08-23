@@ -59,6 +59,7 @@ class FileServiceTest {
     @Mock private StorageService storageService;
     @Mock private UploadValidator uploadValidator;
     @Mock private FileRecordWriter fileRecordWriter;
+    @Mock private DocumentAbstractExtractor abstractExtractor;
     @Mock private AuditService auditService;
     @Mock private NotificationService notificationService;
 
@@ -79,6 +80,7 @@ class FileServiceTest {
                 storageService,
                 uploadValidator,
                 fileRecordWriter,
+                abstractExtractor,
                 auditService,
                 notificationService,
                 properties());

@@ -62,7 +62,12 @@ public class FileRecordWriter {
      * entity instead would hand the caller lazy associations it has no session to resolve.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public FileView record(UUID folderId, User uploader, UploadValidator.Accepted accepted, String storageKey) {
+    public FileView record(
+            UUID folderId,
+            User uploader,
+            UploadValidator.Accepted accepted,
+            String storageKey,
+            String description) {
 
         Folder folder = folderRepository
                 .findById(folderId)
@@ -77,6 +82,7 @@ public class FileRecordWriter {
         file.setFileType(accepted.contentType());
         file.setSizeBytes(accepted.sizeBytes());
         file.setStorageKey(storageKey);
+        file.setDescription(description);
         file.setUploadedBy(uploader);
 
         StoredFile saved = fileRepository.save(file);
@@ -130,7 +136,12 @@ public class FileRecordWriter {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public FileView applyReplacement(
-            UUID fileId, User actor, UploadValidator.Accepted accepted, String storageKey, String previousKey) {
+            UUID fileId,
+            User actor,
+            UploadValidator.Accepted accepted,
+            String storageKey,
+            String previousKey,
+            String description) {
 
         StoredFile file = fileRepository
                 .findByIdAndDeletedFalse(fileId)
@@ -148,6 +159,9 @@ public class FileRecordWriter {
         file.setFileType(accepted.contentType());
         file.setSizeBytes(accepted.sizeBytes());
         file.setStorageKey(storageKey);
+        // Re-extracted from the new bytes: a replaced document is a different document, and its old
+        // description would otherwise linger under a mismatched name.
+        file.setDescription(description);
         file.setVersion(file.getVersion() + 1);
         // uploadedBy is left alone: it is who put the document into the system, and an admin
         // correcting someone's file does not take ownership of it.

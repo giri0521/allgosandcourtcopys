@@ -57,6 +57,10 @@ public class StoredFile extends BaseEntity {
     @Column
     private String checksum;
 
+    /** The Abstract paragraph read from the document itself, if any — see DocumentAbstractExtractor. */
+    @Column(columnDefinition = "text")
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "uploaded_by", nullable = false)
     private User uploadedBy;

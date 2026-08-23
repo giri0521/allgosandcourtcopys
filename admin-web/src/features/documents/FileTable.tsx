@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { DescriptionDialog } from '@/features/documents/DescriptionDialog';
 import { fetchDownloadLink, setFavorite } from '@/features/documents/api';
 import { toApiError } from '@/lib/errors';
 import { formatDateTime, formatFileSize, formatFileType } from '@/lib/format';
@@ -42,6 +43,7 @@ export function FileTable({
 }) {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewingDescription, setViewingDescription] = useState<FileItem | null>(null);
   const queryClient = useQueryClient();
 
   /**
@@ -101,11 +103,12 @@ export function FileTable({
 
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">
         <table
-          className={`w-full text-left text-sm ${showLocation ? 'min-w-[880px]' : 'min-w-[760px]'}`}
+          className={`w-full text-left text-sm ${showLocation ? 'min-w-[1040px]' : 'min-w-[920px]'}`}
         >
           <thead className="border-b border-line bg-navy-50/60 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th scope="col" className="px-5 py-3 font-semibold">Document</th>
+              <th scope="col" className="px-5 py-3 font-semibold">Description</th>
               {showLocation && <th scope="col" className="px-5 py-3 font-semibold">Location</th>}
               <th scope="col" className="px-5 py-3 font-semibold whitespace-nowrap">Uploaded by</th>
               <th scope="col" className="px-5 py-3 font-semibold whitespace-nowrap">Uploaded</th>
@@ -144,6 +147,35 @@ export function FileTable({
                       </p>
                     </div>
                   </div>
+                </td>
+                <td className="px-5 py-3.5">
+                  {file.description ? (
+                    <button
+                      type="button"
+                      onClick={() => setViewingDescription(file)}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5
+                        text-[0.8125rem] font-semibold text-navy-700 outline-none transition-all
+                        duration-[--duration-quick] ease-[--ease-settle] hover:bg-navy-50
+                        hover:text-navy-800 focus-visible:ring-2 focus-visible:ring-navy-300"
+                    >
+                      <svg
+                        aria-hidden
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      View
+                    </button>
+                  ) : (
+                    <span className="text-slate-300">—</span>
+                  )}
                 </td>
                 {showLocation && (
                   <td className="max-w-[14rem] px-5 py-3.5 text-slate-600">
@@ -214,6 +246,8 @@ export function FileTable({
           </tbody>
         </table>
       </div>
+
+      <DescriptionDialog file={viewingDescription} onClose={() => setViewingDescription(null)} />
     </div>
   );
 }

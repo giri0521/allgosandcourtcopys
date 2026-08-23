@@ -80,6 +80,8 @@ export interface FileItem {
   previewable: boolean;
   /** Whether *this* viewer has starred it. Another user's star is never visible. */
   favorite: boolean;
+  /** The Abstract paragraph read from the document itself. Null for a scan nothing could be read from. */
+  description: string | null;
   uploadedAt: string;
 }
 

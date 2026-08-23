@@ -99,9 +99,35 @@ export function Modal({
         className="animate-pop relative w-full max-w-md rounded-2xl border border-line bg-surface
           p-6 shadow-dialog"
       >
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        {description && <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>}
+        <h2 className="pr-8 text-lg font-semibold text-slate-900">{title}</h2>
+        {description && <p className="mt-1 pr-8 text-sm leading-relaxed text-slate-500">{description}</p>}
         <div className="mt-4 space-y-4">{children}</div>
+        {/* Last in the DOM on purpose: Modal auto-focuses the first input/textarea/button inside
+            the panel on open, and that should land on the dialog's real first control — typing a
+            reason, say — rather than on this. Absolute positioning keeps it pinned top-right
+            regardless of where it sits in the markup. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-3 top-3 rounded-md p-1.5 text-slate-400 outline-none
+            transition-colors duration-[--duration-quick] ease-[--ease-settle] hover:bg-navy-50
+            hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-navy-300"
+        >
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+          >
+            <path d="M18 6 6 18" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   );

@@ -71,6 +71,7 @@ public class FileService {
     private final StorageService storageService;
     private final UploadValidator uploadValidator;
     private final FileRecordWriter fileRecordWriter;
+    private final DocumentAbstractExtractor abstractExtractor;
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final AppProperties properties;
@@ -83,6 +84,7 @@ public class FileService {
             StorageService storageService,
             UploadValidator uploadValidator,
             FileRecordWriter fileRecordWriter,
+            DocumentAbstractExtractor abstractExtractor,
             AuditService auditService,
             NotificationService notificationService,
             AppProperties properties) {
@@ -93,6 +95,7 @@ public class FileService {
         this.storageService = storageService;
         this.uploadValidator = uploadValidator;
         this.fileRecordWriter = fileRecordWriter;
+        this.abstractExtractor = abstractExtractor;
         this.auditService = auditService;
         this.notificationService = notificationService;
         this.properties = properties;
@@ -178,6 +181,8 @@ public class FileService {
         UploadValidator.Accepted accepted = uploadValidator.validate(part);
         uploadValidator.scanForMalware(part);
 
+        String description = extractDescription(part, accepted);
+
         String key = storageService.newKey(folder.departmentId(), folder.folderId(), accepted.fileName());
 
         InputStream content;
@@ -195,12 +200,28 @@ public class FileService {
         }
 
         try {
-            return fileRecordWriter.record(folder.folderId(), uploader, accepted, key);
+            return fileRecordWriter.record(folder.folderId(), uploader, accepted, key, description);
         } catch (RuntimeException ex) {
             // The row did not commit, so nothing will ever reference these bytes.
             log.error("Recording upload {} failed; removing the stored object", accepted.fileName(), ex);
             storageService.delete(key);
             throw ex;
+        }
+    }
+
+    /**
+     * The Abstract paragraph, when the upload is a PDF. Nothing else carries that convention, and a
+     * failure to read it is never a reason to refuse the upload it would have enriched.
+     */
+    private String extractDescription(MultipartFile part, UploadValidator.Accepted accepted) {
+        if (!"application/pdf".equals(accepted.contentType())) {
+            return null;
+        }
+        try {
+            return abstractExtractor.extract(part.getBytes());
+        } catch (IOException ex) {
+            log.warn("Could not read {} to extract a description", accepted.fileName(), ex);
+            return null;
         }
     }
 
@@ -235,6 +256,8 @@ public class FileService {
         UploadValidator.Accepted accepted = uploadValidator.validate(part);
         uploadValidator.scanForMalware(part);
 
+        String description = extractDescription(part, accepted);
+
         String key = storageService.newKey(target.departmentId(), target.folderId(), accepted.fileName());
 
         InputStream content;
@@ -252,7 +275,7 @@ public class FileService {
         }
 
         try {
-            return fileRecordWriter.applyReplacement(fileId, actor, accepted, key, target.storageKey());
+            return fileRecordWriter.applyReplacement(fileId, actor, accepted, key, target.storageKey(), description);
         } catch (RuntimeException ex) {
             // The row still points at the old key, so these bytes are unreachable.
             log.error("Replacing file {} failed; removing the stored object", fileId, ex);

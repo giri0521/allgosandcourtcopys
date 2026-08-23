@@ -63,6 +63,8 @@ public final class FileResponses {
             boolean previewable,
             /** Whether <em>this</em> viewer has starred it; another user's row says nothing. */
             boolean favorite,
+            /** The Abstract paragraph read from the document itself; null when there is none. */
+            String description,
             Instant uploadedAt) {
 
         public static FileView from(StoredFile file, boolean canModify) {
@@ -85,6 +87,7 @@ public final class FileResponses {
                     canModify,
                     isPreviewable(file.getFileType()),
                     favorite,
+                    file.getDescription(),
                     file.getCreatedAt());
         }
     }

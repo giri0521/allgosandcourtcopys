@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +22,7 @@ import { useState } from 'react';
  */
 export function FilePreviewPage() {
   const { fileId = '' } = useParams();
+  const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -69,6 +70,32 @@ export function FilePreviewPage() {
       }
       actions={
         <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            className="border-red-300! bg-red-50! text-red-600! hover:border-red-400! hover:bg-red-100!"
+            onClick={() =>
+              // A direct link (bookmark, shared URL) has no in-app page to go back to — fall back
+              // to the folder, or Home if even that is unknown.
+              window.history.length > 1
+                ? navigate(-1)
+                : navigate(document ? `/folders/${document.folderId}` : '/home')
+            }
+          >
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M18 6 6 18" />
+              <path d="M6 6l12 12" />
+            </svg>
+            Close
+          </Button>
           {document && (
             <Link
               to={`/folders/${document.folderId}`}
