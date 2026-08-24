@@ -40,14 +40,20 @@ rem  So the value is checked rather than trusted, and a JDK is located when it i
 rem  wrong or missing. Whatever is resolved here is passed to the backend window,
 rem  so a machine with a broken JAVA_HOME still starts.
 set "JDK="
-if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" set "JDK=%JAVA_HOME%"
+call :checkjdk "%JAVA_HOME%"
 if not defined JDK if defined JAVA_HOME echo       JAVA_HOME is set but is not a JDK root - searching instead
 
-rem  21 first: that is the version the project targets.
-for /d %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-21*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
-for /d %%D in ("%ProgramFiles%\Java\jdk-21*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
-for /d %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
-for /d %%D in ("%ProgramFiles%\Java\jdk-*") do if not defined JDK if exist "%%~fD\bin\java.exe" set "JDK=%%~fD"
+rem  21 first: that is the version the project targets. Every root is searched
+rem  one level deeper as well, because an installer does not always drop the JDK
+rem  directly into it - Oracle's puts it in Java\latest\jdk-21, and a pattern
+rem  anchored at Java\jdk-* walks straight past that.
+call :findjdk "jdk-21*"
+call :findjdk "jdk21*"
+call :findjdk "jdk-*"
+call :findjdk "jdk*"
+
+rem  Last resort: if a JDK is already on PATH, work back from javac to its root.
+if not defined JDK for /f "delims=" %%J in ('where javac 2^>nul') do call :jdkfrombin "%%~dpJ"
 
 if not defined JDK (
   echo [x] No JDK found. JDK 21 is required. Install it with:
@@ -103,6 +109,13 @@ rem ===========================================================================
 rem  2. Stop anything already running
 rem ===========================================================================
 echo [2/6] Stopping any previous run
+rem  The console windows are closed by title before the ports are freed. Killing
+rem  the process on the port only takes out the child that holds the socket -
+rem  Vite's node, Maven's java - and leaves the "cmd /k" window and the npm
+rem  wrapper above it alive. Those orphans survive into the next run, which is
+rem  how a machine ends up with three Vite instances and no clean set at all.
+call :killwindow "ALLGOS backend"
+call :killwindow "ALLGOS web"
 call :killport 8080 "backend"
 call :killport 5173 "web app"
 call :killport 5174 "web app fallback port"
@@ -166,7 +179,11 @@ if not "!NPMFAIL!"=="0" (
 echo(
 echo [6/6] Starting the application
 echo       backend  -^> http://localhost:8080   ^(own window^)
-start "ALLGOS backend" /d "%~dp0backend" cmd /k mvnw.cmd spring-boot:run
+rem  mvnw.cmd is run as .\mvnw.cmd, not as a bare name. When
+rem  NoDefaultCurrentDirectoryInExePath is set - it is on this machine, and on any
+rem  locked-down one - cmd stops resolving commands from the working directory,
+rem  so the bare name dies with "not recognized" and the window closes on it.
+start "ALLGOS backend" /d "%~dp0backend" cmd /k .\mvnw.cmd spring-boot:run
 
 echo       waiting for the API to report healthy
 set /a _n=0
@@ -222,17 +239,63 @@ goto :eof
 
 rem ===========================================================================
 rem  :killport <port> <label>  - kill whatever is listening on <port>
+rem
+rem  netstat is called without "-p tcp" on purpose: that flag limits the output to
+rem  IPv4, and Vite binds [::1]:5173 - IPv6 loopback only. With the flag the port
+rem  never appeared in the listing and this routine silently killed nothing.
 rem ===========================================================================
 :killport
 set "_port=%~1"
 set "_hit="
-for /f "tokens=5" %%P in ('netstat -ano -p tcp ^| findstr /r /c:":%_port% .*LISTENING"') do (
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr /r /c:":%_port% .*LISTENING"') do (
   if not "%%P"=="0" (
     taskkill /f /pid %%P >nul 2>&1
     set "_hit=1"
   )
 )
 if defined _hit echo       stopped the old %~2 on port %_port%
+exit /b 0
+
+rem ===========================================================================
+rem  :findjdk <pattern>  - look for <pattern> under each known install root and
+rem                        one level below it, and keep the first real JDK
+rem ===========================================================================
+:findjdk
+if defined JDK exit /b 0
+for %%R in ("%ProgramFiles%\Eclipse Adoptium" "%ProgramFiles%\Java" "%ProgramFiles%\Microsoft" "%ProgramFiles%\Amazon Corretto" "%ProgramFiles%\Zulu" "%ProgramFiles%\BellSoft" "%ProgramFiles%\Android\Android Studio" "%LOCALAPPDATA%\Programs\Eclipse Adoptium") do (
+  for /d %%D in ("%%~R\%~1") do call :checkjdk "%%~fD"
+  for /d %%P in ("%%~R\*") do for /d %%D in ("%%~fP\%~1") do call :checkjdk "%%~fD"
+)
+exit /b 0
+
+rem ===========================================================================
+rem  :checkjdk <dir>  - accept <dir> only when it is a JDK root. javac has to be
+rem                     there too: a JRE has bin\java.exe and cannot build.
+rem ===========================================================================
+:checkjdk
+if defined JDK exit /b 0
+if "%~1"=="" exit /b 0
+if not exist "%~1\bin\java.exe" exit /b 0
+if not exist "%~1\bin\javac.exe" exit /b 0
+set "JDK=%~1"
+exit /b 0
+
+rem ===========================================================================
+rem  :jdkfrombin <dir>  - <dir> is a bin folder holding javac; test its parent
+rem ===========================================================================
+:jdkfrombin
+if defined JDK exit /b 0
+set "_bin=%~1"
+if "%_bin:~-1%"=="\" set "_bin=%_bin:~0,-1%"
+for %%B in ("%_bin%") do for %%H in ("%%~dpB.") do call :checkjdk "%%~fH"
+exit /b 0
+
+rem ===========================================================================
+rem  :killwindow <title>  - close a console window this script opened, and
+rem                         everything running inside it
+rem ===========================================================================
+:killwindow
+taskkill /f /t /fi "WINDOWTITLE eq %~1" >nul 2>&1
 exit /b 0
 
 :fail
