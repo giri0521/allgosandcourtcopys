@@ -23,7 +23,11 @@ public final class FileResponses {
             String name,
             FolderCategory category,
             int fileCount,
-            Instant createdAt) {
+            Instant createdAt,
+            /** Bumped when a document is filed into or removed from this folder, not only when the
+             * folder itself is renamed — see {@code FolderRepository.adjustFileCount}. What a picker
+             * sorted by "recently used" sorts on. */
+            Instant updatedAt) {
 
         /** Must be called inside the transaction — department and parent are lazy. */
         public static FolderView from(Folder folder) {
@@ -35,8 +39,23 @@ public final class FileResponses {
                     folder.getName(),
                     folder.getCategory(),
                     folder.getFileCount(),
-                    folder.getCreatedAt());
+                    folder.getCreatedAt(),
+                    folder.getUpdatedAt());
         }
+    }
+
+    /**
+     * Where an unfiled PDF probably belongs, guessed from its own Abstract heading.
+     *
+     * <p>Always names a folder when a department is found: every department carries a "General"
+     * folder (seeded by migration), so there is always somewhere to default to even when nothing
+     * more specific was chosen. All fields are null together when nothing in the document matched a
+     * known department closely enough to act on.
+     */
+    public record SuggestedDestination(
+            UUID departmentId, String departmentName, UUID folderId, String folderName) {
+
+        public static final SuggestedDestination NONE = new SuggestedDestination(null, null, null, null);
     }
 
     /**

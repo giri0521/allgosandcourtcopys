@@ -5,7 +5,9 @@ import com.allgos.dms.common.security.AuthenticatedUser;
 import com.allgos.dms.file.dto.FileRequests;
 import com.allgos.dms.file.dto.FileResponses.DownloadLink;
 import com.allgos.dms.file.dto.FileResponses.FileView;
+import com.allgos.dms.file.dto.FileResponses.SuggestedDestination;
 import com.allgos.dms.file.dto.FileResponses.UploadResult;
+import com.allgos.dms.file.service.DestinationSuggestionService;
 import com.allgos.dms.file.service.FileService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -40,9 +42,23 @@ public class FileController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final FileService fileService;
+    private final DestinationSuggestionService destinationSuggestionService;
 
-    public FileController(FileService fileService) {
+    public FileController(FileService fileService, DestinationSuggestionService destinationSuggestionService) {
         this.fileService = fileService;
+        this.destinationSuggestionService = destinationSuggestionService;
+    }
+
+    /**
+     * Guesses where an unfiled PDF belongs, from its own Abstract heading — for the quick-upload
+     * button, so the department and folder pickers can start pre-filled instead of blank.
+     *
+     * <p>Nothing here is stored; the same bytes are uploaded for real afterward, wherever the caller
+     * ends up choosing.
+     */
+    @PostMapping(path = "/suggest-destination", consumes = "multipart/form-data")
+    public SuggestedDestination suggestDestination(@RequestPart("file") MultipartFile file) {
+        return destinationSuggestionService.suggest(file);
     }
 
     /**

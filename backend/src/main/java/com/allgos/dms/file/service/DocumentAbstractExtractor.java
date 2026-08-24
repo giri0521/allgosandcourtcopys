@@ -19,18 +19,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Pulls the "Abstract" paragraph out of a government order PDF, for the description shown beside
- * the document in the file list.
+ * Pulls the "Abstract" paragraph — and the department line right below it — out of a government
+ * order PDF, for the description shown beside the document and for guessing where an unfiled
+ * upload belongs.
  *
- * <p>These orders follow one convention closely enough to rely on: the first page opens with a
- * heading reading "ABSTRACT", followed by a paragraph that always ends with the word "Issued." —
- * that pair of anchors is what is searched for, rather than anything more elaborate.
+ * <p>These orders follow a layout closely enough to rely on: the first page opens with a heading
+ * reading "ABSTRACT", a paragraph that always ends with the word "Issued.", and then, on its own
+ * line, the department the order belongs to (e.g. "Public Works [Estt-I(1)] Department") before the
+ * G.O. number. Those anchors are what is searched for, rather than anything more elaborate.
  *
  * <p>Plenty of what this office uploads as a "PDF" turns out to carry no text layer at all — a scan
  * saved straight to PDF — so whenever the first page yields next to no native text, it is rendered
  * to an image and read with Tesseract OCR instead. Either path, on either kind of document, is a
- * best-effort enrichment: a failure here is logged and produces no description, never a failed
- * upload.
+ * best-effort enrichment: a failure here is logged and produces an empty {@link Extraction}, never a
+ * failed upload.
  */
 @Component
 public class DocumentAbstractExtractor {
@@ -45,20 +47,26 @@ public class DocumentAbstractExtractor {
     /** A sanity bound on what gets stored — never reached by the paragraphs this looks for. */
     private static final int MAX_DESCRIPTION_LENGTH = 2000;
 
-    private static final Pattern ABSTRACT_PATTERN =
-            Pattern.compile("ABSTRACT[^\\n]*\\n(.*?Issued\\.)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    /** Group 1 is the abstract paragraph; group 2 is the department line straight after it. */
+    private static final Pattern ABSTRACT_PATTERN = Pattern.compile(
+            "ABSTRACT[^\\n]*\\n(.*?Issued\\.)\\s*\\n+([^\\n]+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     /** Null when the bundled language data could not be staged; OCR is then skipped rather than failing. */
     private final Path tessdataDir = stageTessdata();
 
+    /** What was read from the document's own Abstract heading. Either field may be null on its own. */
+    public record Extraction(String description, String departmentHint) {
+        public static final Extraction NONE = new Extraction(null, null);
+    }
+
     /**
-     * @return the Abstract paragraph, collapsed to one line, or {@code null} when the bytes are not
-     *     a readable PDF or do not follow the convention this looks for
+     * @return the Abstract paragraph and department line, or {@link Extraction#NONE} when the bytes
+     *     are not a readable PDF or do not follow the convention this looks for
      */
-    public String extract(byte[] pdfBytes) {
+    public Extraction extract(byte[] pdfBytes) {
         try (PDDocument document = Loader.loadPDF(pdfBytes)) {
             if (document.getNumberOfPages() == 0) {
-                return null;
+                return Extraction.NONE;
             }
 
             String text = nativeText(document);
@@ -68,7 +76,7 @@ public class DocumentAbstractExtractor {
             return findAbstract(text);
         } catch (IOException | RuntimeException ex) {
             log.warn("Could not extract a description from an uploaded PDF", ex);
-            return null;
+            return Extraction.NONE;
         }
     }
 
@@ -96,18 +104,24 @@ public class DocumentAbstractExtractor {
         }
     }
 
-    private static String findAbstract(String text) {
+    private static Extraction findAbstract(String text) {
         Matcher matcher = ABSTRACT_PATTERN.matcher(text);
         if (!matcher.find()) {
-            return null;
+            return Extraction.NONE;
         }
-        String collapsed = matcher.group(1).replaceAll("\\s+", " ").trim();
-        if (collapsed.isEmpty()) {
-            return null;
+
+        String description = collapse(matcher.group(1));
+        if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+            description = description.substring(0, MAX_DESCRIPTION_LENGTH);
         }
-        return collapsed.length() > MAX_DESCRIPTION_LENGTH
-                ? collapsed.substring(0, MAX_DESCRIPTION_LENGTH)
-                : collapsed;
+
+        String departmentHint = collapse(matcher.group(2));
+        return new Extraction(description, departmentHint);
+    }
+
+    private static String collapse(String raw) {
+        String collapsed = raw.replaceAll("\\s+", " ").trim();
+        return collapsed.isEmpty() ? null : collapsed;
     }
 
     /**

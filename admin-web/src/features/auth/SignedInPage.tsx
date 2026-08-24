@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { SkeletonRows } from '@/components/ui/Skeleton';
@@ -8,6 +9,7 @@ import {
   fetchMyUploads,
   fetchRecentFiles,
 } from '@/features/documents/api';
+import { QuickUploadDialog } from '@/features/documents/QuickUploadDialog';
 import { fetchMemberCounts } from '@/features/admin/api';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime, formatFileSize, formatFileType } from '@/lib/format';
@@ -27,6 +29,7 @@ import type { FileItem } from '@/types/api';
 export function SignedInPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const departments = useQuery({ queryKey: ['departments'], queryFn: fetchDepartments });
   const myUploads = useQuery({ queryKey: ['my-uploads', 0], queryFn: () => fetchMyUploads(0) });
@@ -171,6 +174,36 @@ export function SignedInPage() {
           </dl>
         </section>
       </div>
+
+      {/* Fixed to the viewport rather than the page: Home can grow taller than the screen, and the
+          fastest way to file a document should not scroll away with the rest of it. */}
+      <button
+        type="button"
+        onClick={() => setUploadOpen(true)}
+        className="animate-pop fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full
+          fill-brand px-5 py-3.5 text-sm font-semibold text-on-brand shadow-lifted
+          transition-all duration-[--duration-quick] ease-[--ease-settle] hover:-translate-y-0.5
+          hover:shadow-dialog focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-300
+          focus-visible:ring-offset-2 active:scale-[0.97] print:hidden"
+      >
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4.5 w-4.5"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M17 8l-5-5-5 5" />
+          <path d="M12 3v13" />
+        </svg>
+        Upload
+      </button>
+
+      <QuickUploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} />
     </AppShell>
   );
 }

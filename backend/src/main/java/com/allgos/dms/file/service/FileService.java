@@ -218,7 +218,7 @@ public class FileService {
             return null;
         }
         try {
-            return abstractExtractor.extract(part.getBytes());
+            return abstractExtractor.extract(part.getBytes()).description();
         } catch (IOException ex) {
             log.warn("Could not read {} to extract a description", accepted.fileName(), ex);
             return null;

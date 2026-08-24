@@ -56,6 +56,21 @@ export interface Folder {
   /** Live files only — a soft delete decrements it and a restore puts it back. */
   fileCount: number;
   createdAt: string;
+  /** Bumped when a document is filed into or removed from the folder, not only on rename. */
+  updatedAt: string;
+}
+
+/**
+ * Where an unfiled PDF probably belongs, guessed server-side from its own Abstract heading.
+ *
+ * <p>All four fields are null together when nothing matched closely enough to act on — the quick
+ * upload picker then simply starts blank, the way it always has.
+ */
+export interface SuggestedDestination {
+  departmentId: string | null;
+  departmentName: string | null;
+  folderId: string | null;
+  folderName: string | null;
 }
 
 export interface FileItem {

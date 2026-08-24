@@ -9,6 +9,7 @@ import type {
   FolderCategory,
   PageResponse,
   PreviewLink,
+  SuggestedDestination,
   UploadResult,
 } from '@/types/api';
 
@@ -149,6 +150,21 @@ export async function uploadFiles(
       if (event.total) onProgress(Math.round((event.loaded / event.total) * 100));
     },
   });
+  return data;
+}
+
+/**
+ * Guesses where an unfiled PDF belongs, from its own Abstract heading — for the quick-upload
+ * button, so the department and folder pickers can start pre-filled instead of blank.
+ *
+ * <p>Nothing here is stored; the file still has to be uploaded for real afterward via {@link
+ * uploadFiles}, wherever the caller ends up choosing.
+ */
+export async function suggestDestination(file: File): Promise<SuggestedDestination> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const { data } = await api.post<SuggestedDestination>('/files/suggest-destination', form);
   return data;
 }
 

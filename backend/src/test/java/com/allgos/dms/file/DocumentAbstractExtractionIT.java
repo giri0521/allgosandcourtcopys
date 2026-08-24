@@ -10,6 +10,8 @@ import com.allgos.dms.auth.repository.OtpVerificationRepository;
 import com.allgos.dms.auth.repository.RegistrationRequestRepository;
 import com.allgos.dms.department.entity.Department;
 import com.allgos.dms.department.repository.DepartmentRepository;
+import com.allgos.dms.folder.entity.Folder;
+import com.allgos.dms.folder.entity.FolderCategory;
 import com.allgos.dms.file.repository.DownloadRepository;
 import com.allgos.dms.file.repository.FavoriteRepository;
 import com.allgos.dms.file.repository.FileDeletionRepository;
@@ -120,6 +122,55 @@ class DocumentAbstractExtractionIT extends AbstractStorageIntegrationTest {
                         org.hamcrest.Matchers.endsWith("Issued."))));
     }
 
+    @Test
+    @DisplayName("a scanned Public Works order suggests the Public Works department and its General folder")
+    void suggestsPublicWorksDepartment() throws Exception {
+        // setUp()'s folderRepository.deleteAll() wipes the General folders V10 seeded for every
+        // department, this one included — restore just the one this test needs.
+        restoreGeneralFolder("Department of Public Works");
+
+        mockMvc.perform(multipart("/api/v1/files/suggest-destination")
+                        .file(sample("sample-documents/go-rt-137-scanned.pdf", "GO Rt 137.pdf", "file"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.departmentName").value("Department of Public Works"))
+                .andExpect(jsonPath("$.folderName").value("General"));
+    }
+
+    @Test
+    @DisplayName("a PDF sent with no real MIME type still gets a suggestion, from its filename")
+    void suggestsFromFilenameWhenBrowserSendsNoRealContentType() throws Exception {
+        // What a browser sends when Windows has no MIME type registered for .pdf at all — an empty
+        // or generic declared type rather than "application/pdf", even though the bytes are a PDF.
+        restoreGeneralFolder("Department of Public Works");
+
+        try (java.io.InputStream in = new org.springframework.core.io.ClassPathResource(
+                        "sample-documents/go-rt-137-scanned.pdf")
+                .getInputStream()) {
+            MockMultipartFile part = new MockMultipartFile(
+                    "file", "GO Rt 137.pdf", "application/octet-stream", in.readAllBytes());
+
+            mockMvc.perform(multipart("/api/v1/files/suggest-destination")
+                            .file(part)
+                            .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.departmentName").value("Department of Public Works"));
+        }
+    }
+
+    @Test
+    @DisplayName("a scanned Finance order suggests the Finance department and its General folder")
+    void suggestsFinanceDepartment() throws Exception {
+        restoreGeneralFolder("Department of Finance");
+
+        mockMvc.perform(multipart("/api/v1/files/suggest-destination")
+                        .file(sample("sample-documents/go-ms-168-scanned.pdf", "GO Ms 168.pdf", "file"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.departmentName").value("Department of Finance"))
+                .andExpect(jsonPath("$.folderName").value("General"));
+    }
+
     // ------------------------------------------------------------------------ helpers
 
     private org.springframework.test.web.servlet.ResultActions upload(String token, MockMultipartFile part)
@@ -131,9 +182,29 @@ class DocumentAbstractExtractionIT extends AbstractStorageIntegrationTest {
     }
 
     private static MockMultipartFile sample(String classpathLocation, String uploadedAs) throws Exception {
+        return sample(classpathLocation, uploadedAs, "files");
+    }
+
+    /** The upload endpoint's part is named "files"; suggest-destination's is the singular "file". */
+    private static MockMultipartFile sample(String classpathLocation, String uploadedAs, String partName)
+            throws Exception {
         try (InputStream in = new ClassPathResource(classpathLocation).getInputStream()) {
-            return new MockMultipartFile("files", uploadedAs, "application/pdf", in.readAllBytes());
+            return new MockMultipartFile(partName, uploadedAs, "application/pdf", in.readAllBytes());
         }
+    }
+
+    private void restoreGeneralFolder(String departmentName) {
+        Department department = departmentRepository.findByName(departmentName).orElseThrow();
+        if (folderRepository
+                .findByDepartmentIdAndParentIsNullAndNameIgnoreCase(department.getId(), "General")
+                .isPresent()) {
+            return;
+        }
+        Folder general = new Folder();
+        general.setDepartment(department);
+        general.setName("General");
+        general.setCategory(FolderCategory.GENERAL);
+        folderRepository.save(general);
     }
 
     private UUID createFolder(UUID departmentId, String name, String token) throws Exception {
