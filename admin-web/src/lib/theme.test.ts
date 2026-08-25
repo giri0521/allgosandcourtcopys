@@ -52,7 +52,7 @@ beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.removeAttribute('data-theme');
   document.documentElement.style.colorScheme = '';
-  document.head.innerHTML = '<meta name="theme-color" content="#1f4076" />';
+  document.head.innerHTML = '<meta name="theme-color" content="#d2e5fb" />';
 });
 
 afterEach(() => {
@@ -139,7 +139,7 @@ describe('applyTheme', () => {
     expect(meta()).toBe('#0a1020');
 
     applyTheme('light');
-    expect(meta()).toBe('#1f4076');
+    expect(meta()).toBe('#d2e5fb');
   });
 
   it('does not fall over when the meta tag is missing', () => {

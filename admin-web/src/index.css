@@ -162,6 +162,17 @@
   --duration-slow: 400ms;    /* content arriving */
 
   /*
+   * The rail folding and unfolding, which is its own pair.
+   *
+   * A little slower than a panel because it is the largest thing on screen that moves, and on a
+   * curve that overshoots by a hair — the seal hops out of the rail and lands in the header rather
+   * than sliding there, which is the only way a move between two places reads as one object rather
+   * than two fading. Everything in the rail borrows both, so nothing arrives on its own schedule.
+   */
+  --duration-rail: 380ms;
+  --ease-hop: cubic-bezier(0.34, 1.42, 0.52, 1);
+
+  /*
    * The theme swap, which is its own thing: slower than anything else, and on a symmetric curve
    * rather than the settle. A whole page changing at once needs to be seen to move; the settle
    * curve is 80% done in the first third and reads as a jump at this scale.
@@ -206,21 +217,33 @@
   --shadow-ambient-dialog: rgb(15 35 64 / 0.28);
 
   /*
-   * The header bar, which is deep navy in both themes.
+   * The chrome — the rail and the header bar, which wear the same skin so the two read as one
+   * L-shaped frame rather than two panels that happen to touch.
    *
-   * <p>Written here rather than as palette steps in the markup because the ramp inverts in dark: a
-   * navy-900 bar would be near-black in light and near-white in dark, which is the opposite of one
-   * consistent piece of chrome. These five hold still, so the header reads the same either way and
-   * everything sitting on it can be light-on-dark once rather than twice.
+   * <p>Written as tokens rather than palette steps because the ramp inverts in dark: a navy-900 bar
+   * would be near-black in light and near-white in dark, and the chrome needs to be decided
+   * per theme rather than fall out of the ramp. Light wears a pale sky blue with navy ink on it;
+   * dark keeps the deep navy with white ink. Everything sitting on the chrome reads these, so a
+   * control written once is correct in both.
+   *
+   * <p>`--header-marker` is the accent that runs down the active entry and tints the Admin pill.
+   * Gold-400 is the seal's colour and is right on the dark bar; on the pale one it measures under
+   * 2:1, so light takes gold-600 — the same pigment, carried far enough down the ramp to be seen.
+   *
+   * <p>`--header-field` is the inset the search box sits in: lighter than the bar in light, darker
+   * in dark, so the field reads as cut into the chrome either way.
    */
-  --header-bg: linear-gradient(100deg, #070d1c 0%, #0f1d3d 45%, #1a2f5c 100%);
-  --header-ink: #ffffff;
-  --header-ink-muted: rgb(255 255 255 / 0.72);
-  --header-hover: rgb(255 255 255 / 0.10);
-  --header-active: rgb(255 255 255 / 0.16);
-  --header-edge: rgb(255 255 255 / 0.12);
-  --header-ring: rgb(255 255 255 / 0.45);
-  --header-shadow: 0 10px 30px -20px rgb(0 0 0 / 0.80);
+  --header-bg: linear-gradient(100deg, #e6f1fd 0%, #d2e5fb 45%, #bcd8f8 100%);
+  --header-ink: #0a2f63;
+  --header-ink-muted: #35578c;
+  --header-hover: rgb(10 47 99 / 0.08);
+  --header-active: rgb(10 47 99 / 0.14);
+  --header-edge: rgb(10 47 99 / 0.14);
+  --header-ring: rgb(13 71 161 / 0.55);
+  --header-shadow: 0 10px 30px -20px rgb(10 47 99 / 0.45);
+  --header-marker: #9c6c1d;
+  --header-field: rgb(255 255 255 / 0.62);
+  --header-field-focus: #ffffff;
 
   /* The strength of the two washes on the body - see the note there. */
   --wash-navy: 30%;
@@ -556,6 +579,22 @@
   --color-tooltip: #050b16;
   --color-tooltip-fg: #ffffff;
   --color-tooltip-fg-muted: #a4afc9;
+
+  /*
+   * The chrome, restated. Deep navy carrying white — the bar this application was drawn around,
+   * and the one place the dark theme is the original rather than the inversion.
+   */
+  --header-bg: linear-gradient(100deg, #070d1c 0%, #0f1d3d 45%, #1a2f5c 100%);
+  --header-ink: #ffffff;
+  --header-ink-muted: rgb(255 255 255 / 0.72);
+  --header-hover: rgb(255 255 255 / 0.10);
+  --header-active: rgb(255 255 255 / 0.16);
+  --header-edge: rgb(255 255 255 / 0.12);
+  --header-ring: rgb(255 255 255 / 0.45);
+  --header-shadow: 0 10px 30px -20px rgb(0 0 0 / 0.80);
+  --header-marker: #d9a43a;
+  --header-field: rgb(255 255 255 / 0.07);
+  --header-field-focus: rgb(255 255 255 / 0.13);
 }
 
 /*
@@ -609,6 +648,19 @@
     fill var(--duration-theme) var(--ease-theme),
     stroke var(--duration-theme) var(--ease-theme),
     box-shadow var(--duration-theme) var(--ease-theme) !important;
+}
+
+/*
+ * The canvas colour, on the root as well as on the body.
+ *
+ * A mobile browser paints the area *outside* the page — what a rubber-band overscroll pulls into
+ * view, and the strip left when the address bar collapses — from the root element, not from the
+ * body. Without this the page is correctly dark and the two inches above and below it are white,
+ * which on a phone is the whole of "dark mode does not work here". `color-scheme` on its own does
+ * not cover it, because the body has an explicit background and there is nothing left to propagate.
+ */
+html {
+  background-color: var(--color-canvas);
 }
 
 body {

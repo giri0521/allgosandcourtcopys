@@ -12,7 +12,7 @@ import { fetchUnreadCount } from '@/features/notifications/api';
  * <p>A failure is silent. The bell is ambient, and an error banner over the header because a
  * background poll missed would be worse than a stale number.
  */
-export function NotificationBell() {
+export function NotificationBell({ className = '' }: { className?: string } = {}) {
   const unread = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: fetchUnreadCount,
@@ -28,9 +28,11 @@ export function NotificationBell() {
       to="/notifications"
       aria-label={label}
       title={label}
-      className="relative rounded-md p-2 text-slate-600 outline-none transition-colors
-        duration-[--duration-base] ease-[--ease-settle] hover:bg-navy-50 hover:text-navy-700
-        focus-visible:ring-2 focus-visible:ring-navy-300"
+      className={`relative rounded-md p-2 outline-none transition-colors
+        duration-[--duration-base] ease-[--ease-settle] focus-visible:ring-2 ${
+          className ||
+          'text-slate-600 hover:bg-navy-50 hover:text-navy-700 focus-visible:ring-navy-300'
+        }`}
     >
       <svg
         aria-hidden

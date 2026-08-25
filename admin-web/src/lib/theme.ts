@@ -78,7 +78,7 @@ export function writeStoredMode(mode: ThemeMode): void {
  */
 function paintBrowserChrome(theme: ResolvedTheme): void {
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (meta) meta.content = theme === 'dark' ? '#0a1020' : '#1f4076';
+  if (meta) meta.content = theme === 'dark' ? '#0a1020' : '#d2e5fb';
 }
 
 /**
