@@ -15,6 +15,8 @@ public final class NotificationType {
     /** Fanned out to every admin, carrying the reason the member gave. */
     public static final String FILE_DELETED = "file_deleted";
     public static final String FILE_RESTORED = "file_restored";
+    /** An admin removed an empty folder. Carries the reason, same as {@link #FILE_DELETED}. */
+    public static final String FOLDER_DELETED = "folder_deleted";
 
     private NotificationType() {}
 }

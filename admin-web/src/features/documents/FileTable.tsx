@@ -145,6 +145,13 @@ export function FileTable({
                           </span>
                         )}
                       </p>
+                      {/* Read from the document itself on upload — see DocumentAbstractExtractor —
+                          so a G.O. can be found again by its number, not only by the file's name. */}
+                      {file.goNumber && (
+                        <p className="truncate text-xs font-medium text-navy-600" title={file.goNumber}>
+                          {file.goNumber}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </td>

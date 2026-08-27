@@ -84,6 +84,8 @@ public final class FileResponses {
             boolean favorite,
             /** The Abstract paragraph read from the document itself; null when there is none. */
             String description,
+            /** The G.O. reference read from the document itself; null when there is none. */
+            String goNumber,
             Instant uploadedAt) {
 
         public static FileView from(StoredFile file, boolean canModify) {
@@ -107,6 +109,7 @@ public final class FileResponses {
                     isPreviewable(file.getFileType()),
                     favorite,
                     file.getDescription(),
+                    file.getGoNumber(),
                     file.getCreatedAt());
         }
     }
@@ -137,9 +140,16 @@ public final class FileResponses {
         public record Rejected(String fileName, String code, String message) {}
     }
 
-    /** A row in the admin deletions log, carrying the reason the deleter gave. */
+    /**
+     * A row in the admin deletions log, carrying the reason the deleter gave.
+     *
+     * <p>Every field but {@code fileId} comes from the deletion record's own snapshot rather than a
+     * live {@code StoredFile} — that file may since have been purged, and a purged row has to read
+     * back exactly as well as one that has not been.
+     */
     public record DeletionView(
             UUID id,
+            /** Null once the file has been purged; there is nothing left at that id to open. */
             UUID fileId,
             String fileName,
             UUID departmentId,
@@ -151,24 +161,34 @@ public final class FileResponses {
             Instant deletedAt,
             String restoredByName,
             Instant restoredAt,
-            boolean restorable) {
+            /** Neither restored nor purged — the only state Restore or "Delete permanently" applies to. */
+            boolean restorable,
+            /** When the daily sweep purges this on its own, if nobody has acted by then. Null once
+             * restored or purged — there is no longer a countdown to show. */
+            Instant purgeExpiresAt,
+            /** Null for the automatic sweep — nobody pressed the button, the 30 days did. */
+            String purgedByName,
+            Instant purgedAt) {
 
         public static DeletionView from(FileDeletion deletion) {
-            StoredFile file = deletion.getFile();
+            boolean restorable = deletion.isRestorable();
             return new DeletionView(
                     deletion.getId(),
-                    file.getId(),
-                    file.getFileName(),
-                    file.getDepartment().getId(),
-                    file.getDepartment().getName(),
-                    file.getFolder().getId(),
-                    file.getFolder().getName(),
+                    deletion.getFile() == null ? null : deletion.getFile().getId(),
+                    deletion.getFileName(),
+                    deletion.getDepartmentId(),
+                    deletion.getDepartmentName(),
+                    deletion.getFolderId(),
+                    deletion.getFolderName(),
                     deletion.getDeletedBy().getFullName(),
                     deletion.getReason(),
                     deletion.getDeletedAt(),
                     deletion.getRestoredBy() == null ? null : deletion.getRestoredBy().getFullName(),
                     deletion.getRestoredAt(),
-                    file.isDeleted());
+                    restorable,
+                    restorable ? deletion.getDeletedAt().plus(FileDeletion.PURGE_RETENTION) : null,
+                    deletion.getPurgedBy() == null ? null : deletion.getPurgedBy().getFullName(),
+                    deletion.getPurgedAt());
         }
     }
 

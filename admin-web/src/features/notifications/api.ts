@@ -67,6 +67,8 @@ export function notificationLink(entityRef: string | null, isAdmin = false): str
   const [kind, id] = entityRef.split(':');
   if (kind === 'file' && id) return `/files/${id}`;
   if (kind === 'folder' && id) return `/folders/${id}`;
+  // A deleted folder has nowhere of its own left to open — its department still does.
+  if (kind === 'department' && id) return `/departments/${id}`;
   if (kind === 'user' && id) return isAdmin ? '/admin/members' : '/profile';
   return null;
 }

@@ -2,18 +2,23 @@ package com.allgos.dms.folder.controller;
 
 import com.allgos.dms.common.dto.PageResponse;
 import com.allgos.dms.common.security.AuthenticatedUser;
+import com.allgos.dms.file.dto.FileRequests;
 import com.allgos.dms.file.dto.FileResponses.FileView;
 import com.allgos.dms.file.dto.FileResponses.FolderView;
 import com.allgos.dms.file.service.FileService;
 import com.allgos.dms.folder.service.FolderService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,6 +62,24 @@ public class FolderController {
             @AuthenticationPrincipal AuthenticatedUser principal) {
 
         return fileService.listByFolder(folderId, principal.user(), pageable(page, size));
+    }
+
+    /**
+     * Deletes an empty folder — not the department's General folder, and not one still holding a
+     * document or a subfolder. The reason is required and is sent to every other account, the same
+     * way a file deletion is.
+     *
+     * <p>Administrators only: a folder carries no owner the way a file does, and there is no restore
+     * for one once it is gone.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{folderId}")
+    public void delete(
+            @PathVariable UUID folderId,
+            @Valid @RequestBody FileRequests.Delete request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        folderService.delete(folderId, request.reason(), principal.user());
     }
 
     /** Newest first, with the page size capped so one request cannot pull a whole department. */

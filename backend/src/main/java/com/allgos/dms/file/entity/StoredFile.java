@@ -61,6 +61,10 @@ public class StoredFile extends BaseEntity {
     @Column(columnDefinition = "text")
     private String description;
 
+    /** The G.O. reference read from the document itself, if any — see DocumentAbstractExtractor. */
+    @Column(name = "go_number")
+    private String goNumber;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "uploaded_by", nullable = false)
     private User uploadedBy;

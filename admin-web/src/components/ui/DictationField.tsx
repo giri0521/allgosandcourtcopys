@@ -34,7 +34,7 @@ export function DictationField({
   hint?: string;
   error?: string;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>) {
-  const [lang, setLang] = useState<DictationLanguage>('en-IN');
+  const [lang, setLang] = useState<DictationLanguage>('ta-IN');
 
   const dictation = useDictation({
     lang,

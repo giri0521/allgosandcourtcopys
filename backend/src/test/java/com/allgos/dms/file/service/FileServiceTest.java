@@ -153,6 +153,12 @@ class FileServiceTest {
         assertThat(saved.getValue().getReason()).isEqualTo("Uploaded to the wrong department");
         assertThat(saved.getValue().getDeletedBy()).isEqualTo(uploader);
 
+        // Captured onto the row itself, not left to a live join — the deletions log has to keep
+        // reading correctly even after this file is one day purged.
+        assertThat(saved.getValue().getFileName()).isEqualTo("Circular 42.pdf");
+        assertThat(saved.getValue().getDepartmentName()).isEqualTo("Revenue Department");
+        assertThat(saved.getValue().getFolderName()).isEqualTo("Circulars 2026");
+
         // And the fan-out carries it, to everyone but the person who did it.
         verify(notificationService)
                 .notifyEveryoneExcept(
@@ -219,6 +225,37 @@ class FileServiceTest {
                 .isEqualTo("FILE_NOT_DELETED");
 
         verify(folderRepository, never()).adjustFileCount(any(), anyInt());
+    }
+
+    @Test
+    @DisplayName("purging removes the database row before touching storage, never the other way round")
+    void purgeCommitsTheRowBeforeRemovingTheBytes() {
+        when(fileRecordWriter.purge(file.getId(), admin)).thenReturn("dept/folder/circular-42.pdf");
+
+        service.purge(file.getId(), admin);
+
+        var order = org.mockito.Mockito.inOrder(fileRecordWriter, storageService);
+        order.verify(fileRecordWriter).purge(file.getId(), admin);
+        order.verify(storageService).delete("dept/folder/circular-42.pdf");
+    }
+
+    @Test
+    @DisplayName("the sweep purges every eligible file, and one failure does not stop the rest")
+    void purgeExpiredSkipsOverAFailureAndKeepsGoing() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        when(deletionRepository.findPurgeableFileIds(any())).thenReturn(java.util.List.of(first, second));
+        // The sweep acts as no one in particular — null rather than any admin.
+        when(fileRecordWriter.purge(eq(first), eq(null)))
+                .thenThrow(new RuntimeException("object already gone from storage"));
+        when(fileRecordWriter.purge(eq(second), eq(null))).thenReturn("dept/folder/other.pdf");
+
+        int purged = service.purgeExpired();
+
+        assertThat(purged).isEqualTo(1);
+        verify(fileRecordWriter).purge(first, null);
+        verify(fileRecordWriter).purge(second, null);
+        verify(storageService).delete("dept/folder/other.pdf");
     }
 
     @Test

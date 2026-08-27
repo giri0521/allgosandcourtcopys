@@ -56,6 +56,16 @@ public class AdminFileController {
         return fileService.restore(fileId, principal.user());
     }
 
+    /**
+     * Permanently removes a deleted document rather than waiting out the 30-day retention window.
+     * Irreversible — there is no restore from here on, which is why this is admin-only same as
+     * restore is, and why the web app asks for a confirmation before calling it.
+     */
+    @PostMapping("/files/{fileId}/purge")
+    public void purge(@PathVariable UUID fileId, @AuthenticationPrincipal AuthenticatedUser principal) {
+        fileService.purge(fileId, principal.user());
+    }
+
     /** Most recent deletion first. */
     private Pageable pageable(int page, int size) {
         return PageRequest.of(

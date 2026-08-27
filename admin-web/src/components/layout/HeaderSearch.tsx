@@ -59,7 +59,7 @@ export function HeaderSearch() {
         type="search"
         value={term}
         onChange={(event) => setTerm(event.target.value)}
-        placeholder="Search documents…"
+        placeholder="Search by name or G.O. number…"
         // 16px at every size, deliberately: below that iOS Safari zooms the page in on focus,
         // which leaves the user zoomed into a header they then have to pinch back out of. It is
         // also simply the right size for the one field the whole application is searched from.

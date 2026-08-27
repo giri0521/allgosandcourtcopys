@@ -13,13 +13,14 @@ import {
 } from '@/features/documents/api';
 import { CreateFolderDialog } from '@/features/documents/CreateFolderDialog';
 import { DeleteFileDialog } from '@/features/documents/DeleteFileDialog';
+import { DeleteFolderDialog } from '@/features/documents/DeleteFolderDialog';
 import { FileTable } from '@/features/documents/FileTable';
 import { FolderGrid } from '@/features/documents/FolderGrid';
 import { ReplaceFileDialog } from '@/features/documents/ReplaceFileDialog';
 import { UploadDialog } from '@/features/documents/UploadDialog';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { toApiError } from '@/lib/errors';
-import type { FileItem } from '@/types/api';
+import type { FileItem, Folder } from '@/types/api';
 
 /**
  * Inside one folder: its subfolders, its documents, and the two actions available here — upload and
@@ -34,6 +35,7 @@ export function FolderPage() {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<FileItem | null>(null);
   const [replacing, setReplacing] = useState<FileItem | null>(null);
+  const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
 
   const folder = useQuery({
     queryKey: ['folder', folderId],
@@ -112,7 +114,7 @@ export function FolderPage() {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               Folders
             </h2>
-            <FolderGrid folders={subfolders.data ?? []} />
+            <FolderGrid folders={subfolders.data ?? []} onDelete={setDeletingFolder} />
           </section>
         )}
 
@@ -154,6 +156,7 @@ export function FolderPage() {
 
       <DeleteFileDialog file={deleting} onClose={() => setDeleting(null)} />
       <ReplaceFileDialog file={replacing} onClose={() => setReplacing(null)} />
+      <DeleteFolderDialog folder={deletingFolder} onClose={() => setDeletingFolder(null)} />
     </AppShell>
   );
 }

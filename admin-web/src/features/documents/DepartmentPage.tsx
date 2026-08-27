@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { SkeletonCards } from '@/components/ui/Skeleton';
 import { fetchDepartments, fetchFolders } from '@/features/documents/api';
 import { CreateFolderDialog } from '@/features/documents/CreateFolderDialog';
+import { DeleteFolderDialog } from '@/features/documents/DeleteFolderDialog';
 import { FolderGrid } from '@/features/documents/FolderGrid';
 import { toApiError } from '@/lib/errors';
+import type { Folder } from '@/types/api';
 
 /**
  * The folders at the top level of one department.
@@ -19,6 +21,7 @@ import { toApiError } from '@/lib/errors';
 export function DepartmentPage() {
   const { departmentId = '' } = useParams();
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<Folder | null>(null);
 
   // Served from the cache when arriving from the department list, so the name renders immediately.
   const departments = useQuery({ queryKey: ['departments'], queryFn: fetchDepartments });
@@ -71,13 +74,14 @@ export function DepartmentPage() {
         </div>
       )}
 
-      <FolderGrid folders={folders.data ?? []} />
+      <FolderGrid folders={folders.data ?? []} onDelete={setDeleting} />
 
       <CreateFolderDialog
         open={creating}
         departmentId={departmentId}
         onClose={() => setCreating(false)}
       />
+      <DeleteFolderDialog folder={deleting} onClose={() => setDeleting(null)} />
     </AppShell>
   );
 }

@@ -34,6 +34,14 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
+  // Read through a ref rather than depended on directly: `onClose` is a fresh function on every
+  // render of whichever dialog owns this modal (its `close` is not memoized), and depending on it
+  // below would re-run the effect on every keystroke into one of the modal's own fields — tearing
+  // down and rebuilding the focus trap mid-type, which yanks focus off whatever the user is typing
+  // into and back onto the first focusable control in the panel.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
 
@@ -41,7 +49,7 @@ export function Modal({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -80,7 +88,7 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       previouslyFocused.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

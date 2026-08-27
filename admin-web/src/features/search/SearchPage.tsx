@@ -84,7 +84,7 @@ export function SearchPage() {
   return (
     <AppShell
       title="Search"
-      subtitle={q ? `Documents matching “${q}”` : 'Find a document by part of its name'}
+      subtitle={q ? `Documents matching “${q}”` : 'Find a document by part of its name or its G.O. number'}
       actions={
         hasFacets ? (
           <Button variant="secondary" onClick={clearFacets}>
@@ -212,7 +212,8 @@ function Prompt() {
         <path d="m20 20-3.5-3.5" />
       </svg>
       <p className="mt-3 text-sm text-slate-500">
-        Type at least two characters in the search box to look across every department.
+        Type at least two characters — a piece of the file name or a G.O. number — to look across
+        every department.
       </p>
     </div>
   );

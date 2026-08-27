@@ -6,9 +6,11 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { SkeletonRows } from '@/components/ui/Skeleton';
 import { fetchDeletions, restoreFile } from '@/features/documents/api';
+import { PurgeFileDialog } from '@/features/documents/PurgeFileDialog';
 import { toApiError } from '@/lib/errors';
-import { formatDateTime } from '@/lib/format';
+import { daysUntil, formatDateTime } from '@/lib/format';
 import { invalidateFileLists } from '@/lib/queryKeys';
+import type { FileDeletion } from '@/types/api';
 
 type Tab = 'deleted' | 'all';
 
@@ -26,6 +28,7 @@ const TABS: { value: Tab; label: string }[] = [
 export function DeletionsPage() {
   const [tab, setTab] = useState<Tab>('deleted');
   const [page, setPage] = useState(0);
+  const [purging, setPurging] = useState<FileDeletion | null>(null);
   const queryClient = useQueryClient();
 
   const deletions = useQuery({
@@ -51,7 +54,7 @@ export function DeletionsPage() {
   return (
     <AppShell
       title="Deleted documents"
-      subtitle="Every deletion, with the reason given. Deletes are reversible."
+      subtitle="Every deletion, with the reason given. A deleted document can be restored for 30 days, after which it is removed for good."
     >
       <div className="mb-4 flex gap-1" role="tablist" aria-label="Deletion filter">
         {TABS.map((entry) => (
@@ -108,13 +111,27 @@ export function DeletionsPage() {
                   </div>
 
                   {entry.restorable ? (
-                    <Button
-                      variant="secondary"
-                      loading={restore.isPending && restore.variables === entry.fileId}
-                      onClick={() => restore.mutate(entry.fileId)}
-                    >
-                      Restore
-                    </Button>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="secondary"
+                          loading={restore.isPending && restore.variables === entry.fileId}
+                          onClick={() => restore.mutate(entry.fileId!)}
+                        >
+                          Restore
+                        </Button>
+                        <Button variant="danger" onClick={() => setPurging(entry)}>
+                          Delete permanently
+                        </Button>
+                      </div>
+                      {entry.purgeExpiresAt && (
+                        <PurgeCountdown expiresAt={entry.purgeExpiresAt} />
+                      )}
+                    </div>
+                  ) : entry.purgedAt ? (
+                    <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                      Permanently deleted
+                    </span>
                   ) : (
                     <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
                       Restored
@@ -131,6 +148,8 @@ export function DeletionsPage() {
                   Deleted by {entry.deletedByName} on {formatDateTime(entry.deletedAt)}
                   {entry.restoredAt &&
                     ` · Restored by ${entry.restoredByName} on ${formatDateTime(entry.restoredAt)}`}
+                  {entry.purgedAt &&
+                    ` · Permanently deleted ${entry.purgedByName ? `by ${entry.purgedByName} ` : ''}on ${formatDateTime(entry.purgedAt)}`}
                 </p>
               </li>
             ))}
@@ -161,6 +180,20 @@ export function DeletionsPage() {
           )}
         </div>
       )}
+
+      <PurgeFileDialog deletion={purging} onClose={() => setPurging(null)} />
     </AppShell>
+  );
+}
+
+/** The countdown to the daily sweep, under the Restore / Delete permanently pair. */
+function PurgeCountdown({ expiresAt }: { expiresAt: string }) {
+  const days = daysUntil(expiresAt);
+  return (
+    <span className="text-xs text-slate-400">
+      {days <= 0
+        ? 'Removed for good today'
+        : `${days} day${days === 1 ? '' : 's'} until permanent deletion`}
+    </span>
   );
 }

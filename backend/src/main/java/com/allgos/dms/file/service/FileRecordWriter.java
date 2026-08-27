@@ -4,11 +4,14 @@ import com.allgos.dms.audit.entity.AuditAction;
 import com.allgos.dms.audit.service.AuditService;
 import com.allgos.dms.common.exception.ApiException;
 import com.allgos.dms.file.dto.FileResponses.FileView;
+import com.allgos.dms.file.entity.FileDeletion;
 import com.allgos.dms.file.entity.StoredFile;
+import com.allgos.dms.file.repository.FileDeletionRepository;
 import com.allgos.dms.file.repository.StoredFileRepository;
 import com.allgos.dms.folder.entity.Folder;
 import com.allgos.dms.folder.repository.FolderRepository;
 import com.allgos.dms.user.entity.User;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -31,12 +34,17 @@ public class FileRecordWriter {
 
     private final StoredFileRepository fileRepository;
     private final FolderRepository folderRepository;
+    private final FileDeletionRepository deletionRepository;
     private final AuditService auditService;
 
     public FileRecordWriter(
-            StoredFileRepository fileRepository, FolderRepository folderRepository, AuditService auditService) {
+            StoredFileRepository fileRepository,
+            FolderRepository folderRepository,
+            FileDeletionRepository deletionRepository,
+            AuditService auditService) {
         this.fileRepository = fileRepository;
         this.folderRepository = folderRepository;
+        this.deletionRepository = deletionRepository;
         this.auditService = auditService;
     }
 
@@ -67,7 +75,8 @@ public class FileRecordWriter {
             User uploader,
             UploadValidator.Accepted accepted,
             String storageKey,
-            String description) {
+            String description,
+            String goNumber) {
 
         Folder folder = folderRepository
                 .findById(folderId)
@@ -83,6 +92,7 @@ public class FileRecordWriter {
         file.setSizeBytes(accepted.sizeBytes());
         file.setStorageKey(storageKey);
         file.setDescription(description);
+        file.setGoNumber(goNumber);
         file.setUploadedBy(uploader);
 
         StoredFile saved = fileRepository.save(file);
@@ -141,7 +151,8 @@ public class FileRecordWriter {
             UploadValidator.Accepted accepted,
             String storageKey,
             String previousKey,
-            String description) {
+            String description,
+            String goNumber) {
 
         StoredFile file = fileRepository
                 .findByIdAndDeletedFalse(fileId)
@@ -160,8 +171,9 @@ public class FileRecordWriter {
         file.setSizeBytes(accepted.sizeBytes());
         file.setStorageKey(storageKey);
         // Re-extracted from the new bytes: a replaced document is a different document, and its old
-        // description would otherwise linger under a mismatched name.
+        // description and G.O. number would otherwise linger under a mismatched name.
         file.setDescription(description);
+        file.setGoNumber(goNumber);
         file.setVersion(file.getVersion() + 1);
         // uploadedBy is left alone: it is who put the document into the system, and an admin
         // correcting someone's file does not take ownership of it.
@@ -181,6 +193,50 @@ public class FileRecordWriter {
                         "previousStorageKey", previousKey));
 
         return FileView.from(file, file.canBeModifiedBy(actor));
+    }
+
+    /**
+     * Hard-deletes a deleted file's row and stamps the deletion record that is about to outlive it.
+     * {@code admin} is null for the 30-day sweep, which has no acting user — the deletion record and
+     * audit entry both say so rather than naming someone who did not press anything.
+     *
+     * @return the storage key the caller must remove the bytes for, once this has committed
+     * @throws ApiException 404 if the file does not exist, 409 if it is not currently deleted
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public String purge(UUID fileId, User admin) {
+        StoredFile file = fileRepository.findById(fileId).orElseThrow(() -> ApiException.notFound("File"));
+
+        if (!file.isDeleted()) {
+            throw ApiException.conflict(
+                    "FILE_NOT_DELETED", "Only a deleted document can be permanently removed.");
+        }
+
+        FileDeletion deletion = deletionRepository
+                .findFirstByFileIdAndRestoredAtIsNullOrderByDeletedAtDesc(fileId)
+                .orElseThrow(() -> ApiException.notFound("Deletion record"));
+
+        String storageKey = file.getStorageKey();
+
+        deletion.setPurgedBy(admin);
+        deletion.setPurgedAt(Instant.now());
+        // Cleared before the row it points at is removed, rather than relying on the database's own
+        // ON DELETE SET NULL to catch up — the persistence context should not disagree with the
+        // database about what this association currently holds for the rest of the transaction.
+        deletion.setFile(null);
+
+        fileRepository.delete(file);
+
+        if (admin != null) {
+            auditService.record(
+                    admin, AuditAction.FILE_PURGED, "file", fileId, Map.of("fileName", deletion.getFileName()));
+        } else {
+            auditService.recordAnonymous(
+                    AuditAction.FILE_PURGED,
+                    Map.of("fileId", fileId.toString(), "fileName", deletion.getFileName(), "trigger", "30-day sweep"));
+        }
+
+        return storageKey;
     }
 
     /**

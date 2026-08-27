@@ -412,6 +412,68 @@ class FileAccessIT extends AbstractStorageIntegrationTest {
                 .andExpect(jsonPath("$.items[0].reason").value("Superseded by GO 118"));
     }
 
+    // ------------------------------------------------------------------------- purge
+
+    @Test
+    @DisplayName("an admin permanently deletes a document: the row, the bytes, and any hope of restoring it")
+    void adminPurgesADeletedDocument() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+        String storageKey = fileRepository.findById(fileId).orElseThrow().getStorageKey();
+
+        deleteFile(fileId, "Wrong department", memberToken).andExpect(status().isOk());
+        assertThat(objectExists(storageKey)).isTrue(); // still recoverable up to this point
+
+        mockMvc.perform(post("/api/v1/admin/files/{id}/purge", fileId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk());
+
+        assertThat(fileRepository.findById(fileId)).isEmpty();
+        assertThat(objectExists(storageKey)).isFalse();
+        assertThat(auditLogRepository.findAll())
+                .anyMatch(entry -> AuditAction.FILE_PURGED.equals(entry.getAction()));
+
+        // The log entry survives the purge, reads back from its own snapshot rather than a broken
+        // join, and no longer offers a restore.
+        mockMvc.perform(get("/api/v1/admin/deletions?status=all")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].fileId").doesNotExist())
+                .andExpect(jsonPath("$.items[0].fileName").value("Circular 42.pdf"))
+                .andExpect(jsonPath("$.items[0].restorable").value(false))
+                .andExpect(jsonPath("$.items[0].purgedByName").value("System Administrator"))
+                .andExpect(jsonPath("$.items[0].purgeExpiresAt").doesNotExist());
+
+        mockMvc.perform(post("/api/v1/admin/files/{id}/restore", fileId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("a member cannot permanently delete a document, even one they uploaded and deleted themselves")
+    void memberCannotPurgeAFile() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+        deleteFile(fileId, "Wrong department", memberToken).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/admin/files/{id}/purge", fileId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().isForbidden());
+
+        assertThat(fileRepository.findById(fileId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("a document that was never deleted cannot be purged")
+    void purgingALiveDocumentIsRefused() throws Exception {
+        UUID fileId = uploadOne(memberToken, "Circular 42.pdf");
+
+        mockMvc.perform(post("/api/v1/admin/files/{id}/purge", fileId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FILE_NOT_DELETED"));
+
+        assertThat(fileRepository.findById(fileId).orElseThrow().isDeleted()).isFalse();
+    }
+
     // ----------------------------------------------------------------------- replace
 
     @Test
@@ -543,6 +605,168 @@ class FileAccessIT extends AbstractStorageIntegrationTest {
                 .andExpect(jsonPath("$[1].name").value("January"));
     }
 
+    // ------------------------------------------------------------------- folder deletion
+
+    @Test
+    @DisplayName("deleting a folder without a reason is refused")
+    void deletingAFolderWithoutAReasonIsRefused() throws Exception {
+        UUID emptyFolderId = createFolder(otherDepartment.getId(), "Empty 2026", memberToken);
+
+        deleteFolder(emptyFolderId, "", adminToken)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        assertThat(folderRepository.findById(emptyFolderId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("a member cannot delete a folder, even an empty one they created")
+    void deletingAFolderIsAdminOnly() throws Exception {
+        UUID emptyFolderId = createFolder(otherDepartment.getId(), "Empty 2026", memberToken);
+
+        deleteFolder(emptyFolderId, "No longer needed", memberToken).andExpect(status().isForbidden());
+
+        assertThat(folderRepository.findById(emptyFolderId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("the department's General folder cannot be deleted")
+    void generalFolderCannotBeDeleted() throws Exception {
+        UUID generalId = createFolder(otherDepartment.getId(), "General", memberToken);
+
+        deleteFolder(generalId, "Tidying up", adminToken)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GENERAL_FOLDER"));
+
+        assertThat(folderRepository.findById(generalId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("a folder still holding a document cannot be deleted")
+    void nonEmptyFolderCannotBeDeleted() throws Exception {
+        uploadOne(memberToken, "Circular 42.pdf"); // lands in `folderId`
+
+        deleteFolder(folderId, "Cleaning up", adminToken)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FOLDER_NOT_EMPTY"));
+
+        assertThat(folderRepository.findById(folderId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("a folder holding only a soft-deleted document can still be deleted; the document moves to General")
+    void folderWithOnlyASoftDeletedDocumentIsReassignedToGeneralAndDeleted() throws Exception {
+        UUID generalId = createFolder(otherDepartment.getId(), "General", memberToken);
+        UUID emptyFolderId = createFolder(otherDepartment.getId(), "Once Used", memberToken);
+
+        // Upload into it directly rather than through `folderId`, then remove the document — the
+        // folder's live fileCount goes back to zero, but the file's row still points at this folder
+        // (that is what makes restoring it possible).
+        String body = mockMvc.perform(multipart("/api/v1/files")
+                        .file(pdf("Temporary.pdf"))
+                        .param("folderId", emptyFolderId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        UUID fileId = UUID.fromString(
+                objectMapper.readTree(body).get("uploaded").get(0).get("id").asText());
+
+        deleteFile(fileId, "Wrong document", memberToken).andExpect(status().isOk());
+        assertThat(folderRepository.findById(emptyFolderId).orElseThrow().getFileCount()).isZero();
+
+        // The folder looks empty and really is deletable now — the deleted document's row moves to
+        // General instead of leaving a foreign key blocking the delete.
+        deleteFolder(emptyFolderId, "Cleaning up", adminToken).andExpect(status().isOk());
+
+        assertThat(folderRepository.findById(emptyFolderId)).isEmpty();
+        assertThat(fileRepository.findById(fileId).orElseThrow().getFolder().getId()).isEqualTo(generalId);
+
+        // The deletions log still says where the document *was* filed — that is a snapshot taken at
+        // the moment of deletion, not a live read through the (now-moved) association.
+        mockMvc.perform(get("/api/v1/admin/deletions?status=all")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(jsonPath("$.items[0].folderName").value("Once Used"));
+    }
+
+    @Test
+    @DisplayName("with no General folder to move it to, a deleted document still blocks the folder")
+    void softDeletedDocumentBlocksDeletionWhenNoGeneralFolderExists() throws Exception {
+        // otherDepartment's General folder was wiped by setUp() and nothing recreates it here.
+        UUID emptyFolderId = createFolder(otherDepartment.getId(), "Once Used", memberToken);
+
+        String body = mockMvc.perform(multipart("/api/v1/files")
+                        .file(pdf("Temporary.pdf"))
+                        .param("folderId", emptyFolderId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        UUID fileId = UUID.fromString(
+                objectMapper.readTree(body).get("uploaded").get(0).get("id").asText());
+
+        deleteFile(fileId, "Wrong document", memberToken).andExpect(status().isOk());
+
+        deleteFolder(emptyFolderId, "Cleaning up", adminToken)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FOLDER_NOT_EMPTY"));
+
+        assertThat(folderRepository.findById(emptyFolderId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("a folder still holding a subfolder cannot be deleted")
+    void folderWithSubfoldersCannotBeDeleted() throws Exception {
+        createFolder(otherDepartment.getId(), "January", memberToken, folderId);
+
+        deleteFolder(folderId, "Cleaning up", adminToken)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FOLDER_NOT_EMPTY"));
+
+        assertThat(folderRepository.findById(folderId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("an admin deletes an empty folder with a reason, and the whole office is told why")
+    void adminDeletesEmptyFolderAndEveryoneIsNotified() throws Exception {
+        String otherToken = registerApproveAndSignIn(OTHER_MEMBER_MOBILE, "Arun Kumar");
+        assertThat(otherToken).isNotBlank();
+
+        UUID emptyFolderId = createFolder(otherDepartment.getId(), "Empty 2026", memberToken);
+        String reason = "Created by mistake";
+
+        deleteFolder(emptyFolderId, reason, adminToken).andExpect(status().isOk());
+
+        assertThat(folderRepository.findById(emptyFolderId)).isEmpty();
+        mockMvc.perform(get("/api/v1/departments/{id}/folders", otherDepartment.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(jsonPath("$[?(@.name == 'Empty 2026')]").isEmpty());
+
+        UUID adminId = userRepository.findByMobileNumber(ADMIN_MOBILE).orElseThrow().getId();
+        List<UUID> expected = userRepository.findAll().stream()
+                .filter(candidate -> candidate.getStatus() == UserStatus.ACTIVE)
+                .map(User::getId)
+                .filter(id -> !id.equals(adminId))
+                .toList();
+
+        List<Notification> told = notificationRepository.findAll().stream()
+                .filter(entry -> NotificationType.FOLDER_DELETED.equals(entry.getType()))
+                .toList();
+
+        assertThat(expected).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(told).extracting(entry -> entry.getUser().getId())
+                .containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(told).allSatisfy(entry -> assertThat(entry.getBody())
+                .contains("System Administrator")
+                .contains("Empty 2026")
+                .contains(reason));
+
+        assertThat(auditLogRepository.findAll())
+                .anyMatch(entry -> AuditAction.FOLDER_DELETED.equals(entry.getAction()));
+    }
+
     @Test
     @DisplayName("My Uploads shows only what this member uploaded")
     void myUploadsIsScopedToTheCaller() throws Exception {
@@ -590,6 +814,13 @@ class FileAccessIT extends AbstractStorageIntegrationTest {
 
     private ResultActions deleteFile(UUID fileId, String reason, String token) throws Exception {
         return mockMvc.perform(delete("/api/v1/files/{id}", fileId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("reason", reason))));
+    }
+
+    private ResultActions deleteFolder(UUID folderId, String reason, String token) throws Exception {
+        return mockMvc.perform(delete("/api/v1/folders/{id}", folderId)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("reason", reason))));

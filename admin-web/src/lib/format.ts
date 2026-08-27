@@ -11,6 +11,16 @@ export function formatDateTime(iso: string | null): string {
   });
 }
 
+/**
+ * Whole days from now until an ISO instant, rounded up — "1 day left" still means today, not
+ * tomorrow, if there are fifteen hours left in it. Negative once the moment has passed, though
+ * nothing should still be showing a countdown by then; the daily sweep runs well before that.
+ */
+export function daysUntil(iso: string): number {
+  const millisPerDay = 24 * 60 * 60 * 1000;
+  return Math.ceil((new Date(iso).getTime() - Date.now()) / millisPerDay);
+}
+
 /** File sizes in the units a clerk reads, not bytes. */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

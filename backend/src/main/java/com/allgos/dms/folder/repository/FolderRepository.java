@@ -15,6 +15,9 @@ public interface FolderRepository extends JpaRepository<Folder, UUID> {
 
     List<Folder> findByParentIdOrderByNameAsc(UUID parentId);
 
+    /** Whether a folder has any subfolders — a folder may only be deleted once this is false. */
+    boolean existsByParentId(UUID parentId);
+
     List<Folder> findByDepartmentIdOrderByNameAsc(UUID departmentId);
 
     boolean existsByDepartmentIdAndParentIdAndNameIgnoreCase(UUID departmentId, UUID parentId, String name);

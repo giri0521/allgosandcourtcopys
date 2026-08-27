@@ -11,6 +11,8 @@ import com.allgos.dms.file.repository.StoredFileRepository;
 import com.allgos.dms.folder.entity.Folder;
 import com.allgos.dms.folder.entity.FolderCategory;
 import com.allgos.dms.folder.repository.FolderRepository;
+import com.allgos.dms.notification.entity.NotificationType;
+import com.allgos.dms.notification.service.NotificationService;
 import com.allgos.dms.user.entity.User;
 import java.util.List;
 import java.util.Locale;
@@ -28,20 +30,26 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FolderService {
 
+    /** Seeded for every department by {@code V10__general_folder_per_department}; never deletable. */
+    static final String GENERAL_FOLDER_NAME = "General";
+
     private final FolderRepository folderRepository;
     private final DepartmentRepository departmentRepository;
     private final StoredFileRepository fileRepository;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public FolderService(
             FolderRepository folderRepository,
             DepartmentRepository departmentRepository,
             StoredFileRepository fileRepository,
-            AuditService auditService) {
+            AuditService auditService,
+            NotificationService notificationService) {
         this.folderRepository = folderRepository;
         this.departmentRepository = departmentRepository;
         this.fileRepository = fileRepository;
         this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     /** Every active department, with the counts the browse cards show. */
@@ -135,6 +143,85 @@ public class FolderService {
                 Map.of("name", trimmed, "departmentId", departmentId.toString()));
 
         return FolderView.from(saved);
+    }
+
+    /**
+     * Deletes a folder holding no live document and no subfolder. Admin-only — enforced by
+     * {@code @PreAuthorize} on the controller, since unlike a file there is no owner to fall back to
+     * and no restore once it is gone.
+     *
+     * <p>A folder that once held a document, since deleted, is not held back by that: the file's row
+     * survives a soft delete so it can still be restored and so the admin deletions log can still say
+     * where it came from, and {@code files.folder_id} is a {@code NOT NULL} foreign key with no
+     * {@code ON DELETE} action — so before this folder is removed, any such row is moved to the
+     * department's General folder instead, the same place an unfiled upload already lands by
+     * convention. A restore from here on lands in General rather than a folder that no longer exists;
+     * the deletions log's own record of where the document <em>was</em> filed is unaffected, since
+     * that is captured on the deletion row itself, not read back through this association.
+     *
+     * <p>Subfolders are a different matter and still block this outright: a folder full of subfolders
+     * that are themselves empty must be deleted leaf-first, since cascading would silently take
+     * documents with it that nobody meant to remove in one click.
+     *
+     * @throws ApiException 400 if the reason is missing, or the folder is the department's General
+     *     folder; 409 if the folder still holds a live document or a subfolder
+     */
+    @Transactional
+    public void delete(UUID folderId, String reason, User actor) {
+        String trimmed = reason == null ? "" : reason.trim();
+        if (trimmed.isEmpty()) {
+            throw ApiException.badRequest("REASON_REQUIRED", "Please give a reason for deleting this folder.");
+        }
+
+        Folder folder = loadFolder(folderId);
+
+        if (folder.getParent() == null && GENERAL_FOLDER_NAME.equalsIgnoreCase(folder.getName())) {
+            throw ApiException.badRequest(
+                    "GENERAL_FOLDER", "The General folder cannot be deleted — every department needs one.");
+        }
+        if (fileRepository.countByFolderIdAndDeletedFalse(folder.getId()) > 0) {
+            throw ApiException.conflict(
+                    "FOLDER_NOT_EMPTY", "This folder still has documents in it. Delete or move them first.");
+        }
+        if (folderRepository.existsByParentId(folder.getId())) {
+            throw ApiException.conflict(
+                    "FOLDER_NOT_EMPTY", "This folder still has subfolders in it. Delete those first.");
+        }
+
+        UUID departmentId = folder.getDepartment().getId();
+        String departmentName = folder.getDepartment().getName();
+        String folderName = folder.getName();
+
+        // Nothing live is left (checked above), so anything still pointing here is a soft-deleted
+        // file kept only for restore and the deletions log — move it to General rather than leaving
+        // it to block the delete with a foreign-key violation.
+        if (fileRepository.existsByFolderId(folder.getId())) {
+            Folder general = folderRepository
+                    .findByDepartmentIdAndParentIsNullAndNameIgnoreCase(departmentId, GENERAL_FOLDER_NAME)
+                    .orElseThrow(() -> ApiException.conflict(
+                            "FOLDER_NOT_EMPTY",
+                            "This folder still has a deleted document on record, and there is no General "
+                                    + "folder here to move it to."));
+            fileRepository.reassignFolder(folder.getId(), general.getId());
+        }
+
+        folderRepository.delete(folder);
+
+        auditService.record(
+                actor,
+                AuditAction.FOLDER_DELETED,
+                "folder",
+                folderId,
+                Map.of("name", folderName, "departmentId", departmentId.toString(), "reason", trimmed));
+
+        notificationService.notifyEveryoneExcept(
+                actor,
+                NotificationType.FOLDER_DELETED,
+                "A folder was deleted",
+                "%s deleted the folder \"%s\" from %s. Reason: %s"
+                        .formatted(actor.getFullName(), folderName, departmentName, trimmed),
+                // The folder itself is gone; the department it sat in is still there to look at.
+                "department:" + departmentId);
     }
 
     private static FolderCategory parseCategory(String category) {

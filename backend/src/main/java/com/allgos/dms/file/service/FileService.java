@@ -181,7 +181,7 @@ public class FileService {
         UploadValidator.Accepted accepted = uploadValidator.validate(part);
         uploadValidator.scanForMalware(part);
 
-        String description = extractDescription(part, accepted);
+        DocumentAbstractExtractor.Extraction extraction = extractEnrichment(part, accepted);
 
         String key = storageService.newKey(folder.departmentId(), folder.folderId(), accepted.fileName());
 
@@ -200,7 +200,13 @@ public class FileService {
         }
 
         try {
-            return fileRecordWriter.record(folder.folderId(), uploader, accepted, key, description);
+            return fileRecordWriter.record(
+                    folder.folderId(),
+                    uploader,
+                    accepted,
+                    key,
+                    extraction.description(),
+                    extraction.goNumber());
         } catch (RuntimeException ex) {
             // The row did not commit, so nothing will ever reference these bytes.
             log.error("Recording upload {} failed; removing the stored object", accepted.fileName(), ex);
@@ -210,18 +216,20 @@ public class FileService {
     }
 
     /**
-     * The Abstract paragraph, when the upload is a PDF. Nothing else carries that convention, and a
-     * failure to read it is never a reason to refuse the upload it would have enriched.
+     * The Abstract paragraph and G.O. number, when the upload is a PDF. Nothing else carries that
+     * convention, and a failure to read it is never a reason to refuse the upload it would have
+     * enriched.
      */
-    private String extractDescription(MultipartFile part, UploadValidator.Accepted accepted) {
+    private DocumentAbstractExtractor.Extraction extractEnrichment(
+            MultipartFile part, UploadValidator.Accepted accepted) {
         if (!"application/pdf".equals(accepted.contentType())) {
-            return null;
+            return DocumentAbstractExtractor.Extraction.NONE;
         }
         try {
-            return abstractExtractor.extract(part.getBytes()).description();
+            return abstractExtractor.extract(part.getBytes());
         } catch (IOException ex) {
             log.warn("Could not read {} to extract a description", accepted.fileName(), ex);
-            return null;
+            return DocumentAbstractExtractor.Extraction.NONE;
         }
     }
 
@@ -256,7 +264,7 @@ public class FileService {
         UploadValidator.Accepted accepted = uploadValidator.validate(part);
         uploadValidator.scanForMalware(part);
 
-        String description = extractDescription(part, accepted);
+        DocumentAbstractExtractor.Extraction extraction = extractEnrichment(part, accepted);
 
         String key = storageService.newKey(target.departmentId(), target.folderId(), accepted.fileName());
 
@@ -275,7 +283,14 @@ public class FileService {
         }
 
         try {
-            return fileRecordWriter.applyReplacement(fileId, actor, accepted, key, target.storageKey(), description);
+            return fileRecordWriter.applyReplacement(
+                    fileId,
+                    actor,
+                    accepted,
+                    key,
+                    target.storageKey(),
+                    extraction.description(),
+                    extraction.goNumber());
         } catch (RuntimeException ex) {
             // The row still points at the old key, so these bytes are unreachable.
             log.error("Replacing file {} failed; removing the stored object", fileId, ex);
@@ -382,6 +397,16 @@ public class FileService {
         deletion.setFile(file);
         deletion.setDeletedBy(actor);
         deletion.setReason(trimmed);
+        // Captured now rather than read through `file` later: a purge — manual or the 30-day sweep
+        // — removes the row this association points at, and the log has to keep reading correctly
+        // for every entry after that, not only the ones nobody has purged yet.
+        deletion.setFileName(file.getFileName());
+        deletion.setFileType(file.getFileType());
+        deletion.setSizeBytes(file.getSizeBytes());
+        deletion.setDepartmentId(file.getDepartment().getId());
+        deletion.setDepartmentName(file.getDepartment().getName());
+        deletion.setFolderId(file.getFolder().getId());
+        deletion.setFolderName(file.getFolder().getName());
         deletionRepository.save(deletion);
 
         auditService.record(
@@ -439,6 +464,51 @@ public class FileService {
                 "file:" + file.getId());
 
         return FileView.from(file, file.canBeModifiedBy(admin));
+    }
+
+    // -------------------------------------------------------------------------- purge
+
+    /**
+     * Permanently removes a deleted document — the row and its bytes — rather than waiting out the
+     * {@link FileDeletion#PURGE_RETENTION} window. Admin-only — the controller carries the role
+     * check, the same as restore.
+     *
+     * <p>The database change commits before the bytes are removed from storage, never the other way
+     * round: if the object delete were to fail first, the row would still exist afterward looking
+     * exactly like an ordinary, restorable deletion, and a restore would then hand back a file whose
+     * bytes are already gone. An orphaned object nobody ever reads again is the safe failure to have
+     * instead — the same ordering {@link #uploadOne} uses, just in reverse.
+     *
+     * @throws ApiException 404 if the file does not exist, 409 if it is not currently deleted
+     */
+    public void purge(UUID fileId, User admin) {
+        String storageKey = fileRecordWriter.purge(fileId, admin);
+        storageService.delete(storageKey);
+    }
+
+    /**
+     * The daily sweep: purges every document still deleted {@link FileDeletion#PURGE_RETENTION}
+     * after it was, that nobody restored in the meantime.
+     *
+     * <p>Each file is purged and committed on its own, so one failure — an object already missing
+     * from storage, say — is logged and does not stop the rest of the batch.
+     *
+     * @return how many were purged
+     */
+    public int purgeExpired() {
+        Instant threshold = Instant.now().minus(FileDeletion.PURGE_RETENTION);
+        List<UUID> fileIds = deletionRepository.findPurgeableFileIds(threshold);
+
+        int purged = 0;
+        for (UUID fileId : fileIds) {
+            try {
+                purge(fileId, null);
+                purged++;
+            } catch (RuntimeException ex) {
+                log.error("The 30-day sweep could not purge file {}", fileId, ex);
+            }
+        }
+        return purged;
     }
 
     /** The admin deletions log. {@code onlyUnrestored} narrows it to files still deleted. */

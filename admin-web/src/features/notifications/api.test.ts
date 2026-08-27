@@ -33,11 +33,17 @@ describe('notificationLink', () => {
     );
   });
 
+  it('sends a deleted folder\'s notification to the department it sat in, since the folder itself is gone', () => {
+    expect(notificationLink('department:11111111-1111-1111-1111-111111111111')).toBe(
+      '/departments/11111111-1111-1111-1111-111111111111',
+    );
+  });
+
   it('yields no link rather than a broken one', () => {
     expect(notificationLink(null)).toBeNull();
     expect(notificationLink('')).toBeNull();
     // A kind this build does not know, and a known kind with nothing to point at.
-    expect(notificationLink('department:11111111-1111-1111-1111-111111111111')).toBeNull();
+    expect(notificationLink('circular:11111111-1111-1111-1111-111111111111')).toBeNull();
     expect(notificationLink('file:')).toBeNull();
   });
 });

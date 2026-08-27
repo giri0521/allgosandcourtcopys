@@ -128,6 +128,15 @@ export async function createFolder(
 }
 
 /**
+ * Deletes an empty folder — admin-only, and refused by the server for the department's General
+ * folder or for one still holding a document or a subfolder. The reason is sent to every other
+ * account, the same way a file deletion is.
+ */
+export async function deleteFolder(folderId: string, reason: string): Promise<void> {
+  await api.delete(`/folders/${folderId}`, { data: { reason } });
+}
+
+/**
  * Uploads into any department's folder — uploads are deliberately not restricted to the uploader's
  * own department.
  *
@@ -287,4 +296,12 @@ export async function fetchDeletions(
 export async function restoreFile(fileId: string): Promise<FileItem> {
   const { data } = await api.post<FileItem>(`/admin/files/${fileId}/restore`);
   return data;
+}
+
+/**
+ * Permanently removes a deleted document rather than waiting out the 30-day retention window.
+ * Irreversible — there is no restore from here on.
+ */
+export async function purgeFile(fileId: string): Promise<void> {
+  await api.post(`/admin/files/${fileId}/purge`);
 }

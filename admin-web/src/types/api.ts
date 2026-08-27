@@ -97,6 +97,8 @@ export interface FileItem {
   favorite: boolean;
   /** The Abstract paragraph read from the document itself. Null for a scan nothing could be read from. */
   description: string | null;
+  /** The G.O. number read from the document itself, e.g. "G.O.(Ms) No. 123". Null when there is none. */
+  goNumber: string | null;
   uploadedAt: string;
 }
 
@@ -154,7 +156,8 @@ export interface DownloadLink {
 /** A row in the admin deletions log, carrying the reason the deleter had to give. */
 export interface FileDeletion {
   id: string;
-  fileId: string;
+  /** Null once the file has been purged — there is nothing left at that id to open or restore. */
+  fileId: string | null;
   fileName: string;
   departmentId: string;
   departmentName: string;
@@ -165,8 +168,13 @@ export interface FileDeletion {
   deletedAt: string;
   restoredByName: string | null;
   restoredAt: string | null;
-  /** True while the file is still deleted, which is when restore is offered. */
+  /** True while the file is neither restored nor purged, which is when Restore is offered. */
   restorable: boolean;
+  /** When the daily sweep purges this on its own, if nobody acts first. Null once restored or purged. */
+  purgeExpiresAt: string | null;
+  /** Null for the automatic sweep — nobody pressed the button, the 30 days did. */
+  purgedByName: string | null;
+  purgedAt: string | null;
 }
 
 /**

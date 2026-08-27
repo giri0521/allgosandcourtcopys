@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,6 +27,37 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
 
     long countByFolderIdAndDeletedFalse(UUID folderId);
 
+    /**
+     * Whether <em>any</em> file row still points at this folder — live or soft-deleted.
+     *
+     * <p>Deliberately not scoped to {@code deleted = false}: {@code files.folder_id} is a
+     * {@code NOT NULL} foreign key with no {@code ON DELETE} action, and a soft-deleted file's row
+     * survives (that is what makes restoring it possible, and what the admin deletions log reads).
+     * A folder a document was once filed into and later removed from still has that row pointing at
+     * it, so {@link com.allgos.dms.folder.service.FolderService#delete} has to check this rather than
+     * the live {@code fileCount}, or the delete fails at commit with a foreign-key violation instead
+     * of the clear refusal the caller should see.
+     */
+    boolean existsByFolderId(UUID folderId);
+
+    /**
+     * Moves every file row still pointing at {@code folderId} — by construction of the caller, only
+     * soft-deleted ones, since a live one would have refused the folder delete this exists for —
+     * over to {@code generalFolderId}.
+     *
+     * <p>This is what actually lets an apparently-empty folder be deleted: the row survives so a
+     * restore and the deletions log both keep working, and it has to point <em>somewhere</em> that
+     * still exists once the folder itself is gone. General is where an unfiled document already
+     * lands by convention (see {@code DestinationSuggestionService}), so a deleted document that
+     * outlives its folder joins it there rather than needing a new place invented for it.
+     *
+     * <p>Native and a bulk statement rather than loading and saving each row: a folder can carry
+     * years of turnover, and this runs inside the same transaction as the delete itself.
+     */
+    @Modifying
+    @Query(value = "UPDATE files SET folder_id = :generalFolderId WHERE folder_id = :folderId", nativeQuery = true)
+    void reassignFolder(@Param("folderId") UUID folderId, @Param("generalFolderId") UUID generalFolderId);
+
     long countByDepartmentIdAndDeletedFalse(UUID departmentId);
 
     long countByUploadedByIdAndDeletedFalse(UUID uploaderId);
@@ -33,14 +65,15 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
     long countByCreatedAtAfter(Instant after);
 
     /**
-     * Global search by part of a document's name, narrowed by the optional facets.
+     * Global search by part of a document's name or its G.O. number, narrowed by the optional facets.
      *
-     * <p><b>Native, and deliberately so.</b> The schema carries a GIN trigram index on
-     * {@code file_name} ({@code idx_files_name_trgm}), and {@code ILIKE '%…%'} is what uses it.
-     * The JPQL equivalent would be {@code lower(fileName) like …}, which indexes
-     * {@code lower(file_name)} — a different expression from the one the index was built on, so
-     * every search would fall back to scanning the table. Rewriting this in JPQL would compile,
-     * pass its tests on a handful of rows, and quietly stop scaling.
+     * <p><b>Native, and deliberately so.</b> The schema carries GIN trigram indexes on
+     * {@code file_name} ({@code idx_files_name_trgm}) and {@code go_number}
+     * ({@code idx_files_go_number_trgm}), and {@code ILIKE '%…%'} is what uses them. The JPQL
+     * equivalent would be {@code lower(fileName) like …}, which indexes {@code lower(file_name)} — a
+     * different expression from the one the index was built on, so every search would fall back to
+     * scanning the table. Rewriting this in JPQL would compile, pass its tests on a handful of rows,
+     * and quietly stop scaling.
      *
      * <p>Every optional filter is wrapped in a {@code cast(… as …)}: a native query with a plain
      * null parameter leaves PostgreSQL unable to infer the type and it refuses to prepare the
@@ -57,7 +90,7 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
                     select f.* from files f
                     join folders fo on fo.id = f.folder_id
                     where f.is_deleted = false
-                      and f.file_name ilike :pattern
+                      and (f.file_name ilike :pattern or f.go_number ilike :pattern)
                       and (cast(:departmentId as uuid) is null
                            or f.department_id = cast(:departmentId as uuid))
                       and (cast(:category as varchar) is null
@@ -73,7 +106,7 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
                     select count(*) from files f
                     join folders fo on fo.id = f.folder_id
                     where f.is_deleted = false
-                      and f.file_name ilike :pattern
+                      and (f.file_name ilike :pattern or f.go_number ilike :pattern)
                       and (cast(:departmentId as uuid) is null
                            or f.department_id = cast(:departmentId as uuid))
                       and (cast(:category as varchar) is null

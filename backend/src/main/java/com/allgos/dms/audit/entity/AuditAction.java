@@ -41,6 +41,8 @@ public final class AuditAction {
     public static final String FILE_REPLACED = "file_replaced";
     public static final String FILE_DELETED = "file_deleted";
     public static final String FILE_RESTORED = "file_restored";
+    /** Hard-deleted for good — by an admin, or by the 30-day sweep once nobody restored it. */
+    public static final String FILE_PURGED = "file_purged";
 
     // letters
     public static final String LETTER_TEMPLATE_CREATED = "letter_template_created";
