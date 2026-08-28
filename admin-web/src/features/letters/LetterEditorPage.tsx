@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { DictationField } from '@/components/ui/DictationField';
-import { TextAreaField, TextField } from '@/components/ui/Field';
+import { TextField } from '@/components/ui/Field';
 import { LetterSheet } from '@/features/letters/LetterSheet';
 import {
   createLetter,
@@ -201,18 +201,18 @@ export function LetterEditorPage() {
                 value={draft.letterDate}
                 onChange={(event) => set('letterDate')(event.target.value)}
               />
-              <TextAreaField
+              <DictationField
                 label="From"
                 rows={5}
                 value={draft.fromBlock}
-                onChange={(event) => set('fromBlock')(event.target.value)}
+                onValueChange={set('fromBlock')}
                 hint="Filled from your profile. Edit it here for this letter only."
               />
-              <TextAreaField
+              <DictationField
                 label="To"
                 rows={6}
                 value={draft.toBlock}
-                onChange={(event) => set('toBlock')(event.target.value)}
+                onValueChange={set('toBlock')}
                 placeholder={'1. The Commissioner of MBC & DNC, Ch-5.\n2. The Commissioner of MW, Ch-05.'}
                 hint="One recipient per line; number them if there are several."
               />
@@ -235,11 +235,11 @@ export function LetterEditorPage() {
                 onValueChange={set('subject')}
                 hint="Printed after Sub:"
               />
-              <TextAreaField
+              <DictationField
                 label="Reference"
                 rows={2}
                 value={draft.reference}
-                onChange={(event) => set('reference')(event.target.value)}
+                onValueChange={set('reference')}
                 hint="Printed after Ref: — the order or letter this one answers"
               />
               <DictationField
@@ -255,24 +255,25 @@ export function LetterEditorPage() {
           <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
             <h2 className="font-semibold text-slate-900">Closing</h2>
             <div className="mt-4 space-y-4">
-              <TextField
+              <DictationField
                 label="Enclosure"
+                singleLine
                 value={draft.enclosure}
-                onChange={(event) => set('enclosure')(event.target.value)}
+                onValueChange={set('enclosure')}
                 placeholder="G.O Copy."
               />
-              <TextAreaField
+              <DictationField
                 label="Signature"
                 rows={4}
                 value={draft.signOff}
-                onChange={(event) => set('signOff')(event.target.value)}
+                onValueChange={set('signOff')}
                 hint="Sits above the line, on the right"
               />
-              <TextAreaField
+              <DictationField
                 label="Copy to"
                 rows={4}
                 value={draft.copyTo}
-                onChange={(event) => set('copyTo')(event.target.value)}
+                onValueChange={set('copyTo')}
                 hint="Left off the letter entirely when empty"
               />
             </div>
