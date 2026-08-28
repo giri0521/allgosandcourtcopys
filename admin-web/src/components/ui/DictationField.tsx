@@ -1,22 +1,23 @@
-import { useState } from 'react';
-import type { TextareaHTMLAttributes } from 'react';
-import { TextAreaField } from '@/components/ui/Field';
+import { useId } from 'react';
+import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import { TextAreaField, TextField } from '@/components/ui/Field';
 import {
   DICTATION_LANGUAGES,
   appendTranscript,
   dictationSupported,
   useDictation,
+  useDictationLanguage,
   type DictationLanguage,
 } from '@/lib/dictation';
 
 /**
- * A text area that can also be dictated into.
+ * A field that can also be dictated into.
  *
  * <p>Typing is unchanged — the microphone is an alternative to it, never a mode. What is recognised
  * is added to what is already there, so somebody can type a paragraph, dictate the next and go back
  * to typing without losing either.
  *
- * <p>On a browser with no speech recognition the control is simply a text area: the button is not
+ * <p>On a browser with no speech recognition the control is simply a field: the button is not
  * rendered at all rather than shown disabled, because a disabled button invites a question nobody
  * can answer from the screen.
  */
@@ -26,6 +27,8 @@ export function DictationField({
   onValueChange,
   hint,
   error,
+  singleLine = false,
+  rows,
   ...props
 }: {
   label: string;
@@ -33,8 +36,11 @@ export function DictationField({
   onValueChange: (value: string) => void;
   hint?: string;
   error?: string;
+  /** A one-line field — an enclosure, a name — rather than a block of prose. */
+  singleLine?: boolean;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>) {
-  const [lang, setLang] = useState<DictationLanguage>('en-IN');
+  const languageId = useId();
+  const [lang, setLang] = useDictationLanguage();
 
   const dictation = useDictation({
     lang,
@@ -43,14 +49,26 @@ export function DictationField({
 
   return (
     <div>
-      <TextAreaField
-        label={label}
-        value={value}
-        onChange={(event) => onValueChange(event.target.value)}
-        hint={hint}
-        error={error}
-        {...props}
-      />
+      {singleLine ? (
+        <TextField
+          label={label}
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
+          hint={hint}
+          error={error}
+          {...(props as InputHTMLAttributes<HTMLInputElement>)}
+        />
+      ) : (
+        <TextAreaField
+          label={label}
+          rows={rows}
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
+          hint={hint}
+          error={error}
+          {...props}
+        />
+      )}
 
       {dictationSupported && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -81,16 +99,17 @@ export function DictationField({
               <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
               <path d="M12 18v4" />
             </svg>
-            {dictation.listening ? 'Stop dictating' : 'Dictate'}
+            {dictation.listening ? 'Stop dictating' : `Dictate ${label.toLowerCase()}`}
           </button>
 
           {/* Beside the button rather than in a settings screen: the language of the next sentence
-              is a decision made while writing, and an office writing in both switches often. */}
-          <label className="sr-only" htmlFor={`${label}-dictation-language`}>
+              is a decision made while writing, and an office writing in both switches often. The
+              choice is shared by every field, so it is made once for the whole letter. */}
+          <label className="sr-only" htmlFor={languageId}>
             Dictation language for {label}
           </label>
           <select
-            id={`${label}-dictation-language`}
+            id={languageId}
             value={lang}
             onChange={(event) => setLang(event.target.value as DictationLanguage)}
             disabled={dictation.listening}

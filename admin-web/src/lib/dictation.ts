@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 /**
  * Dictation, through the browser's own speech recognition.
@@ -19,6 +19,34 @@ export const DICTATION_LANGUAGES = [
 ] as const;
 
 export type DictationLanguage = (typeof DICTATION_LANGUAGES)[number]['code'];
+
+/* The chosen language belongs to the writer, not to the field. A letter dictated in Tamil is Tamil
+   throughout, and picking it again on the From block, the To block and every paragraph would be a
+   tax on the one office most likely to dictate at all. Kept outside React so every field on the
+   screen reads the same answer without a provider threaded through the form. */
+let language: DictationLanguage = 'en-IN';
+const languageListeners = new Set<() => void>();
+
+/** The dictation language, shared by every field on the screen. */
+export function useDictationLanguage(): [DictationLanguage, (next: DictationLanguage) => void] {
+  const value = useSyncExternalStore(
+    (listener) => {
+      languageListeners.add(listener);
+      return () => {
+        languageListeners.delete(listener);
+      };
+    },
+    () => language,
+    () => language,
+  );
+
+  const set = useCallback((next: DictationLanguage) => {
+    language = next;
+    languageListeners.forEach((listener) => listener());
+  }, []);
+
+  return [value, set];
+}
 
 /**
  * Adds recognised speech to what is already in the field.
@@ -81,6 +109,12 @@ function recognitionConstructor(): RecognitionConstructor | null {
 /** Whether this browser can dictate at all. Checked once, at module scope, since it cannot change. */
 export const dictationSupported = recognitionConstructor() !== null;
 
+/* There is one microphone, and a form with a dictation button beside every block invites somebody
+   to start a second without stopping the first. Two live recognisers fight over the device and the
+   words land in whichever field wins, so starting one ends any other — tracked here rather than in
+   the hook, which only ever sees its own field. */
+let openMicrophone: SpeechRecognitionLike | null = null;
+
 const MESSAGES: Record<string, string> = {
   'not-allowed': 'The microphone is blocked. Allow it for this site in the address bar, then try again.',
   'service-not-allowed': 'The microphone is blocked for this site.',
@@ -126,7 +160,8 @@ export function useDictation({
     const Recognition = recognitionConstructor();
     if (!Recognition) return;
 
-    recognitionRef.current?.abort();
+    // Ends the previous session, whether it belongs to this field or to another one on the form.
+    openMicrophone?.abort();
     setError(null);
     setInterim('');
 
@@ -163,11 +198,13 @@ export function useDictation({
     };
 
     recognition.onend = () => {
+      if (openMicrophone === recognition) openMicrophone = null;
       setListening(false);
       setInterim('');
     };
 
     recognitionRef.current = recognition;
+    openMicrophone = recognition;
     recognition.start();
     setListening(true);
   }, [lang]);
